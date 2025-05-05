@@ -30,7 +30,7 @@ ALLOWED_MODELS = {
     # Perplexity
     "sonar-pro",
     "sonar-deep-research",
-    "codellama-70b-instruct",
+    "sonar-reasoning-pro",
     # OpenAI
     "gpt-4.1", 
     "o4-mini-2025-04-16",
