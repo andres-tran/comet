@@ -114,7 +114,7 @@ def stream_openai(query, model_name):
                 {"role": "user", "content": query}
             ],
             stream=True,
-            max_completion_tokens=15500, # Correct parameter for OpenAI completion length
+            max_completion_tokens=10000, # Increased token limit for OpenAI
         )
         for chunk in stream:
             content = chunk.choices[0].delta.content
@@ -152,7 +152,7 @@ def stream_perplexity(query, model_name):
             {"role": "user", "content": query}
         ],
         "stream": True,
-        "max_tokens": 10000, # Allow longer responses
+        "max_tokens": 10000, # Increased token limit for Perplexity
     }
 
     try:
