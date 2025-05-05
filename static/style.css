@@ -33,7 +33,7 @@ body {
     text-align: center;
     font-size: 2rem; 
     font-weight: 600;
-    color: #2563eb; /* Use the darker blue */
+    color: #ea580c; /* Use a darker orange for title */
     margin-bottom: 10px; /* Space below Comet title */
 }
 
@@ -121,7 +121,7 @@ body {
 #search-button {
     padding: 10px 12px;
     font-size: 1rem;
-    background-color: #3b82f6; /* Perplexity blue */
+    background-color: #f97316; /* Primary Orange */
     color: white;
     border: none;
     border-radius: 18px; /* Rounded */
@@ -133,7 +133,7 @@ body {
 }
 
 #search-button:hover {
-    background-color: #2563eb; /* Darker blue */
+    background-color: #ea580c; /* Darker Orange */
 }
 
 /* === Results Area === */
@@ -183,7 +183,7 @@ body {
 
 .spinner {
     border: 4px solid rgba(0, 0, 0, 0.1); /* Light grey border */
-    border-left-color: #3b82f6; /* Blue spinner part */
+    border-left-color: #f97316; /* Primary Orange spinner part */
     border-radius: 50%;
     width: 24px;
     height: 24px;
@@ -197,6 +197,36 @@ body {
 
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+
+/* Style for Generated Images */
+.generated-image {
+    display: block; /* Prevent extra space below */
+    max-width: 100%; /* Ensure image fits container */
+    height: auto; /* Maintain aspect ratio */
+    margin: 20px auto; /* Center image with some margin */
+    border-radius: 8px; /* Optional: rounded corners */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Optional: subtle shadow */
+}
+
+/* === Download Button Styling === */
+#download-area a.download-button {
+    display: inline-block;
+    padding: 8px 22px; /* Adjusted padding */
+    background-color: #f97316; /* Primary Orange */
+    color: white;
+    text-decoration: none;
+    border-radius: 20px; /* Keep rounded */
+    font-size: 0.9rem;
+    font-weight: 500; /* Keep medium weight */
+    cursor: pointer;
+    border: 1px solid transparent; /* Add transparent border for layout consistency on hover */
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; /* Smooth transition */
+}
+
+#download-area a.download-button:hover {
+    background-color: #ea580c; /* Darker Orange */
+    border-color: #ea580c; /* Match border color */
 }
 
 /* Loading text (now embedded in results container) */
@@ -272,7 +302,7 @@ body {
 }
 
 .results-container-perplexity blockquote {
-    border-left: 3px solid #3b82f6; /* Blue border */
+    border-left: 3px solid #f97316; /* Orange border */
     padding-left: 1em;
     margin-left: 0;
     margin-bottom: 1em;
@@ -300,7 +330,7 @@ body {
 }
 
 .results-container-perplexity a {
-    color: #1e6cd6; /* Perplexity link blue */
+    color: #dd6b20; /* Link Orange */
     text-decoration: none;
 }
 

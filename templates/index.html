@@ -15,7 +15,7 @@
         <header class="search-header">
             <!-- Optional: Logo can go here -->
             <h2 class="logo-title">Comet</h2>
-            <h1>Ask anything...</h1> 
+            <h1>Ask me anything...</h1> 
             <form id="search-form" class="search-form-perplexity">
                 <div class="input-wrapper">
                     <i class="fas fa-search search-icon"></i> <!-- Search Icon -->
@@ -35,6 +35,8 @@
                             <option value="gpt-4.1">GPT-4.1</option>
                             <option value="o4-mini-2025-04-16">o4-mini-2025-04-16</option>
                             <option value="o3-2025-04-16">o3-2025-04-16</option>
+                            <option value="gpt-4o-search-preview-2025-03-11">GPT-4o Search Preview</option>
+                            <option value="gpt-image-1">GPT Image 1</option>
                         </optgroup>
                     </select>
                     <button type="submit" id="search-button" title="Submit Search">
@@ -51,13 +53,18 @@
             <!-- Thinking Indicator -->
             <div class="thinking-indicator" style="display: none;">
                 <div class="spinner"></div>
-                <span>Thinking...</span>
+                <span id="thinking-text">Thinking...</span>
             </div>
 
             <!-- Results Area -->
             <div id="results-container" class="results-container-perplexity">
                 <!-- Initial placeholder message -->
                 <p class="placeholder-text">Your AI search results will appear here.</p>
+            </div>
+
+            <!-- Download Button Area -->
+            <div id="download-area" style="text-align: center; margin-top: 15px; display: none;">
+                <!-- Download button will be added here -->
             </div>
         </main>
 

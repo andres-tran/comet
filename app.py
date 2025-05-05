@@ -2,6 +2,8 @@ import os
 import json
 import openai
 import requests # For Perplexity API
+# Add base64 for image handling
+import base64 
 from flask import Flask, render_template, request, jsonify, Response
 from dotenv import load_dotenv
 import traceback
@@ -28,12 +30,13 @@ ALLOWED_MODELS = {
     # Perplexity
     "sonar-pro",
     "sonar-deep-research",
-    "sonar-reasoning-pro",
     "codellama-70b-instruct",
     # OpenAI
-    "gpt-4.1",
+    "gpt-4.1", 
     "o4-mini-2025-04-16",
     "o3-2025-04-16",
+    "gpt-4o-search-preview-2025-03-11",
+    "gpt-image-1", # Image Model
 }
 
 # --- Error Handling --- 
@@ -43,16 +46,57 @@ def check_api_keys(model_name):
     is_openai_model = (
         model_name.startswith('gpt-') or 
         model_name == "o4-mini-2025-04-16" or 
-        model_name == "o3-2025-04-16"
+        model_name == "o3-2025-04-16" or
+        model_name == "gpt-4o-search-preview-2025-03-11" or
+        model_name == "gpt-image-1"
     )
     
     if is_openai_model:
-        if not openai.api_key:
+        if not openai.api_key or not openai_client: # Also check client initialization
             return ["OpenAI"]
     else: # Assuming Perplexity otherwise
         if not perplexity_api_key:
             return ["Perplexity"]
     return [] # No missing keys for the selected model type
+
+# --- Image Generation Function ---
+def generate_image(query):
+    """Generates an image using OpenAI and returns base64 data or error."""
+    if not openai_client:
+         # Return standard JSON response for image errors
+         return jsonify({'error': 'OpenAI client not initialized. Check API key.'}), 500
+
+    print(f"Generating image with prompt: {query[:100]}...")
+    try:
+        result = openai_client.images.generate(
+            model="gpt-image-1",
+            prompt=query,
+            size="1024x1024" # Default size, can be customized later
+            # Add quality, style etc. parameters here if needed
+        )
+        # Access the base64 data correctly
+        if result.data and result.data[0].b64_json:
+            image_base64 = result.data[0].b64_json
+            print("Image generated successfully (returning base64).")
+            return jsonify({'image_base64': image_base64})
+        else:
+            print("Error: No image data received from OpenAI.")
+            return jsonify({'error': 'No image data received from OpenAI.'}), 500
+
+    except openai.APIError as e:
+        print(f"OpenAI API error during image generation: {e}")
+        err_msg = str(e)
+        # Attempt to extract more specific error message if available
+        if hasattr(e, 'body') and isinstance(e.body, dict) and 'message' in e.body:
+             err_msg = e.body['message']
+        elif hasattr(e, 'message'): # Sometimes error is directly in message attribute
+             err_msg = e.message
+        return jsonify({'error': f'OpenAI API error: {err_msg}'}), 500
+    except Exception as e:
+        print(f"Unexpected error during image generation: {e}")
+        traceback.print_exc()
+        return jsonify({'error': 'An internal server error occurred during image generation.'}), 500
+
 
 # --- Streaming Generators --- 
 
@@ -83,8 +127,10 @@ def stream_openai(query, model_name):
     except openai.APIError as e:
         print(f"OpenAI API error during stream: {e}")
         err_msg = str(e)
-        if hasattr(e, 'body') and e.body and 'message' in e.body:
+        if hasattr(e, 'body') and isinstance(e.body, dict) and 'message' in e.body:
             err_msg = e.body['message']
+        elif hasattr(e, 'message'):
+             err_msg = e.message
         yield f"data: {json.dumps({'error': f'OpenAI API error: {err_msg}'})}\n\n"
     except Exception as e:
         print(f"Error during OpenAI stream: {e}")
@@ -101,6 +147,7 @@ def stream_perplexity(query, model_name):
     payload = {
         "model": model_name,
         "messages": [
+            # Using a similar reasoning prompt for Perplexity
             {"role": "system", "content": "You are a precise and thorough AI assistant. Reason step-by-step about the user query to provide an accurate and detailed response. **Always format your entire response using Markdown.**"},
             {"role": "user", "content": query}
         ],
@@ -163,45 +210,50 @@ def index():
 
 @app.route('/search', methods=['POST'])
 def search():
-    """Handles the search query, returning a Server-Sent Event stream."""
+    """Handles the search query, returning a stream for text or JSON for image."""
     query = request.json.get('query')
     selected_model = request.json.get('model')
 
-    # Basic validation (can be done before streaming starts)
+    # Basic validation
     if not query:
-        # Cannot easily return JSON error in streaming context, log and return empty stream or signal error
-        print("Error: No query provided")
-        def error_stream(): yield f"data: {json.dumps({'error': 'No query provided'})}\n\n"
-        return Response(error_stream(), mimetype='text/event-stream')
-
+        # For non-streaming error before choice
+        return jsonify({'error': 'No query provided'}), 400
+    
     if not selected_model or selected_model not in ALLOWED_MODELS:
         print(f"Warning: Invalid or missing model '{selected_model}'. Defaulting to sonar-pro.")
-        selected_model = "sonar-pro"
+        selected_model = "sonar-pro" # Defaulting is safer than erroring pre-stream
 
     missing_keys = check_api_keys(selected_model)
     if missing_keys:
         key_str = " and ".join(missing_keys)
-        print(f"Error: Missing API Key(s) {key_str}")
-        def error_stream_keys(): yield f"data: {json.dumps({'error': f'Missing API key(s) in .env file for model {selected_model}: {key_str}'})}\n\n"
-        return Response(error_stream_keys(), mimetype='text/event-stream')
+        print(f"Error: Missing API Key(s) {key_str} for model {selected_model}")
+        # Return non-streaming error before choice
+        return jsonify({'error': f'Missing API key(s) in .env file for model {selected_model}: {key_str}'}), 500
 
     print(f"Received query: {query}, Model: {selected_model}")
 
-    # --- Choose the appropriate streaming generator ---
-    # Check if it's an OpenAI model (standard prefix or specific custom names)
-    is_openai_model_route = (
-        selected_model.startswith('gpt-') or 
-        selected_model == "o4-mini-2025-04-16" or 
-        selected_model == "o3-2025-04-16"
-    )
-
-    if is_openai_model_route:
-        generator = stream_openai(query, selected_model)
+    # --- Route to Image Generation or Text Streaming --- 
+    if selected_model == "gpt-image-1":
+        # Call image generation function (returns Response object with JSON)
+        return generate_image(query)
     else:
-        generator = stream_perplexity(query, selected_model)
+        # Determine if it's OpenAI text or Perplexity text
+        is_openai_text_model = (
+            selected_model.startswith('gpt-') or 
+            selected_model == "o4-mini-2025-04-16" or 
+            selected_model == "o3-2025-04-16" or
+            selected_model == "gpt-4o-search-preview-2025-03-11"
+            # Exclude gpt-image-1 which is handled above
+        )
 
-    # Return the streaming response
-    return Response(generator, mimetype='text/event-stream')
+        if is_openai_text_model:
+            generator = stream_openai(query, selected_model)
+        else: # Assume Perplexity model
+            generator = stream_perplexity(query, selected_model)
+        
+        # Return the streaming response for text models
+        return Response(generator, mimetype='text/event-stream')
+
 
 # --- Main Execution --- 
 if __name__ == '__main__':

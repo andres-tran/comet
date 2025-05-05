@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsContainer = document.getElementById('results-container');
     const errorContainer = document.getElementById('error-container');
     const thinkingIndicator = document.querySelector('.thinking-indicator'); // Get thinking indicator
+    const thinkingText = document.getElementById('thinking-text'); // Get the text span
+    const downloadArea = document.getElementById('download-area'); // Get download area
 
     // Configure marked.js (optional: customize options here if needed)
     // marked.setOptions({...});
@@ -23,6 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset UI states
         resultsContainer.style.display = 'block';
         resultsContainer.innerHTML = ''; // Clear previous results immediately
+        downloadArea.style.display = 'none'; // Hide download area
+        downloadArea.innerHTML = ''; // Clear previous button
         thinkingIndicator.style.display = 'flex'; // Show thinking animation
         // Clear placeholder explicitly if it exists
         const placeholder = resultsContainer.querySelector('.placeholder-text');
@@ -31,9 +35,77 @@ document.addEventListener('DOMContentLoaded', () => {
         errorContainer.style.display = 'none';
         errorContainer.textContent = '';
 
+        // Set appropriate thinking text
+        if (selectedModel === 'gpt-image-1') {
+            thinkingText.textContent = 'Generating an image...';
+        } else {
+            thinkingText.textContent = 'Thinking...';
+        }
+
         let accumulatedResponse = "";
         let currentError = null;
 
+        // --- Handle Image Generation Separately ---
+        if (selectedModel === 'gpt-image-1') {
+            console.log("Image generation model selected. Using non-streaming fetch.");
+            resultsContainer.innerHTML = ''; // Clear results area
+            thinkingIndicator.style.display = 'flex'; // Show thinking indicator
+
+            try {
+                const response = await fetch('/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: query, model: selectedModel }),
+                });
+
+                thinkingIndicator.style.display = 'none'; // Hide indicator once response received
+                const data = await response.json(); // Expecting JSON for images
+
+                if (!response.ok) {
+                    // Throw error from JSON response if available, otherwise status text
+                    throw new Error(data.error || `Error: ${response.status} ${response.statusText}`);
+                }
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                if (data.image_base64) {
+                    const img = document.createElement('img');
+                    img.src = `data:image/png;base64,${data.image_base64}`;
+                    img.alt = query; // Use prompt as alt text
+                    img.classList.add('generated-image'); // Add class for styling
+                    resultsContainer.appendChild(img);
+
+                    // Create and add download button
+                    const downloadButton = document.createElement('a');
+                    downloadButton.href = img.src;
+                    downloadButton.download = `comet-${query.substring(0, 20).replace(/\s+/g, '_') || 'image'}.png`; // Suggest filename
+                    downloadButton.textContent = 'Download Image';
+                    downloadButton.classList.add('download-button');
+                    downloadArea.appendChild(downloadButton);
+                    downloadArea.style.display = 'block'; // Show the download area
+
+                } else {
+                    throw new Error("Received response but no image data found.");
+                }
+
+            } catch (error) {
+                console.error('Image generation failed:', error);
+                displayError(error.message || 'An unexpected error occurred during image generation.');
+                resultsContainer.style.display = 'none';
+                if (thinkingIndicator.style.display !== 'none') {
+                    thinkingIndicator.style.display = 'none';
+                }
+            }
+            return; // Stop execution for image model
+        }
+        // --- End Image Generation Handling ---
+
+        // --- Proceed with Text Streaming Logic --- 
+        console.log("Text model selected. Using streaming fetch.");
         try {
             const response = await fetch('/search', {
                 method: 'POST',
@@ -125,12 +197,12 @@ document.addEventListener('DOMContentLoaded', () => {
                  throw new Error(currentError);
             }
             // If response finished but is empty, show message
-            if (accumulatedResponse.trim() === ''){
+            if (accumulatedResponse.trim() === '' && resultsContainer.innerHTML.trim() === ''){
                  resultsContainer.innerHTML = '<p>Received an empty response.</p>';
-            } else if (!currentError && resultsContainer.innerHTML.trim() === '') {
+             } else if (!currentError && resultsContainer.innerHTML.trim() === '') {
                  // If stream ended successfully but nothing was ever rendered (edge case)
                  resultsContainer.innerHTML = '<p>Received an empty response.</p>';
-            }
+             }
 
         } catch (error) {
             console.error('Search failed:', error);
@@ -153,12 +225,14 @@ document.addEventListener('DOMContentLoaded', () => {
         errorContainer.textContent = message;
         errorContainer.style.display = 'block';
         resultsContainer.classList.add('error'); // Add error class for potential styling
+        downloadArea.style.display = 'none'; // Hide download area on error
     }
 
     input.addEventListener('input', () => {
         if (errorContainer.style.display !== 'none') {
             errorContainer.style.display = 'none';
             resultsContainer.classList.remove('error');
+            downloadArea.style.display = 'none'; // Also hide download area when clearing error
         }
     });
 }); 
