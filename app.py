@@ -59,48 +59,6 @@ def check_api_keys(model_name):
             return ["Perplexity"]
     return [] # No missing keys for the selected model type
 
-# --- OpenAI Non-Streaming Function (with Web Search) ---
-def generate_openai_with_search(query, model_name):
-    """Generates a response using OpenAI Responses API with web search."""
-    if not openai_client:
-         return jsonify({'error': 'OpenAI client not initialized. Check API key.'}), 500
-    
-    print(f"Generating response from {model_name} with web search...")
-    try:
-        response = openai_client.responses.create(
-            model="gpt-4.1", # Using gpt-4.1 as it's compatible with Responses API + Web Search
-            tools=[{"type": "web_search_preview"}], # Enable web search
-            input=query
-            # Add other params like user_location, search_context_size if needed
-        )
-        
-        print(f"OpenAI Responses API Raw Response: {response}")
-        
-        # Response structure is different, look for output_text
-        if hasattr(response, 'output_text') and response.output_text:
-            answer = response.output_text
-            # TODO: Extract and return annotations as well if needed later
-            # annotations = response.annotations if hasattr(response, 'annotations') else []
-            print(f"OpenAI response with search generated.")
-            return jsonify({'answer': answer}) # Use 'answer' key for consistency for now
-        else:
-             print(f"Unexpected OpenAI Responses API structure: {response}")
-             return jsonify({'error': 'Could not parse answer from OpenAI Responses API.'}), 500
-
-    except openai.APIError as e:
-        print(f"OpenAI Responses API error: {e}")
-        err_msg = str(e)
-        if hasattr(e, 'body') and isinstance(e.body, dict) and 'message' in e.body:
-             err_msg = e.body['message']
-        elif hasattr(e, 'message'):
-             err_msg = e.message
-        return jsonify({'error': f'OpenAI API error: {err_msg}'}), 500
-    except Exception as e:
-        print(f"Unexpected error during OpenAI search response call: {e}")
-        traceback.print_exc()
-        return jsonify({'error': 'An internal server error occurred during OpenAI search response.'}), 500
-
-
 # --- Streaming Generators --- 
 
 def stream_openai(query, model_name):
@@ -109,17 +67,26 @@ def stream_openai(query, model_name):
         yield f"data: {json.dumps({'error': 'OpenAI client not initialized. Check API key.'})}\n\n"
         return
 
+    # --- Prepare API Call Parameters ---
+    api_params = {
+        "model": model_name,
+        "messages": [
+            # System prompt might need adjustment depending on how the model uses search
+            {"role": "system", "content": "You are a helpful and meticulous AI assistant. Think step-by-step to deeply understand the query. Provide a comprehensive and well-reasoned answer. **Always format your entire response using Markdown.** If relevant, use web search results to provide up-to-date information."},
+            {"role": "user", "content": query}
+        ],
+        "stream": True,
+        "max_completion_tokens": 10000, 
+    }
+
     try:
-        stream = openai_client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {"role": "system", "content": "You are a helpful and meticulous AI assistant. Think step-by-step to deeply understand the query. Provide a comprehensive and well-reasoned answer. **Always format your entire response using Markdown.**"},
-                {"role": "user", "content": query}
-            ],
-            stream=True,
-            max_completion_tokens=10000, # Increased token limit for OpenAI
-        )
+        print(f"Calling chat.completions.create with params: {api_params}")
+        stream = openai_client.chat.completions.create(**api_params)
+        
         for chunk in stream:
+            # TODO: Need to inspect chunk structure if tools are used
+            # It might contain tool_calls instead of/in addition to delta.content
+            # For now, assume standard content streaming
             content = chunk.choices[0].delta.content
             if content is not None:
                 # Send chunk data formatted as SSE
@@ -236,17 +203,10 @@ def search():
 
     print(f"Received query: {query}, Model: {selected_model}")
 
-    # --- Route to Image, Search, or Text Streaming --- 
-    search_models = ["gpt-4o-search-preview-2025-03-11"] # Models using Responses API
-    
+    # --- Route to Image or Text Streaming --- 
     if selected_model == "gpt-image-1":
-        print("--- Routing to image generation --- ") # Log Branch
         return generate_image(query)
-    elif selected_model in search_models:
-        print("--- Routing to web search generation --- ") # Log Branch
-        return generate_openai_with_search(query, selected_model)
     else:
-        print("--- Routing to text streaming --- ") # Log Branch
         # Determine if it's standard OpenAI text or Perplexity text
         is_standard_openai_text_model = (
             selected_model.startswith('gpt-') or 

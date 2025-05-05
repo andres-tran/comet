@@ -45,13 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
         let accumulatedResponse = "";
         let currentError = null;
 
-        // --- Handle Non-Streaming Models (Image or Search) ---
-        const nonStreamingModels = ['gpt-image-1', 'gpt-4o-search-preview-2025-03-11']; 
+        // --- Handle Non-Streaming Models (Image Only) ---
+        const nonStreamingModels = ['gpt-image-1']; // Removed search model
         if (nonStreamingModels.includes(selectedModel)) {
-            const isImageModel = selectedModel === 'gpt-image-1';
-            const isSearchModel = selectedModel === 'gpt-4o-search-preview-2025-03-11';
-            
-            console.log(`${isImageModel ? 'Image' : (isSearchModel ? 'Search' : 'Non-streaming text')} model selected. Using non-streaming fetch.`);
+            const isImageModel = selectedModel === 'gpt-image-1'; // This will always be true now
+            console.log(`Image model selected. Using non-streaming fetch.`);
             resultsContainer.innerHTML = ''; // Clear results area
             thinkingIndicator.style.display = 'flex'; // Show thinking indicator
             thinkingText.textContent = isImageModel ? 'Generating an image...' : 'Searching the web...'; // Custom text
@@ -127,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         // --- End Non-Streaming Handling ---
 
-        // --- Proceed with Text Streaming Logic (Handles all text models including sonar-deep-research) --- 
+        // --- Proceed with Text Streaming Logic (Handles all text models including search) --- 
         console.log("Streaming text model selected. Using streaming fetch.");
         thinkingText.textContent = 'Thinking...'; // Reset thinking text for streaming
         try {
