@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comet</title>
+    <!-- Consider adding a favicon similar to Perplexity's -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Add Font Awesome for icons (optional, but helps mimic UI) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="main-container">
+        <header class="search-header">
+            <!-- Optional: Logo can go here -->
+            <h2 class="logo-title">Comet</h2>
+            <h1>Ask anything...</h1> 
+            <form id="search-form" class="search-form-perplexity">
+                <div class="input-wrapper">
+                    <i class="fas fa-search search-icon"></i> <!-- Search Icon -->
+                    <input type="text" id="search-input" placeholder="Ask anything..." required autocomplete="off">
+                    <!-- Optional: Clear button can be added here via JS -->
+                </div>
+                <div class="controls-wrapper">
+                     <select id="model-select">
+                        <!-- Group Perplexity models -->
+                        <optgroup label="Perplexity">
+                            <option value="sonar-pro" selected>Sonar Pro</option>
+                            <option value="sonar-deep-research">Sonar Deep Research</option>
+                            <option value="sonar-reasoning-pro">Sonar Reasoning Pro</option>
+                        </optgroup>
+                         <!-- Group OpenAI models -->
+                        <optgroup label="OpenAI">
+                            <option value="gpt-4.1">GPT-4.1</option>
+                            <option value="o4-mini-2025-04-16">o4-mini-2025-04-16</option>
+                            <option value="o3-2025-04-16">o3-2025-04-16</option>
+                        </optgroup>
+                    </select>
+                    <button type="submit" id="search-button" title="Submit Search">
+                        <i class="fas fa-arrow-right"></i> <!-- Arrow Icon -->
+                    </button>
+                </div>
+            </form>
+        </header>
+
+        <main class="results-area">
+            <!-- Error Container -->
+            <div id="error-container" class="error-perplexity"></div>
+
+            <!-- Results Area -->
+            <div id="results-container" class="results-container-perplexity">
+                <!-- Initial placeholder message -->
+                <p class="placeholder-text">Your AI search results will appear here.</p>
+            </div>
+        </main>
+
+         <!-- Optional: Footer can go here -->
+
+    </div> <!-- End main-container -->
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html> 

@@ -1,0 +1,324 @@
+/* === Reset & Base Styles === */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: #ffffff; /* Perplexity often uses a white or very light gray */
+    color: #1a1a1a; /* Dark text color */
+    line-height: 1.6;
+    display: flex;
+    justify-content: center;
+    padding-top: 40px; /* Space above content */
+}
+
+.main-container {
+    width: 100%;
+    max-width: 768px; /* Typical content width */
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* === Search Header === */
+.search-header {
+    margin-bottom: 40px;
+}
+
+/* Added styling for the Comet logo title */
+.logo-title {
+    text-align: center;
+    font-size: 2rem; 
+    font-weight: 600;
+    color: #2563eb; /* Use the darker blue */
+    margin-bottom: 10px; /* Space below Comet title */
+}
+
+.search-header h1 {
+    font-size: 1.5rem; /* Smaller heading */
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.search-form-perplexity {
+    display: flex;
+    align-items: stretch; /* Make items same height */
+    border: 1px solid #e0e0e0;
+    border-radius: 24px; /* Rounded corners like Perplexity */
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden; /* Clip children to rounded corners */
+    padding: 5px; /* Padding around the internal elements */
+}
+
+.input-wrapper {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding-left: 15px; /* Space for icon */
+}
+
+.search-icon {
+    color: #aaa;
+    font-size: 0.9rem;
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+#search-input {
+    width: 100%;
+    padding: 10px 15px 10px 35px; /* Top/Bottom, Right, Left (make space for icon) */
+    font-size: 1rem;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #1a1a1a;
+}
+
+#search-input::placeholder {
+    color: #aaa;
+}
+
+.controls-wrapper {
+    display: flex;
+    align-items: center;
+    padding-left: 5px; /* Space between input and controls */
+}
+
+#model-select {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    border: 1px solid #e0e0e0; /* Subtle border */
+    border-radius: 18px; /* Rounded */
+    background-color: #f7f7f7; /* Light background */
+    color: #333;
+    outline: none;
+    cursor: pointer;
+    margin-right: 5px; /* Space before button */
+    -webkit-appearance: none; /* Remove default styling */
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666666%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); /* Basic dropdown arrow */
+    background-repeat: no-repeat;
+    background-position: right 10px top 50%;
+    background-size: .65em auto;
+    padding-right: 30px; /* Make space for arrow */
+}
+
+#model-select optgroup {
+    font-weight: bold;
+    font-style: italic;
+}
+
+#search-button {
+    padding: 10px 12px;
+    font-size: 1rem;
+    background-color: #3b82f6; /* Perplexity blue */
+    color: white;
+    border: none;
+    border-radius: 18px; /* Rounded */
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#search-button:hover {
+    background-color: #2563eb; /* Darker blue */
+}
+
+/* === Results Area === */
+.results-area {
+    width: 100%;
+}
+
+.error-perplexity {
+    width: 100%;
+    padding: 15px;
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    text-align: center;
+    display: none; /* Hidden by default */
+}
+
+.results-container-perplexity {
+    width: 100%;
+    background-color: #fff;
+    border: 1px solid #e0e0e0; /* Subtle border */
+    border-radius: 12px; /* Slightly less rounded than input */
+    padding: 25px 30px; /* More padding */
+    min-height: 100px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+/* Initial Placeholder */
+.placeholder-text {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 40px 0;
+}
+
+/* Loading text (now embedded in results container) */
+.results-container-perplexity p.loading-text {
+    text-align: center;
+    color: #888;
+    font-style: italic;
+    padding: 20px;
+}
+
+/* --- Enhanced Markdown Styling (Perplexity-like) --- */
+
+.results-container-perplexity h1,
+.results-container-perplexity h2,
+.results-container-perplexity h3,
+.results-container-perplexity h4,
+.results-container-perplexity h5,
+.results-container-perplexity h6 {
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+    font-weight: 600;
+    line-height: 1.3;
+    color: #1a1a1a;
+}
+
+.results-container-perplexity h1 { font-size: 1.6em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+.results-container-perplexity h2 { font-size: 1.4em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+.results-container-perplexity h3 { font-size: 1.2em; }
+.results-container-perplexity h4 { font-size: 1.1em; }
+
+.results-container-perplexity p {
+    margin-bottom: 1em;
+}
+
+.results-container-perplexity ul,
+.results-container-perplexity ol {
+    margin-left: 1.5em;
+    margin-bottom: 1em;
+    padding-left: 1em;
+}
+
+.results-container-perplexity li {
+    margin-bottom: 0.5em;
+}
+
+/* Inline code */
+.results-container-perplexity code {
+    background-color: #f0f0f0; /* Lighter gray */
+    padding: 0.2em 0.5em;
+    border-radius: 4px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 0.9em;
+    color: #333;
+}
+
+/* Code blocks */
+.results-container-perplexity pre {
+    background-color: #f7f7f7; /* Very light gray background */
+    border: 1px solid #e0e0e0; /* Subtle border */
+    color: #1a1a1a;
+    padding: 1em;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin-bottom: 1.2em;
+}
+
+.results-container-perplexity pre code {
+    background-color: transparent;
+    padding: 0;
+    border: none;
+    color: inherit;
+    font-size: 0.9em;
+}
+
+.results-container-perplexity blockquote {
+    border-left: 3px solid #3b82f6; /* Blue border */
+    padding-left: 1em;
+    margin-left: 0;
+    margin-bottom: 1em;
+    color: #555;
+    /* font-style: italic; Removed italic for perplexity feel */
+}
+
+.results-container-perplexity table {
+    border-collapse: collapse;
+    margin-bottom: 1em;
+    width: auto;
+    border: 1px solid #e0e0e0;
+}
+
+.results-container-perplexity th,
+.results-container-perplexity td {
+    border: 1px solid #e0e0e0;
+    padding: 0.6em 1em;
+    text-align: left;
+}
+
+.results-container-perplexity th {
+    background-color: #f7f7f7;
+    font-weight: 600;
+}
+
+.results-container-perplexity a {
+    color: #1e6cd6; /* Perplexity link blue */
+    text-decoration: none;
+}
+
+.results-container-perplexity a:hover {
+    text-decoration: underline;
+}
+
+/* === Responsive Adjustments (Basic) === */
+@media (max-width: 600px) {
+    body {
+        padding-top: 20px;
+    }
+    .main-container {
+        padding: 0 15px;
+    }
+    .search-header h1 {
+        font-size: 1.3rem;
+    }
+    .search-form-perplexity {
+        flex-direction: column; /* Stack input and controls */
+        border-radius: 12px; /* Less round on mobile? */
+        padding: 10px;
+    }
+    .input-wrapper {
+        padding-left: 10px; /* Adjust padding */
+        margin-bottom: 10px; /* Space when stacked */
+    }
+     #search-input {
+        padding: 10px 10px 10px 30px;
+    }
+    .search-icon {
+        left: 10px;
+    }
+    .controls-wrapper {
+        padding-left: 0;
+        justify-content: space-between; /* Space out controls */
+    }
+    #model-select {
+        flex-grow: 1; /* Allow select to grow */
+        margin-right: 8px;
+    }
+    #search-button {
+         padding: 10px;
+    }
+
+    .results-container-perplexity {
+        padding: 20px;
+    }
+} 

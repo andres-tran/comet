@@ -1,0 +1,8 @@
+# Python dependencies for AI Search Clone
+
+flask
+openai
+python-dotenv
+requests
+
+# Using uv for installation, but listing dependencies here 
