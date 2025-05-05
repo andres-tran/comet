@@ -59,43 +59,46 @@ def check_api_keys(model_name):
             return ["Perplexity"]
     return [] # No missing keys for the selected model type
 
-# --- Image Generation Function ---
-def generate_image(query):
-    """Generates an image using OpenAI and returns base64 data or error."""
+# --- OpenAI Non-Streaming Function (with Web Search) ---
+def generate_openai_with_search(query, model_name):
+    """Generates a response using OpenAI Responses API with web search."""
     if not openai_client:
-         # Return standard JSON response for image errors
          return jsonify({'error': 'OpenAI client not initialized. Check API key.'}), 500
-
-    print(f"Generating image with prompt: {query[:100]}...")
+    
+    print(f"Generating response from {model_name} with web search...")
     try:
-        result = openai_client.images.generate(
-            model="gpt-image-1",
-            prompt=query,
-            size="1024x1024" # Default size, can be customized later
-            # Add quality, style etc. parameters here if needed
+        response = openai_client.responses.create(
+            model="gpt-4.1", # Using gpt-4.1 as it's compatible with Responses API + Web Search
+            tools=[{"type": "web_search_preview"}], # Enable web search
+            input=query
+            # Add other params like user_location, search_context_size if needed
         )
-        # Access the base64 data correctly
-        if result.data and result.data[0].b64_json:
-            image_base64 = result.data[0].b64_json
-            print("Image generated successfully (returning base64).")
-            return jsonify({'image_base64': image_base64})
+        
+        print(f"OpenAI Responses API Raw Response: {response}")
+        
+        # Response structure is different, look for output_text
+        if hasattr(response, 'output_text') and response.output_text:
+            answer = response.output_text
+            # TODO: Extract and return annotations as well if needed later
+            # annotations = response.annotations if hasattr(response, 'annotations') else []
+            print(f"OpenAI response with search generated.")
+            return jsonify({'answer': answer}) # Use 'answer' key for consistency for now
         else:
-            print("Error: No image data received from OpenAI.")
-            return jsonify({'error': 'No image data received from OpenAI.'}), 500
+             print(f"Unexpected OpenAI Responses API structure: {response}")
+             return jsonify({'error': 'Could not parse answer from OpenAI Responses API.'}), 500
 
     except openai.APIError as e:
-        print(f"OpenAI API error during image generation: {e}")
+        print(f"OpenAI Responses API error: {e}")
         err_msg = str(e)
-        # Attempt to extract more specific error message if available
         if hasattr(e, 'body') and isinstance(e.body, dict) and 'message' in e.body:
              err_msg = e.body['message']
-        elif hasattr(e, 'message'): # Sometimes error is directly in message attribute
+        elif hasattr(e, 'message'):
              err_msg = e.message
         return jsonify({'error': f'OpenAI API error: {err_msg}'}), 500
     except Exception as e:
-        print(f"Unexpected error during image generation: {e}")
+        print(f"Unexpected error during OpenAI search response call: {e}")
         traceback.print_exc()
-        return jsonify({'error': 'An internal server error occurred during image generation.'}), 500
+        return jsonify({'error': 'An internal server error occurred during OpenAI search response.'}), 500
 
 
 # --- Streaming Generators --- 
@@ -211,6 +214,7 @@ def index():
 @app.route('/search', methods=['POST'])
 def search():
     """Handles the search query, returning a stream for text or JSON for image."""
+    print("--- Request received at /search endpoint ---") # Log Route Entry
     query = request.json.get('query')
     selected_model = request.json.get('model')
 
@@ -232,28 +236,74 @@ def search():
 
     print(f"Received query: {query}, Model: {selected_model}")
 
-    # --- Route to Image Generation or Text Streaming --- 
+    # --- Route to Image, Search, or Text Streaming --- 
+    search_models = ["gpt-4o-search-preview-2025-03-11"] # Models using Responses API
+    
     if selected_model == "gpt-image-1":
-        # Call image generation function (returns Response object with JSON)
+        print("--- Routing to image generation --- ") # Log Branch
         return generate_image(query)
+    elif selected_model in search_models:
+        print("--- Routing to web search generation --- ") # Log Branch
+        return generate_openai_with_search(query, selected_model)
     else:
-        # Determine if it's OpenAI text or Perplexity text
-        is_openai_text_model = (
+        print("--- Routing to text streaming --- ") # Log Branch
+        # Determine if it's standard OpenAI text or Perplexity text
+        is_standard_openai_text_model = (
             selected_model.startswith('gpt-') or 
             selected_model == "o4-mini-2025-04-16" or 
-            selected_model == "o3-2025-04-16" or
-            selected_model == "gpt-4o-search-preview-2025-03-11"
-            # Exclude gpt-image-1 which is handled above
+            selected_model == "o3-2025-04-16"
+            # Exclude image and search models handled above
         )
+        # Handle potentially removed non-streaming perplexity models if needed
+        # elif selected_model == "sonar-deep-research": 
+        #     return generate_perplexity_non_streaming(query, selected_model)
 
-        if is_openai_text_model:
+        if is_standard_openai_text_model:
             generator = stream_openai(query, selected_model)
-        else: # Assume Perplexity model
+        else: # Assume Perplexity model (including sonar-deep-research)
             generator = stream_perplexity(query, selected_model)
         
         # Return the streaming response for text models
         return Response(generator, mimetype='text/event-stream')
 
+# --- Image Generation Function ---
+def generate_image(query):
+    """Generates an image using OpenAI and returns base64 data or error."""
+    print("--- Entering generate_image function ---") # Log Entry
+    if not openai_client:
+         # Return standard JSON response for image errors
+         print("ERROR: generate_image - OpenAI client not initialized.") # Log Error
+         return jsonify({'error': 'OpenAI client not initialized. Check API key.'}), 500
+
+    print(f"Generating image with prompt: {query[:100]}...")
+    try:
+        result = openai_client.images.generate(
+            model="gpt-image-1",
+            prompt=query,
+            size="1024x1024"
+        )
+        
+        if result.data and result.data[0].b64_json:
+            image_base64 = result.data[0].b64_json
+            print("SUCCESS: generate_image - Image generated, returning JSON.") # Log Success
+            return jsonify({'image_base64': image_base64})
+        else:
+            print("ERROR: generate_image - No image data received from OpenAI.") # Log Error
+            return jsonify({'error': 'No image data received from OpenAI.'}), 500
+
+    except openai.APIError as e:
+        print(f"ERROR: generate_image - OpenAI APIError caught: {e}") # Log Specific Error
+        err_msg = str(e)
+        # Attempt to extract more specific error message if available
+        if hasattr(e, 'body') and isinstance(e.body, dict) and 'message' in e.body:
+            err_msg = e.body['message']
+        elif hasattr(e, 'message'):
+            err_msg = e.message
+        return jsonify({'error': f'OpenAI API error: {err_msg}'}), 500
+    except Exception as e:
+        print(f"ERROR: generate_image - Unexpected Exception caught: {e}") # Log Specific Error
+        traceback.print_exc()
+        return jsonify({'error': 'An internal server error occurred during image generation.'}), 500
 
 # --- Main Execution --- 
 if __name__ == '__main__':

@@ -39,17 +39,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (selectedModel === 'gpt-image-1') {
             thinkingText.textContent = 'Generating an image...';
         } else {
-            thinkingText.textContent = 'Thinking...';
+            thinkingText.textContent = 'Searching the web...';
         }
 
         let accumulatedResponse = "";
         let currentError = null;
 
-        // --- Handle Image Generation Separately ---
-        if (selectedModel === 'gpt-image-1') {
-            console.log("Image generation model selected. Using non-streaming fetch.");
+        // --- Handle Non-Streaming Models (Image or Search) ---
+        const nonStreamingModels = ['gpt-image-1', 'gpt-4o-search-preview-2025-03-11']; 
+        if (nonStreamingModels.includes(selectedModel)) {
+            const isImageModel = selectedModel === 'gpt-image-1';
+            const isSearchModel = selectedModel === 'gpt-4o-search-preview-2025-03-11';
+            
+            console.log(`${isImageModel ? 'Image' : (isSearchModel ? 'Search' : 'Non-streaming text')} model selected. Using non-streaming fetch.`);
             resultsContainer.innerHTML = ''; // Clear results area
             thinkingIndicator.style.display = 'flex'; // Show thinking indicator
+            thinkingText.textContent = isImageModel ? 'Generating an image...' : 'Searching the web...'; // Custom text
 
             try {
                 const response = await fetch('/search', {
@@ -72,40 +77,59 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(data.error);
                 }
 
-                if (data.image_base64) {
-                    const img = document.createElement('img');
-                    img.src = `data:image/png;base64,${data.image_base64}`;
-                    img.alt = query; // Use prompt as alt text
-                    img.classList.add('generated-image'); // Add class for styling
-                    resultsContainer.appendChild(img);
+                if (isImageModel) {
+                    // Handle image response (this is the only case now)
+                    if (data.image_base64) {
+                        const img = document.createElement('img');
+                        img.src = `data:image/png;base64,${data.image_base64}`;
+                        img.alt = query; // Use prompt as alt text
+                        img.classList.add('generated-image'); // Add class for styling
+                        resultsContainer.appendChild(img);
 
-                    // Create and add download button
-                    const downloadButton = document.createElement('a');
-                    downloadButton.href = img.src;
-                    downloadButton.download = `comet-${query.substring(0, 20).replace(/\s+/g, '_') || 'image'}.png`; // Suggest filename
-                    downloadButton.textContent = 'Download Image';
-                    downloadButton.classList.add('download-button');
-                    downloadArea.appendChild(downloadButton);
-                    downloadArea.style.display = 'block'; // Show the download area
-
+                        // Create and add download button
+                        const downloadButton = document.createElement('a');
+                        downloadButton.href = img.src;
+                        downloadButton.download = `comet-${query.substring(0, 20).replace(/\s+/g, '_') || 'image'}.png`; // Suggest filename
+                        downloadButton.textContent = 'Download Image';
+                        downloadButton.classList.add('download-button');
+                        downloadArea.appendChild(downloadButton);
+                        downloadArea.style.display = 'block'; // Show the download area
+                    } else {
+                        throw new Error("Received response but no image data found.");
+                    }
                 } else {
-                    throw new Error("Received response but no image data found.");
-                }
+                    // Handle non-streaming text response (e.g., search models)
+                    if (data.answer) {
+                        // Render the full Markdown response from 'answer' key
+                        // TODO: Add citation handling here later if needed
+                        resultsContainer.innerHTML = marked.parse(data.answer);
+                    } else {
+                         throw new Error("Received response but no answer found.");
+                    }
+                } 
 
             } catch (error) {
-                console.error('Image generation failed:', error);
-                displayError(error.message || 'An unexpected error occurred during image generation.');
-                resultsContainer.style.display = 'none';
-                if (thinkingIndicator.style.display !== 'none') {
-                    thinkingIndicator.style.display = 'none';
-                }
+                console.error('Search failed:', error);
+                displayError(error.message || 'An unexpected error occurred.');
+                resultsContainer.style.display = 'none'; // Hide results on error
+                resultsContainer.innerHTML = ''; // Clear any partial results
+                thinkingIndicator.style.display = 'none'; // Hide thinking indicator on fetch error
+            } finally {
+                // Ensure thinking indicator is hidden if stream ends without data/error (edge case)
+                 if (thinkingIndicator.style.display !== 'none') {
+                     thinkingIndicator.style.display = 'none';
+                 }
+                // Ensure the specific loading text P element is gone
+                const loadingP = resultsContainer.querySelector('p.loading-text');
+                if (loadingP) loadingP.remove();
             }
-            return; // Stop execution for image model
+            return; // Stop execution for non-streaming models (i.e., image model)
         }
-        // --- End Image Generation Handling ---
+        // --- End Non-Streaming Handling ---
 
-        // --- Proceed with Text Streaming Logic --- 
-        console.log("Text model selected. Using streaming fetch.");
+        // --- Proceed with Text Streaming Logic (Handles all text models including sonar-deep-research) --- 
+        console.log("Streaming text model selected. Using streaming fetch.");
+        thinkingText.textContent = 'Thinking...'; // Reset thinking text for streaming
         try {
             const response = await fetch('/search', {
                 method: 'POST',
