@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modelSelect = document.getElementById('model-select'); // Get the select element
     const resultsContainer = document.getElementById('results-container');
     const errorContainer = document.getElementById('error-container');
+    const thinkingIndicator = document.querySelector('.thinking-indicator'); // Get thinking indicator
 
     // Configure marked.js (optional: customize options here if needed)
     // marked.setOptions({...});
@@ -21,7 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Reset UI states
         resultsContainer.style.display = 'block';
-        resultsContainer.innerHTML = '<p class="loading-text">Generating response...</p>'; // Initial loading state
+        resultsContainer.innerHTML = ''; // Clear previous results immediately
+        thinkingIndicator.style.display = 'flex'; // Show thinking animation
         // Clear placeholder explicitly if it exists
         const placeholder = resultsContainer.querySelector('.placeholder-text');
         if (placeholder) placeholder.remove();
@@ -55,7 +57,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- Process the Stream --- 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
-            resultsContainer.innerHTML = ''; // Clear loading text, ready for stream
+            // resultsContainer.innerHTML = ''; // Cleared earlier
+            let isFirstChunk = true; // Flag to track the first data arrival
 
             while (true) {
                 const { value, done } = await reader.read();
@@ -73,6 +76,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         const jsonData = message.substring(5).trim(); // Remove 'data: '
                         try {
                             const data = JSON.parse(jsonData);
+
+                            // Hide thinking indicator on first valid data/error
+                            if (isFirstChunk) {
+                                thinkingIndicator.style.display = 'none';
+                                isFirstChunk = false;
+                            }
 
                             if (data.error) {
                                 console.error("Error from stream:", data.error);
@@ -128,12 +137,15 @@ document.addEventListener('DOMContentLoaded', () => {
             displayError(error.message || 'An unexpected error occurred.');
             resultsContainer.style.display = 'none'; // Hide results on error
             resultsContainer.innerHTML = ''; // Clear any partial results
+            thinkingIndicator.style.display = 'none'; // Hide thinking indicator on fetch error
         } finally {
-            // Remove loading class regardless of success or error
-            // resultsContainer.classList.remove('loading'); // Not using class based loading anymore
-             // Ensure the specific loading text P element is gone
-             const loadingP = resultsContainer.querySelector('p.loading-text');
-             if (loadingP) loadingP.remove();
+            // Ensure thinking indicator is hidden if stream ends without data/error (edge case)
+             if (thinkingIndicator.style.display !== 'none') {
+                 thinkingIndicator.style.display = 'none';
+             }
+            // Ensure the specific loading text P element is gone
+            const loadingP = resultsContainer.querySelector('p.loading-text');
+            if (loadingP) loadingP.remove();
         }
     });
 
