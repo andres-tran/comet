@@ -152,7 +152,7 @@ def stream_perplexity(query, model_name):
             {"role": "user", "content": query}
         ],
         "stream": True,
-        "max_tokens": 15500, # Allow longer responses
+        "max_tokens": 10000, # Allow longer responses
     }
 
     try:
