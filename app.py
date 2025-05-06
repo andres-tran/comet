@@ -64,19 +64,45 @@ def check_api_keys(model_name):
 def stream_openai(query, model_name):
     """Generator for streaming responses from OpenAI."""
     if not openai_client:
-        yield f"data: {json.dumps({'error': 'OpenAI client not initialized. Check API key.'})}\n\n"
+        yield f"data: {json.dumps({'error': 'OpenAI client not initialized. Check API key.'})}\\n\\n"
         return
 
+    # --- Determine max_completion_tokens based on model ---
+    model_token_limits = {
+        "gpt-4.1": 32768,
+        "o4-mini-2025-04-16": 100000,
+        "o3-2025-04-16": 100000,
+        "gpt-4o-search-preview-2025-03-11": 16384,
+        # Add other OpenAI models and their limits here if needed
+        # Fallback for any other OpenAI models not explicitly listed
+        "default": 10000 # Keep the original default or choose a suitable one
+    }
+    max_tokens = model_token_limits.get(model_name, model_token_limits["default"])
+
+
     # --- Prepare API Call Parameters ---
+    # Enhanced System Prompt for OpenAI
+    enhanced_openai_system_prompt = """You are Comet, a powerful, meticulous, and helpful AI agent.
+Your primary goal is to provide comprehensive, accurate, and well-reasoned answers to user queries.
+
+## Instructions:
+1.  **Analyze Thoroughly:** Think step-by-step to deeply understand the user's query, intent, and context.
+2.  **Be Knowledgeable & Accurate:** Draw upon your internal knowledge. If necessary and relevant, use your web search capability (if available for the model) to find up-to-date information and ensure the accuracy of your response. Cite sources when possible if using external information.
+3.  **Provide Comprehensive Answers:** Offer detailed explanations and cover multiple facets of the topic when appropriate.
+4.  **Structure Clearly:** **Always format your entire response using Markdown.** Use headings, lists, and code blocks where helpful for readability.
+5.  **Maintain Tone:** Be helpful, knowledgeable, and objective. Avoid expressing personal opinions unless specifically asked for and clearly labeled as such.
+6.  **Admit Limitations:** If you are unsure about an answer or lack specific information, state that clearly rather than speculating.
+7.  **Safety:** Do not generate responses that are harmful, unethical, biased, or promote illegal activities."""
+
     api_params = {
         "model": model_name,
         "messages": [
-            # System prompt might need adjustment depending on how the model uses search
-            {"role": "system", "content": "You are a helpful and meticulous AI assistant. Think step-by-step to deeply understand the query. Provide a comprehensive and well-reasoned answer. **Always format your entire response using Markdown.** If relevant, use web search results to provide up-to-date information."},
+            {"role": "system", "content": enhanced_openai_system_prompt},
             {"role": "user", "content": query}
         ],
         "stream": True,
-        "max_completion_tokens": 10000, 
+        # Use the determined max_tokens
+        "max_completion_tokens": max_tokens,
     }
 
     try:
@@ -114,11 +140,23 @@ def stream_perplexity(query, model_name):
         "Content-Type": "application/json",
         "Accept": "text/event-stream" # Important for Perplexity streaming
     }
+
+    # Enhanced System Prompt for Perplexity
+    enhanced_perplexity_system_prompt = """You are a precise, thorough, and helpful AI assistant.
+Your primary goal is to provide accurate, detailed, and well-reasoned answers to user queries by reasoning step-by-step.
+
+## Instructions:
+1.  **Reason Step-by-Step:** Carefully analyze the user's query to understand the core request.
+2.  **Be Accurate & Detailed:** Provide precise information and detailed explanations. Use your web search capabilities to ensure information is up-to-date and accurate.
+3.  **Structure Clearly:** **Always format your entire response using Markdown.** Use headings, lists, and code blocks where helpful for readability.
+4.  **Maintain Tone:** Be helpful, precise, and objective.
+5.  **Admit Limitations:** If unsure about an answer or lack specific information, state that clearly rather than speculating.
+6.  **Safety:** Do not generate responses that are harmful, unethical, biased, or promote illegal activities."""
+
     payload = {
         "model": model_name,
         "messages": [
-            # Using a similar reasoning prompt for Perplexity
-            {"role": "system", "content": "You are a precise and thorough AI assistant. Reason step-by-step about the user query to provide an accurate and detailed response. **Always format your entire response using Markdown.**"},
+            {"role": "system", "content": enhanced_perplexity_system_prompt},
             {"role": "user", "content": query}
         ],
         "stream": True,

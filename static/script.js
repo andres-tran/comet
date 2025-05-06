@@ -7,9 +7,104 @@ document.addEventListener('DOMContentLoaded', () => {
     const thinkingIndicator = document.querySelector('.thinking-indicator'); // Get thinking indicator
     const thinkingText = document.getElementById('thinking-text'); // Get the text span
     const downloadArea = document.getElementById('download-area'); // Get download area
+    const themeToggleButton = document.getElementById('theme-toggle-button'); // Get toggle button
+    const body = document.body; // Get body element
 
     // Configure marked.js (optional: customize options here if needed)
     // marked.setOptions({...});
+
+    // --- Theme Handling --- 
+    const currentTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    // Function to apply theme class and update button icon
+    function applyTheme(theme) {
+        if (theme === 'dark') {
+            body.classList.add('dark-mode');
+            themeToggleButton.innerHTML = '<i class="fas fa-sun"></i>'; // Show sun icon
+            localStorage.setItem('theme', 'dark');
+        } else {
+            body.classList.remove('dark-mode');
+            themeToggleButton.innerHTML = '<i class="fas fa-moon"></i>'; // Show moon icon
+            localStorage.setItem('theme', 'light');
+        }
+    }
+
+    // Initialize theme based on localStorage or system preference
+    if (currentTheme) {
+        applyTheme(currentTheme);
+    } else if (prefersDark) {
+        applyTheme('dark'); // Default to dark if system prefers and no localStorage
+    } else {
+        applyTheme('light'); // Default to light otherwise
+    }
+
+    // Theme toggle button event listener
+    themeToggleButton.addEventListener('click', () => {
+        if (body.classList.contains('dark-mode')) {
+            applyTheme('light');
+        } else {
+            applyTheme('dark');
+        }
+    });
+    // --- End Theme Handling ---
+
+    // Function to add Copy buttons to <pre> blocks
+    function addCopyButtons() {
+        const preBlocks = resultsContainer.querySelectorAll('pre');
+        preBlocks.forEach(pre => {
+            // Avoid adding multiple buttons
+            if (pre.querySelector('.copy-button')) {
+                return;
+            }
+
+            const codeBlock = pre.querySelector('code');
+            if (!codeBlock) return; // Only add to pre blocks containing code
+
+            const button = document.createElement('button');
+            button.textContent = 'Copy';
+            button.className = 'copy-button';
+            button.setAttribute('aria-label', 'Copy code to clipboard');
+            // Style the button - consider moving to CSS
+            button.style.position = 'absolute';
+            button.style.top = '0.5em';
+            button.style.right = '0.5em';
+            button.style.padding = '0.2em 0.5em';
+            button.style.border = '1px solid var(--border-color)';
+            button.style.borderRadius = '4px';
+            button.style.backgroundColor = 'var(--secondary-bg-color)';
+            button.style.color = 'var(--primary-text-color)';
+            button.style.cursor = 'pointer';
+            button.style.fontSize = '0.8em';
+            button.style.opacity = '0.7'; // Slightly transparent initially
+            button.style.transition = 'opacity 0.2s';
+
+            // Add hover effect for visibility
+             pre.style.position = 'relative'; // Parent needs relative position
+             pre.addEventListener('mouseover', () => { button.style.opacity = '1'; });
+             pre.addEventListener('mouseout', () => { button.style.opacity = '0.7'; });
+
+
+            button.addEventListener('click', async () => {
+                const codeToCopy = codeBlock.innerText;
+                try {
+                    await navigator.clipboard.writeText(codeToCopy);
+                    button.textContent = 'Copied!';
+                    setTimeout(() => {
+                        button.textContent = 'Copy';
+                    }, 2000); // Revert after 2 seconds
+                } catch (err) {
+                    console.error('Failed to copy code:', err);
+                    button.textContent = 'Error';
+                    setTimeout(() => {
+                        button.textContent = 'Copy';
+                    }, 2000);
+                }
+            });
+
+            pre.appendChild(button);
+        });
+    }
 
     // Helper function to render Markdown and wrap tables
     function renderAndUpdateTables(container, markdownContent) {
@@ -40,6 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Update the actual container's content
         container.innerHTML = tempDiv.innerHTML;
+
+        // Add copy buttons after rendering
+        addCopyButtons();
     }
 
     form.addEventListener('submit', async (event) => {
@@ -252,6 +350,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (accumulatedResponse.trim() === '' && resultsContainer.innerHTML.trim() === ''){
                  resultsContainer.innerHTML = '<p>Received an empty response.</p>';
              }
+
+            // Ensure copy buttons are added even if the last chunk didn't trigger rendering
+            addCopyButtons();
 
         } catch (error) {
             console.error('Search failed:', error);

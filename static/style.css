@@ -1,4 +1,70 @@
 /* === Reset & Base Styles === */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #1a1a1a;
+    --text-muted-color: #666;
+    --border-color: #e0e0e0;
+    --input-bg-color: #fff;
+    --input-placeholder-color: #aaa;
+    --select-bg-color: #f7f7f7;
+    --select-border-color: #e0e0e0;
+    --results-bg-color: #fff;
+    --results-border-color: #e0e0e0;
+    --results-shadow-color: rgba(0, 0, 0, 0.04);
+    --code-bg-color: #f0f0f0;
+    --code-text-color: #333;
+    --pre-bg-color: #f7f7f7;
+    --pre-text-color: #1a1a1a;
+    --pre-border-color: #e0e0e0;
+    --blockquote-color: #555;
+    --table-border-color: #e0e0e0;
+    --table-header-bg-color: #f7f7f7;
+    --link-color: #dd6b20; /* Link Orange */
+    --primary-color: #f97316; /* Primary Orange */
+    --primary-hover-color: #ea580c; /* Darker Orange */
+    --logo-color: #ea580c; /* Darker Orange for logo */
+    --button-text-color: #ffffff;
+    --error-bg-color: #f8d7da;
+    --error-text-color: #721c24;
+    --error-border-color: #f5c6cb;
+    --download-bg-color: #f97316; /* Orange */
+    --download-hover-bg-color: #ea580c; /* Darker Orange */
+    --thinking-text-color: #666;
+    --spinner-base-color: rgba(0, 0, 0, 0.1);
+    --spinner-accent-color: var(--primary-color);
+}
+
+body.dark-mode {
+    --bg-color: #000000;
+    --text-color: #e0e0e0;
+    --text-muted-color: #a0a0a0;
+    --border-color: #333333;
+    --input-bg-color: #1a1a1a;
+    --input-placeholder-color: #777;
+    --select-bg-color: #2c2c2c;
+    --select-border-color: #444;
+    --results-bg-color: #0d0d0d;
+    --results-border-color: #2a2a2a;
+    --results-shadow-color: rgba(255, 255, 255, 0.05);
+    --code-bg-color: #282828;
+    --code-text-color: #ccc;
+    --pre-bg-color: #1e1e1e;
+    --pre-text-color: #d4d4d4;
+    --pre-border-color: #333;
+    --blockquote-color: #a0a0a0;
+    --table-border-color: #444;
+    --table-header-bg-color: #252525;
+    /* Keep orange link color for contrast */
+    /* --link-color: #ffa500; /* Lighter orange maybe? */
+    /* Keep primary orange */
+    /* --logo-color: var(--primary-hover-color); */
+    --error-bg-color: #4d2226; /* Darker red bg */
+    --error-text-color: #f8d7da; /* Lighter red text */
+    --error-border-color: #721c24;
+    --thinking-text-color: #a0a0a0;
+    --spinner-base-color: rgba(255, 255, 255, 0.1);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -7,12 +73,13 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    background-color: #ffffff; /* Perplexity often uses a white or very light gray */
-    color: #1a1a1a; /* Dark text color */
+    background-color: var(--bg-color);
+    color: var(--text-color);
     line-height: 1.6;
     display: flex;
     justify-content: center;
     padding-top: 40px; /* Space above content */
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .main-container {
@@ -26,6 +93,29 @@ body {
 /* === Search Header === */
 .search-header {
     margin-bottom: 40px;
+    position: relative; /* For positioning header controls */
+}
+
+.header-controls {
+    position: absolute;
+    top: 5px; /* Adjust as needed */
+    right: 0;
+}
+
+#theme-toggle-button {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted-color);
+    padding: 6px 10px;
+    border-radius: 18px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+#theme-toggle-button:hover {
+    color: var(--text-color);
+    border-color: var(--text-color);
 }
 
 /* Added styling for the Comet logo title */
@@ -33,14 +123,25 @@ body {
     text-align: center;
     font-size: 2rem; 
     font-weight: 600;
-    color: #ea580c; /* Use a darker orange for title */
+    color: var(--logo-color);
     margin-bottom: 10px; /* Space below Comet title */
+    display: flex; /* Align emoji and text */
+    justify-content: center;
+    align-items: center;
+    gap: 0.3em; /* Space between emoji and text */
+}
+
+.comet-emoji {
+    /* Optional: Adjust emoji size/position slightly if needed */
+    /* font-size: 0.9em; */ 
+    /* position: relative; */
+    /* top: -0.05em; */
 }
 
 .search-header h1 {
     font-size: 1.5rem; /* Smaller heading */
     font-weight: 500;
-    color: #666;
+    color: var(--text-muted-color);
     margin-bottom: 15px;
     text-align: center;
 }
@@ -48,12 +149,13 @@ body {
 .search-form-perplexity {
     display: flex;
     align-items: stretch; /* Make items same height */
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
     border-radius: 24px; /* Rounded corners like Perplexity */
-    background-color: #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    background-color: var(--input-bg-color);
+    box-shadow: 0 2px 8px var(--results-shadow-color); /* Use shadow color var */
     overflow: hidden; /* Clip children to rounded corners */
     padding: 5px; /* Padding around the internal elements */
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .input-wrapper {
@@ -65,7 +167,7 @@ body {
 }
 
 .search-icon {
-    color: #aaa;
+    color: var(--input-placeholder-color);
     font-size: 0.9rem;
     position: absolute;
     left: 15px;
@@ -80,11 +182,11 @@ body {
     border: none;
     outline: none;
     background: transparent;
-    color: #1a1a1a;
+    color: var(--text-color);
 }
 
 #search-input::placeholder {
-    color: #aaa;
+    color: var(--input-placeholder-color);
 }
 
 .controls-wrapper {
@@ -96,33 +198,36 @@ body {
 #model-select {
     padding: 8px 12px;
     font-size: 0.9rem;
-    border: 1px solid #e0e0e0; /* Subtle border */
+    border: 1px solid var(--select-border-color);
     border-radius: 18px; /* Rounded */
-    background-color: #f7f7f7; /* Light background */
-    color: #333;
+    background-color: var(--select-bg-color);
+    color: var(--text-color);
     outline: none;
     cursor: pointer;
     margin-right: 5px; /* Space before button */
     -webkit-appearance: none; /* Remove default styling */
     -moz-appearance: none;
     appearance: none;
-    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666666%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); /* Basic dropdown arrow */
+    /* Basic dropdown arrow - needs color variable */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23${encodeURIComponent(getComputedStyle(document.documentElement).getPropertyValue('--text-muted-color').trim().substring(1))}%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
     background-repeat: no-repeat;
     background-position: right 10px top 50%;
     background-size: .65em auto;
     padding-right: 30px; /* Make space for arrow */
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 #model-select optgroup {
     font-weight: bold;
     font-style: italic;
+    /* Optgroup styling is limited cross-browser */
 }
 
 #search-button {
     padding: 10px 12px;
     font-size: 1rem;
-    background-color: #f97316; /* Primary Orange */
-    color: white;
+    background-color: var(--primary-color);
+    color: var(--button-text-color);
     border: none;
     border-radius: 18px; /* Rounded */
     cursor: pointer;
@@ -133,7 +238,7 @@ body {
 }
 
 #search-button:hover {
-    background-color: #ea580c; /* Darker Orange */
+    background-color: var(--primary-hover-color);
 }
 
 /* === Results Area === */
@@ -144,9 +249,9 @@ body {
 .error-perplexity {
     width: 100%;
     padding: 15px;
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: var(--error-bg-color);
+    color: var(--error-text-color);
+    border: 1px solid var(--error-border-color);
     border-radius: 8px;
     margin-bottom: 20px;
     text-align: center;
@@ -155,17 +260,18 @@ body {
 
 .results-container-perplexity {
     width: 100%;
-    background-color: #fff;
-    border: 1px solid #e0e0e0; /* Subtle border */
+    background-color: var(--results-bg-color);
+    border: 1px solid var(--results-border-color); /* Subtle border */
     border-radius: 12px; /* Slightly less rounded than input */
     padding: 25px 30px; /* More padding */
     min-height: 100px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 4px var(--results-shadow-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 /* Initial Placeholder */
 .placeholder-text {
-    color: #888;
+    color: var(--text-muted-color);
     font-style: italic;
     text-align: center;
     padding: 40px 0;
@@ -182,8 +288,8 @@ body {
 }
 
 .spinner {
-    border: 4px solid rgba(0, 0, 0, 0.1); /* Light grey border */
-    border-left-color: #f97316; /* Primary Orange spinner part */
+    border: 4px solid var(--spinner-base-color);
+    border-left-color: var(--spinner-accent-color);
     border-radius: 50%;
     width: 24px;
     height: 24px;
@@ -192,7 +298,7 @@ body {
 
 .thinking-indicator span {
     font-style: italic;
-    color: #666;
+    color: var(--thinking-text-color);
 }
 
 @keyframes spin {
@@ -206,15 +312,16 @@ body {
     height: auto; /* Maintain aspect ratio */
     margin: 20px auto; /* Center image with some margin */
     border-radius: 8px; /* Optional: rounded corners */
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Optional: subtle shadow */
+    box-shadow: 0 2px 8px var(--results-shadow-color); /* Optional: subtle shadow */
+    background-color: #fff; /* Add white background for transparent images in dark mode */
 }
 
 /* === Download Button Styling === */
 #download-area a.download-button {
     display: inline-block;
     padding: 8px 22px; /* Adjusted padding */
-    background-color: #f97316; /* Primary Orange */
-    color: white;
+    background-color: var(--download-bg-color);
+    color: var(--button-text-color);
     text-decoration: none;
     border-radius: 20px; /* Keep rounded */
     font-size: 0.9rem;
@@ -225,19 +332,19 @@ body {
 }
 
 #download-area a.download-button:hover {
-    background-color: #ea580c; /* Darker Orange */
-    border-color: #ea580c; /* Match border color */
+    background-color: var(--download-hover-bg-color);
+    border-color: var(--download-hover-bg-color); /* Match border color */
 }
 
 /* Loading text (now embedded in results container) */
 .results-container-perplexity p.loading-text {
     text-align: center;
-    color: #888;
+    color: var(--text-muted-color);
     font-style: italic;
     padding: 20px;
 }
 
-/* --- Enhanced Markdown Styling (Perplexity-like) --- */
+/* --- Enhanced Markdown Styling (Using Variables) --- */
 
 .results-container-perplexity h1,
 .results-container-perplexity h2,
@@ -249,11 +356,11 @@ body {
     margin-bottom: 0.8em;
     font-weight: 600;
     line-height: 1.3;
-    color: #1a1a1a;
+    color: var(--text-color);
 }
 
-.results-container-perplexity h1 { font-size: 1.6em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
-.results-container-perplexity h2 { font-size: 1.4em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+.results-container-perplexity h1 { font-size: 1.6em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+.results-container-perplexity h2 { font-size: 1.4em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
 .results-container-perplexity h3 { font-size: 1.2em; }
 .results-container-perplexity h4 { font-size: 1.1em; }
 
@@ -274,23 +381,25 @@ body {
 
 /* Inline code */
 .results-container-perplexity code {
-    background-color: #f0f0f0; /* Lighter gray */
+    background-color: var(--code-bg-color);
     padding: 0.2em 0.5em;
     border-radius: 4px;
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
     font-size: 0.9em;
-    color: #333;
+    color: var(--code-text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Code blocks */
 .results-container-perplexity pre {
-    background-color: #f7f7f7; /* Very light gray background */
-    border: 1px solid #e0e0e0; /* Subtle border */
-    color: #1a1a1a;
+    background-color: var(--pre-bg-color);
+    border: 1px solid var(--pre-border-color);
+    color: var(--pre-text-color);
     padding: 1em;
     border-radius: 8px;
     overflow-x: auto;
     margin-bottom: 1.2em;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 .results-container-perplexity pre code {
@@ -302,40 +411,62 @@ body {
 }
 
 .results-container-perplexity blockquote {
-    border-left: 3px solid #f97316; /* Orange border */
+    border-left: 3px solid var(--primary-color);
     padding-left: 1em;
     margin-left: 0;
     margin-bottom: 1em;
-    color: #555;
+    color: var(--blockquote-color);
     /* font-style: italic; Removed italic for perplexity feel */
+    transition: color 0.3s ease, border-color 0.3s ease;
 }
 
 .results-container-perplexity table {
     border-collapse: collapse;
     margin-bottom: 1em;
     width: auto;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--table-border-color);
 }
 
 .results-container-perplexity th,
 .results-container-perplexity td {
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--table-border-color);
     padding: 0.6em 1em;
     text-align: left;
 }
 
 .results-container-perplexity th {
-    background-color: #f7f7f7;
+    background-color: var(--table-header-bg-color);
     font-weight: 600;
 }
 
 .results-container-perplexity a {
-    color: #dd6b20; /* Link Orange */
+    color: var(--link-color);
     text-decoration: none;
 }
 
 .results-container-perplexity a:hover {
     text-decoration: underline;
+}
+
+/* Responsive Table Wrapper */
+.table-wrapper {
+    overflow-x: auto;    /* Enable horizontal scrolling */
+    margin-bottom: 1.5em; /* Add space below the wrapped table */
+    -webkit-overflow-scrolling: touch; /* Optional: Improve scrolling feel on iOS */
+}
+
+/* Ensure tables inside wrapper don't collapse borders unnecessarily */
+.table-wrapper table {
+    /* Styles moved to main table selector */
+}
+
+.table-wrapper th,
+.table-wrapper td {
+     /* Styles moved to main table selector */
+}
+
+.table-wrapper th {
+     /* Styles moved to main table selector */
 }
 
 /* === Responsive Adjustments (Basic) === */
@@ -345,6 +476,12 @@ body {
     }
     .main-container {
         padding: 0 15px;
+    }
+    .header-controls {
+        top: -5px; /* Adjust position on mobile */
+    }
+    .logo-title {
+        font-size: 1.8rem; /* Slightly smaller logo on mobile */
     }
     .search-header h1 {
         font-size: 1.3rem;
@@ -379,31 +516,4 @@ body {
     .results-container-perplexity {
         padding: 20px;
     }
-}
-
-/* Responsive Table Wrapper */
-.table-wrapper {
-    overflow-x: auto;    /* Enable horizontal scrolling */
-    margin-bottom: 1.5em; /* Add space below the wrapped table */
-    -webkit-overflow-scrolling: touch; /* Optional: Improve scrolling feel on iOS */
-}
-
-/* Ensure tables inside wrapper don't collapse borders unnecessarily */
-.table-wrapper table {
-    border-collapse: collapse;
-    margin-bottom: 1em;
-    width: auto;
-    border: 1px solid #e0e0e0;
-}
-
-.table-wrapper th,
-.table-wrapper td {
-    border: 1px solid #e0e0e0;
-    padding: 0.6em 1em;
-    text-align: left;
-}
-
-.table-wrapper th {
-    background-color: #f7f7f7;
-    font-weight: 600;
 } 
