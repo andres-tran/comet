@@ -30,9 +30,8 @@ ALLOWED_MODELS = {
     # Perplexity (Updated based on table)
     "sonar",                # 128k
     "sonar-pro",            # 200k
-    "sonar-deep-research",  # 128k
-    "sonar-reasoning-pro",  # 128k
     "sonar-reasoning",      # 128k
+    "sonar-reasoning-pro",  # 128k
     "r1-1776",              # 128k
     # OpenAI
     "gpt-4.1",
@@ -78,7 +77,7 @@ def stream_openai(query, model_name):
         "gpt-4o-search-preview-2025-03-11": 16384,
         # Add other OpenAI models and their limits here if needed
         # Fallback for any other OpenAI models not explicitly listed
-        "default": 10000 # Keep the original default or choose a suitable one
+        "default": 16384 # Keep the original default or choose a suitable one
     }
     max_tokens = model_token_limits.get(model_name, model_token_limits["default"])
 
