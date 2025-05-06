@@ -379,4 +379,31 @@ body {
     .results-container-perplexity {
         padding: 20px;
     }
+}
+
+/* Responsive Table Wrapper */
+.table-wrapper {
+    overflow-x: auto;    /* Enable horizontal scrolling */
+    margin-bottom: 1.5em; /* Add space below the wrapped table */
+    -webkit-overflow-scrolling: touch; /* Optional: Improve scrolling feel on iOS */
+}
+
+/* Ensure tables inside wrapper don't collapse borders unnecessarily */
+.table-wrapper table {
+    border-collapse: collapse;
+    margin-bottom: 1em;
+    width: auto;
+    border: 1px solid #e0e0e0;
+}
+
+.table-wrapper th,
+.table-wrapper td {
+    border: 1px solid #e0e0e0;
+    padding: 0.6em 1em;
+    text-align: left;
+}
+
+.table-wrapper th {
+    background-color: #f7f7f7;
+    font-weight: 600;
 } 

@@ -29,7 +29,7 @@ PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions"
 ALLOWED_MODELS = {
     # Perplexity
     "sonar-pro",
-    "sonar-deep-research",
+    # "sonar-deep-research", # Removed
     "sonar-reasoning-pro",
     # OpenAI
     "gpt-4.1", 

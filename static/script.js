@@ -11,6 +11,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // Configure marked.js (optional: customize options here if needed)
     // marked.setOptions({...});
 
+    // Helper function to render Markdown and wrap tables
+    function renderAndUpdateTables(container, markdownContent) {
+        // Parse the full markdown content
+        const rawHtml = marked.parse(markdownContent);
+
+        // Use a temporary element to easily manipulate the DOM
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = rawHtml;
+
+        // Find all tables within the parsed content
+        const tables = tempDiv.querySelectorAll('table');
+        
+        tables.forEach(table => {
+            // Check if the table is already wrapped (to avoid double wrapping)
+            if (!table.parentElement || !table.parentElement.classList.contains('table-wrapper')) {
+                 // Create wrapper div
+                const wrapper = document.createElement('div');
+                wrapper.className = 'table-wrapper';
+
+                // Insert wrapper before the table in the temporary DOM
+                table.parentNode.insertBefore(wrapper, table);
+
+                // Move the table inside the wrapper
+                wrapper.appendChild(table);
+            }
+        });
+
+        // Update the actual container's content
+        container.innerHTML = tempDiv.innerHTML;
+    }
+
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
@@ -98,9 +129,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     // Handle non-streaming text response (e.g., search models)
                     if (data.answer) {
-                        // Render the full Markdown response from 'answer' key
-                        // TODO: Add citation handling here later if needed
-                        resultsContainer.innerHTML = marked.parse(data.answer);
+                        // Render the full Markdown response and wrap tables
+                        renderAndUpdateTables(resultsContainer, data.answer); // Use helper function
                     } else {
                          throw new Error("Received response but no answer found.");
                     }
@@ -187,8 +217,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             if (data.chunk) {
                                 accumulatedResponse += data.chunk;
-                                // Render Markdown
-                                resultsContainer.innerHTML = marked.parse(accumulatedResponse);
+                                // Render Markdown and wrap tables
+                                renderAndUpdateTables(resultsContainer, accumulatedResponse); // Use helper function
                             }
 
                             if (data.end_of_stream) {
@@ -220,9 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // If response finished but is empty, show message
             if (accumulatedResponse.trim() === '' && resultsContainer.innerHTML.trim() === ''){
-                 resultsContainer.innerHTML = '<p>Received an empty response.</p>';
-             } else if (!currentError && resultsContainer.innerHTML.trim() === '') {
-                 // If stream ended successfully but nothing was ever rendered (edge case)
                  resultsContainer.innerHTML = '<p>Received an empty response.</p>';
              }
 
