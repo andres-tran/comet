@@ -27,12 +27,15 @@ PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions"
 
 # Allowed models (add more as needed and update frontend)
 ALLOWED_MODELS = {
-    # Perplexity
-    "sonar-pro",
-    # "sonar-deep-research", # Removed
-    "sonar-reasoning-pro",
+    # Perplexity (Updated based on table)
+    "sonar",                # 128k
+    "sonar-pro",            # 200k
+    "sonar-deep-research",  # 128k
+    "sonar-reasoning-pro",  # 128k
+    "sonar-reasoning",      # 128k
+    "r1-1776",              # 128k
     # OpenAI
-    "gpt-4.1", 
+    "gpt-4.1",
     "o4-mini-2025-04-16",
     "o3-2025-04-16",
     "gpt-4o-search-preview-2025-03-11",
