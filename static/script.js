@@ -1,4 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}") /* Use Flask's url_for if this JS is embedded in HTML or adjust path directly */
+            // Correcting the path for a static JS file:
+            // navigator.serviceWorker.register('/static/sw.js') 
+            // The template tag {{ url_for(...) }} won't work directly in a separate .js file.
+            // Assuming script.js is loaded via <script src="{{ url_for('static', filename='script.js') }}"> in index.html,
+            // then the path to sw.js from the root would be /static/sw.js
+            navigator.serviceWorker.register('/static/sw.js') // Correct path for static JS file
+                .then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                })
+                .catch(error => {
+                    console.log('ServiceWorker registration failed: ', error);
+                });
+        });
+    }
+
     const form = document.getElementById('search-form');
     const input = document.getElementById('search-input');
     const modelSelect = document.getElementById('model-select'); // Get the select element
@@ -91,6 +110,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Prepare payload
+        const payload = {
+            query: query,
+            model: selectedModel
+        };
+
         // Reset UI states
         resultsContainer.style.display = 'block';
         resultsContainer.innerHTML = ''; // Clear previous results immediately
@@ -115,10 +140,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentError = null;
 
         // --- Handle Non-Streaming Models (Image Only) ---
-        const nonStreamingModels = ['gpt-image-1']; // Removed search model
+        const nonStreamingModels = ['gpt-image-1'];
         if (nonStreamingModels.includes(selectedModel)) {
-            const isImageModel = selectedModel === 'gpt-image-1'; // This will always be true now
-            console.log(`Image model selected. Using non-streaming fetch.`);
+            const isImageModel = selectedModel === 'gpt-image-1';
+            console.log(`Image model selected: ${selectedModel}. Using non-streaming fetch.`);
             resultsContainer.innerHTML = ''; // Clear results area
             thinkingIndicator.style.display = 'flex'; // Show thinking indicator
             thinkingText.textContent = isImageModel ? 'Generating an image...' : 'Searching the web...'; // Custom text
@@ -129,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ query: query, model: selectedModel }),
+                    body: JSON.stringify(payload), // Use payload
                 });
 
                 thinkingIndicator.style.display = 'none'; // Hide indicator once response received
@@ -148,15 +173,39 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Handle image response (this is the only case now)
                     if (data.image_base64) {
                         const img = document.createElement('img');
-                        img.src = `data:image/png;base64,${data.image_base64}`;
+                        img.src = `data:image/jpeg;base64,${data.image_base64}`; // Assuming jpeg for grok, png for openai. Backend sends full data URI for grok.
+                        // To be more robust, backend should ideally send raw base64 and type, or frontend parses the data URI prefix.
+                        // For now, if grok sends `data:image/jpeg;base64,...` this will work.
+                        // If OpenAI also sends `data:image/png;base64,...`, then `img.src = data.image_base64` would be cleaner if backend normalizes it.
+                        // Let's assume backend for grok sends the full data URI string, and for gpt-image-1 it sends raw base64.
+                        if (selectedModel === 'gpt-image-1') {
+                            img.src = `data:image/png;base64,${data.image_base64}`;
+                        }
+
                         img.alt = query; // Use prompt as alt text
                         img.classList.add('generated-image'); // Add class for styling
                         resultsContainer.appendChild(img);
 
+                        // Display revised prompt if available (for grok-2-image)
+                        if (data.revised_prompt) {
+                            // This was specific to Grok, but could be kept if other models might use it.
+                            // For now, assuming only Grok used it and removing for clarity unless specified otherwise.
+                            // const revisedPromptText = document.createElement('p');
+                            // revisedPromptText.classList.add('revised-prompt-text');
+                            // revisedPromptText.innerHTML = `<strong>Revised Prompt:</strong> ${data.revised_prompt.replace(/</g, "&lt;").replace(/>/g, "&gt;")}`;
+                            // resultsContainer.appendChild(revisedPromptText);
+                        }
+
                         // Create and add download button
                         const downloadButton = document.createElement('a');
                         downloadButton.href = img.src;
-                        downloadButton.download = `comet-${query.substring(0, 20).replace(/\s+/g, '_') || 'image'}.png`; // Suggest filename
+
+                        let filename = `comet-${query.substring(0, 20).replace(/\s+/g, '_') || 'image'}`;
+                        if (selectedModel === 'gpt-image-1') {
+                            filename += '.png';
+                        }
+                        downloadButton.download = filename;
+
                         downloadButton.textContent = 'Download Image';
                         downloadButton.classList.add('download-button');
                         downloadArea.appendChild(downloadButton);
@@ -202,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ query: query, model: selectedModel }),
+                body: JSON.stringify(payload), // Use payload
             });
 
             if (!response.ok) {
@@ -216,80 +265,89 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorMessage);
             }
 
-            // --- Process the Stream --- 
+            // --- Revert to Live Text Streaming Logic ---
+            console.log("Using live streaming fetch for text model.");
+            thinkingText.textContent = 'Thinking...'; // Initial thinking text
+            
+            accumulatedResponse = ""; // Reset accumulated response for this new request
+            let lineBuffer = ''; // To handle lines that might be split across chunks
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
-            // resultsContainer.innerHTML = ''; // Cleared earlier
-            let isFirstChunk = true; // Flag to track the first data arrival
+            let isFirstChunkProcessed = false;
 
-            while (true) {
-                const { value, done } = await reader.read();
-                if (done) {
-                    console.log('Stream finished.');
-                    break; // Exit loop when stream is done
-                }
-
-                const sseMessages = decoder.decode(value, { stream: true }).split('\n\n');
-
-                sseMessages.forEach(message => {
-                    if (message.trim().length === 0) return; // Skip empty messages
-
-                    if (message.startsWith('data:')) {
-                        const jsonData = message.substring(5).trim(); // Remove 'data: '
-                        try {
-                            const data = JSON.parse(jsonData);
-
-                            // Hide thinking indicator on first valid data/error
-                            if (isFirstChunk) {
-                                thinkingIndicator.style.display = 'none';
-                                isFirstChunk = false;
-                            }
-
-                            if (data.error) {
-                                console.error("Error from stream:", data.error);
-                                currentError = data.error; // Store the error
-                                // Stop processing further chunks on error
-                                reader.cancel('Error received'); // Optional: signal cancellation
-                                return; // Exit forEach loop
-                            }
-
-                            if (data.chunk) {
-                                accumulatedResponse += data.chunk;
-                                // Render Markdown and wrap tables
-                                renderAndUpdateTables(resultsContainer, accumulatedResponse); // Use helper function
-                            }
-
-                            if (data.end_of_stream) {
-                                console.log('End of stream signal received.');
-                                // No need to break here, the reader.read() loop will handle 'done'
-                            }
-
-                        } catch (e) {
-                            console.error('Failed to parse SSE data:', jsonData, e);
-                            // Decide how to handle parse errors, maybe display a message
-                            currentError = 'Error parsing response stream.';
-                            reader.cancel('Parse error');
-                            return;
+            async function processStream() {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        console.log("Stream reading complete.");
+                        if (thinkingIndicator.style.display !== 'none') {
+                            thinkingIndicator.style.display = 'none';
                         }
-                    } else {
-                        console.warn("Received non-SSE formatted message:", message);
+                        if (accumulatedResponse.trim() === '' && !currentError && resultsContainer.innerHTML.trim() === '') {
+                             resultsContainer.innerHTML = '<p>Stream ended with no content.</p>';
+                        }
+                        break; // Exit loop when stream is done
                     }
-                });
-                 // If an error was detected inside the loop, break the outer while loop
-                 if (currentError) {
-                    break;
-                 }
-            }
-            // --- End Stream Processing ---
 
-            // After stream finishes, check if an error occurred during streaming
-            if (currentError) {
-                 throw new Error(currentError);
+                    // Decode and process the current chunk
+                    lineBuffer += decoder.decode(value, { stream: true });
+                    let lines = lineBuffer.split("\n");
+
+                    // Keep the last (potentially incomplete) line in the buffer
+                    lineBuffer = lines.pop(); 
+
+                    for (const line of lines) {
+                        if (line.trim().length === 0) continue; // Skip empty lines (often between SSE messages)
+                        
+                        if (line.startsWith('data:')) {
+                            const jsonData = line.substring(5).trim();
+                            if (jsonData === '[DONE]') { // Handle Perplexity [DONE] signal or similar if needed
+                                console.log("Received [DONE] signal in stream.");
+                                // This might be redundant if `end_of_stream` is used by all backends
+                                continue;
+                            }
+                            try {
+                                const data = JSON.parse(jsonData);
+
+                                if (!isFirstChunkProcessed) {
+                                    thinkingIndicator.style.display = 'none'; // Hide after first actual data
+                                    resultsContainer.innerHTML = ''; // Clear any initial "Thinking..." text from results
+                                    isFirstChunkProcessed = true;
+                                }
+
+                                if (data.error) {
+                                    console.error("Error from stream data:", data.error);
+                                    currentError = data.error; // Store the error
+                                    // Optionally, display error directly and stop further processing
+                                    displayError(data.error);
+                                    resultsContainer.style.display = 'none'; 
+                                    return; // Stop processing this stream
+                                }
+
+                                if (data.chunk) {
+                                    accumulatedResponse += data.chunk;
+                                    renderAndUpdateTables(resultsContainer, accumulatedResponse);
+                                }
+
+                                if (data.end_of_stream) {
+                                    console.log('End of stream signal received from backend.');
+                                    // The main loop's `done` condition will handle final cleanup.
+                                    return; // Or break, depending on if more data could follow `end_of_stream`
+                                }
+
+                            } catch (e) {
+                                console.warn('Failed to parse SSE data line:', jsonData, e);
+                                // Decide if this is a fatal error for the stream or can be skipped
+                            }
+                        } else {
+                            console.log("Skipping non-data line from stream:", line);
+                        }
+                    }
+                }
             }
-            // If response finished but is empty, show message
-            if (accumulatedResponse.trim() === '' && resultsContainer.innerHTML.trim() === ''){
-                 resultsContainer.innerHTML = '<p>Received an empty response.</p>';
-             }
+
+            await processStream(); // Start processing the stream
+            // --- End Live Text Streaming Logic ---
 
         } catch (error) {
             console.error('Search failed:', error);

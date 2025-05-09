@@ -285,6 +285,7 @@ body {
     padding: 30px 0;
     gap: 10px; /* Space between spinner and text */
     width: 100%;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 .spinner {
@@ -392,15 +393,19 @@ body {
 
 /* Code blocks */
 .results-container-perplexity pre {
-    background-color: var(--pre-bg-color);
-    border: 1px solid var(--pre-border-color);
+    white-space: pre-wrap;       /* CSS3 */
+    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+    white-space: -pre-wrap;      /* Opera 4-6 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
+    overflow-x: auto;            /* Add scrollbar if content still too wide */
+    max-width: 100%;             /* Ensure pre does not overflow container */
+    background-color: var(--pre-bg-color); /* Ensure background color is applied */
     color: var(--pre-text-color);
-    padding: 1em;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin-bottom: 1.2em;
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-    position: relative; /* Ensure this is the positioning context for the button */
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid var(--pre-border-color);
+    margin-bottom: 1em;
 }
 
 .results-container-perplexity pre code {
@@ -473,48 +478,76 @@ body {
 /* === Responsive Adjustments (Basic) === */
 @media (max-width: 600px) {
     body {
-        padding-top: 20px;
+        padding-top: 20px; /* Reduce top padding */
     }
     .main-container {
-        padding: 0 15px;
+        padding: 0 15px; /* Reduce side padding */
     }
     .header-controls {
-        top: -5px; /* Adjust position on mobile */
+        top: 2px; /* Adjust if needed */
+        right: 5px;
     }
     .logo-title {
-        font-size: 1.8rem; /* Slightly smaller logo on mobile */
+        font-size: 1.8rem; /* Slightly smaller logo */
     }
     .search-header h1 {
-        font-size: 1.3rem;
+        font-size: 1.2rem; /* Smaller subtitle */
+        margin-bottom: 15px;
     }
     .search-form-perplexity {
         flex-direction: column; /* Stack input and controls */
-        border-radius: 12px; /* Less round on mobile? */
-        padding: 10px;
+        padding: 10px; /* Adjust padding for stacked layout */
+        border-radius: 18px; /* Maybe slightly smaller radius */
     }
     .input-wrapper {
         padding-left: 10px; /* Adjust padding */
         margin-bottom: 10px; /* Space when stacked */
     }
      #search-input {
-        padding: 10px 10px 10px 30px;
+        padding: 10px 10px 10px 30px; /* Adjust padding */
+        font-size: 0.95rem;
     }
     .search-icon {
-        left: 10px;
+        left: 10px; /* Adjust icon position */
     }
     .controls-wrapper {
-        padding-left: 0;
-        justify-content: space-between; /* Space out controls */
+        padding-left: 0; /* Remove padding when stacked */
+        justify-content: space-between; /* Space out select and button */
+        width: 100%; /* Make controls full width */
     }
     #model-select {
-        flex-grow: 1; /* Allow select to grow */
-        margin-right: 8px;
+        flex-grow: 1; /* Allow select to take more space */
+        margin-right: 8px; /* Adjust space */
+        padding: 9px 10px;
+        padding-right: 28px; /* Adjust for arrow */
+        font-size: 0.85rem;
     }
     #search-button {
-         padding: 10px;
+        padding: 9px 10px;
+        font-size: 0.9rem;
+    }
+    .results-container-perplexity {
+        font-size: 0.95rem; /* Slightly smaller base font for results on mobile */
+        padding: 15px; /* Adjust padding for mobile */
     }
 
-    .results-container-perplexity {
-        padding: 20px;
+    .results-container-perplexity h1, 
+    .results-container-perplexity h2, 
+    .results-container-perplexity h3 {
+        font-size: 1.2em; /* Adjust heading sizes within results for mobile */
+    }
+
+    /* Ensure generated images are responsive */
+    .generated-image {
+        max-width: 100%;
+        height: auto;
+        display: block; /* Remove extra space below image */
+        margin: 10px auto; /* Center image */
+    }
+
+    .revised-prompt-text {
+        font-size: 0.8rem;
+        text-align: center;
+        margin-top: 5px;
     }
 } 

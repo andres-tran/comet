@@ -17,10 +17,13 @@ app = Flask(__name__)
 # Configure API keys (ensure they are set in .env)
 openai.api_key = os.getenv("OPENAI_API_KEY") # Keep this for OpenAI
 perplexity_api_key = os.getenv("PERPLEXITY_API_KEY")
+# xai_api_key = os.getenv("XAI_API_KEY") # Removed for xAI
 
 # --- API Clients (Optional but good practice) ---
 # Initialize OpenAI client (recommended way)
 openai_client = openai.OpenAI() if openai.api_key else None
+# Initialize xAI client
+# xai_client = openai.OpenAI(base_url="https://api.x.ai/v1", api_key=xai_api_key) if xai_api_key else None # Removed
 
 # Perplexity API endpoint
 PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions"
@@ -39,6 +42,7 @@ ALLOWED_MODELS = {
     "o3-2025-04-16",
     "gpt-4o-search-preview-2025-03-11",
     "gpt-image-1", # Image Model
+    # xAI Grok Models - REMOVED
 }
 
 # --- Error Handling --- 
@@ -52,14 +56,19 @@ def check_api_keys(model_name):
         model_name == "gpt-4o-search-preview-2025-03-11" or
         model_name == "gpt-image-1"
     )
-    
+    # is_xai_model = model_name.startswith('grok-') # Removed
+
+    missing = []
     if is_openai_model:
         if not openai.api_key or not openai_client: # Also check client initialization
-            return ["OpenAI"]
-    else: # Assuming Perplexity otherwise
+            missing.append("OpenAI")
+    # elif is_xai_model: # Removed xAI check
+    #     if not xai_api_key or not xai_client:
+    #         missing.append("xAI")
+    else: # Assuming Perplexity otherwise (if not OpenAI)
         if not perplexity_api_key:
-            return ["Perplexity"]
-    return [] # No missing keys for the selected model type
+            missing.append("Perplexity")
+    return missing
 
 # --- Streaming Generators --- 
 
@@ -84,17 +93,31 @@ def stream_openai(query, model_name):
 
     # --- Prepare API Call Parameters ---
     # Enhanced System Prompt for OpenAI
-    enhanced_openai_system_prompt = """You are Comet, a powerful, meticulous, and helpful AI agent.
-Your primary goal is to provide comprehensive, accurate, and well-reasoned answers to user queries.
+    enhanced_openai_system_prompt = """You are Comet, a helpful and meticulous AI agent specializing in deep research.
+Your main goal is to give users comprehensive, accurate, and well-explained answers.
 
-## Instructions:
-1.  **Analyze Thoroughly:** Think step-by-step to deeply understand the user's query, intent, and context.
-2.  **Be Knowledgeable & Accurate:** Draw upon your internal knowledge. If necessary and relevant, use your web search capability (if available for the model) to find up-to-date information and ensure the accuracy of your response. Cite sources when possible if using external information.
-3.  **Provide Comprehensive Answers:** Offer detailed explanations and cover multiple facets of the topic when appropriate.
-4.  **Structure Clearly:** **Always format your entire response using Markdown.** Use headings, lists, and code blocks where helpful for readability.
-5.  **Maintain Tone:** Be helpful, knowledgeable, and objective. Avoid expressing personal opinions unless specifically asked for and clearly labeled as such.
-6.  **Admit Limitations:** If you are unsure about an answer or lack specific information, state that clearly rather than speculating.
-7.  **Safety:** Do not generate responses that are harmful, unethical, biased, or promote illegal activities."""
+## Your Role:
+*   Act as a knowledgeable and objective research assistant.
+*   Avoid personal opinions.
+
+## How to Respond:
+1.  **Understand Deeply:** Carefully analyze the user's query to grasp its full meaning and intent.
+2.  **Research Thoroughly:**
+    *   Use your knowledge and web search (if available) to find accurate, up-to-date information.
+    *   Cite sources for external information when possible.
+3.  **Answer Comprehensively:** Provide detailed explanations, covering key aspects of the topic.
+4.  **Format Clearly with Markdown:**
+    *   **Always use Markdown** for your entire response.
+    *   Organize with headings, lists, and tables for readability.
+    *   Use bold/italics for emphasis.
+5.  **Be Professional:** Maintain a helpful, precise, and objective tone.
+6.  **Be Honest About Limits:** If unsure or lacking information, say so clearly.
+
+## Important Safety Rules:
+*   **No Harmful Content:** Do not generate unethical, hateful, biased, or illegal content.
+*   **Protect Privacy:** Do not use or request personal information.
+*   **Stay On Topic:** Focus only on the user's research query.
+"""
 
     api_params = {
         "model": model_name,
@@ -144,16 +167,29 @@ def stream_perplexity(query, model_name):
     }
 
     # Enhanced System Prompt for Perplexity
-    enhanced_perplexity_system_prompt = """You are a precise, thorough, and helpful AI assistant.
-Your primary goal is to provide accurate, detailed, and well-reasoned answers to user queries by reasoning step-by-step.
+    enhanced_perplexity_system_prompt = """You are Comet, a precise and thorough AI agent for deep research.
+Your main goal is to give users accurate, detailed, and well-reasoned answers.
 
-## Instructions:
-1.  **Reason Step-by-Step:** Carefully analyze the user's query to understand the core request.
-2.  **Be Accurate & Detailed:** Provide precise information and detailed explanations. Use your web search capabilities to ensure information is up-to-date and accurate.
-3.  **Structure Clearly:** **Always format your entire response using Markdown.** Use headings, lists, and code blocks where helpful for readability.
-4.  **Maintain Tone:** Be helpful, precise, and objective.
-5.  **Admit Limitations:** If unsure about an answer or lack specific information, state that clearly rather than speculating.
-6.  **Safety:** Do not generate responses that are harmful, unethical, biased, or promote illegal activities."""
+## Your Role:
+*   Act as a research assistant focused on precision and detail.
+*   Maintain a helpful, precise, and objective tone.
+
+## How to Respond:
+1.  **Analyze Carefully:** Reason step-by-step to fully understand the user's request.
+2.  **Prioritize Accuracy & Detail:**
+    *   Use your knowledge and web search to provide precise, up-to-date, and verifiable information.
+3.  **Answer In-Depth:** Offer detailed explanations.
+4.  **Format Clearly with Markdown:**
+    *   **Always use Markdown** for your entire response.
+    *   Organize with headings, lists, and tables for easy understanding.
+5.  **Be Objective:** Focus on factual reporting.
+6.  **State Limitations Clearly:** If unsure or can't find information, admit it.
+
+## Important Safety Rules:
+*   **No Harmful Content:** Do not generate unethical, hateful, biased, illegal, or misleading content.
+*   **Protect Privacy:** Do not use or request personal information.
+*   **Stick to Research:** Avoid off-topic chat.
+"""
 
     payload = {
         "model": model_name,
@@ -210,7 +246,7 @@ Your primary goal is to provide accurate, detailed, and well-reasoned answers to
     except Exception as e:
         print(f"Error during Perplexity stream: {e}")
         traceback.print_exc()
-        yield f"data: {json.dumps({'error': 'An unexpected error occurred during the Perplexity stream.'})}\n\n"
+        yield f"data: {json.dumps({'error': 'An unexpected error occurred during the Perplexity stream.'})}\\n\\n"
 
 # --- Routes --- 
 @app.route('/')
@@ -246,6 +282,8 @@ def search():
     # --- Route to Image or Text Streaming --- 
     if selected_model == "gpt-image-1":
         return generate_image(query)
+    # elif selected_model == "grok-2-image": # Removed xAI image model routing
+    #     return generate_xai_image(query)
     else:
         # Determine if it's standard OpenAI text or Perplexity text
         is_standard_openai_text_model = (
@@ -254,12 +292,16 @@ def search():
             selected_model == "o3-2025-04-16"
             # Exclude image and search models handled above
         )
+        # is_xai_model = selected_model.startswith('grok-') # Removed
+
         # Handle potentially removed non-streaming perplexity models if needed
         # elif selected_model == "sonar-deep-research": 
         #     return generate_perplexity_non_streaming(query, selected_model)
 
         if is_standard_openai_text_model:
             generator = stream_openai(query, selected_model)
+        # elif is_xai_model: # Removed xAI text model routing
+        #     generator = stream_xai(query, selected_model)
         else: # Assume Perplexity model (including sonar-deep-research)
             generator = stream_perplexity(query, selected_model)
         
@@ -305,15 +347,22 @@ def generate_image(query):
         traceback.print_exc()
         return jsonify({'error': 'An internal server error occurred during image generation.'}), 500
 
+# --- xAI Image Generation Function (New) --- DELETED
+# def generate_xai_image(query):
+#     ...
+
 # --- Main Execution --- 
 if __name__ == '__main__':
     # Startup checks remain the same
-    if not openai_client and not perplexity_api_key:
-         print("\n*** WARNING: Neither OpenAI nor Perplexity API key found in .env ***")
+    if not openai_client and not perplexity_api_key: # Updated check
+         print("\n*** WARNING: Neither OpenAI nor Perplexity API keys found in .env ***")
          print("Please add at least one API key to the .env file and restart.\n")
-    elif not openai_client:
-         print("\n*** WARNING: OpenAI API key not found in .env. OpenAI models will not work. ***\n")
-    elif not perplexity_api_key:
-         print("\n*** WARNING: Perplexity API key not found in .env. Perplexity models will not work. ***\n")
+    else:
+        if not openai_client:
+             print("\n*** WARNING: OpenAI API key not found in .env. OpenAI models will not work. ***\n")
+        if not perplexity_api_key:
+             print("\n*** WARNING: Perplexity API key not found in .env. Perplexity models will not work. ***\n")
+        # if not xai_api_key: # Removed xAI key warning
+        #      print("\n*** WARNING: xAI API key not found in .env. Grok models will not work. ***\n")
 
     app.run(debug=True, threaded=True) # Added threaded=True, often helpful for streaming 

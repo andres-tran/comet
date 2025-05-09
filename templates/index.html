@@ -4,8 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Comet</title>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#f97316"> <!-- Match manifest theme-color -->
     <!-- Favicon using SVG Data URL -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☄️</text></svg>">
+    <!-- Apple touch icon (optional, but good for iOS 'Add to Home Screen') -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192x192.png') }}"> <!-- Use one of your icon sizes -->
     <!-- Consider adding a favicon similar to Perplexity's -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -45,6 +49,7 @@
                             <option value="gpt-4o-search-preview-2025-03-11">GPT-4o Search Preview</option>
                             <option value="gpt-image-1">GPT Image 1</option>
                         </optgroup>
+                        <!-- Group xAI Grok models -->
                     </select>
                     <button type="submit" id="search-button" title="Submit Search">
                         <i class="fas fa-arrow-right"></i> <!-- Arrow Icon -->
