@@ -120,12 +120,24 @@ body {
 }
 
 /* Focus visible styles for better accessibility */
-#search-input:focus-visible,
 #model-select:focus-visible,
 #search-button:focus-visible,
 #theme-toggle-button:focus-visible {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
+}
+
+/* Remove outline from search input on focus, as it's handled by the form's box-shadow or other indicators */
+#search-input:focus,
+#search-input:focus-visible {
+    outline: none;
+}
+
+/* Style the parent form when the input is focused, if desired */
+.search-form-perplexity:has(#search-input:focus),
+.search-form-perplexity:has(#search-input:focus-visible) {
+    border-color: var(--primary-color); /* Example: highlight border of the whole form */
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb, 249, 115, 22), 0.3); /* Example: outer glow, define --primary-color-rgb in :root if using this */
 }
 
 /* Added styling for the Comet logo title */
@@ -515,7 +527,7 @@ body {
     }
      #search-input {
         padding: 10px 10px 10px 30px; /* Adjust padding */
-        font-size: 0.95rem;
+        font-size: 1rem; /* Changed from 0.95rem to 1rem (typically 16px) to prevent iOS zoom */
     }
     .search-icon {
         left: 10px; /* Adjust icon position */
