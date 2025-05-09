@@ -80,6 +80,7 @@ body {
     justify-content: center;
     padding-top: 40px; /* Space above content */
     transition: background-color 0.3s ease, color 0.3s ease;
+    -webkit-tap-highlight-color: transparent; /* Disable tap highlight on mobile */
 }
 
 .main-container {
@@ -116,6 +117,15 @@ body {
 #theme-toggle-button:hover {
     color: var(--text-color);
     border-color: var(--text-color);
+}
+
+/* Focus visible styles for better accessibility */
+#search-input:focus-visible,
+#model-select:focus-visible,
+#search-button:focus-visible,
+#theme-toggle-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
 }
 
 /* Added styling for the Comet logo title */
