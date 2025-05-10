@@ -127,17 +127,32 @@ body {
     outline-offset: 2px;
 }
 
+#model-select:focus,
+#model-select:focus-visible {
+    outline: none;
+}
+
 /* Remove outline from search input on focus, as it's handled by the form's box-shadow or other indicators */
 #search-input:focus,
 #search-input:focus-visible {
     outline: none;
 }
 
-/* Style the parent form when the input is focused, if desired */
-.search-form-perplexity:has(#search-input:focus),
-.search-form-perplexity:has(#search-input:focus-visible) {
-    border-color: var(--primary-color); /* Example: highlight border of the whole form */
-    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb, 249, 115, 22), 0.3); /* Example: outer glow, define --primary-color-rgb in :root if using this */
+/* Glowing orange effect when search input is focused */
+.search-form-perplexity:focus-within {
+    border-color: var(--primary-color);
+    box-shadow:
+        0 0 0 4px rgba(249, 115, 22, 0.22),   /* stronger inner glow */
+        0 0 32px 8px rgba(249, 115, 22, 0.45); /* much larger, brighter outer glow */
+    transition: box-shadow 0.2s;
+}
+
+.search-form-perplexity:hover {
+    border-color: var(--primary-color);
+    box-shadow:
+        0 0 0 4px rgba(249, 115, 22, 0.22),
+        0 0 32px 8px rgba(249, 115, 22, 0.45);
+    transition: box-shadow 0.2s;
 }
 
 /* Added styling for the Comet logo title */
