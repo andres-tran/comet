@@ -11,7 +11,7 @@
     <!-- Apple touch icon (optional, but good for iOS 'Add to Home Screen') -->
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192x192.png') }}"> <!-- Use one of your icon sizes -->
     <!-- Consider adding a favicon similar to Perplexity's -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20240607">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- Add Font Awesome for icons (optional, but helps mimic UI) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -31,7 +31,7 @@
             <form id="search-form" class="search-form-perplexity">
                 <div class="input-wrapper">
                     <i class="fas fa-search search-icon"></i> <!-- Search Icon -->
-                    <input type="text" id="search-input" placeholder="Ask anything..." required autocomplete="off">
+                    <textarea id="search-input" placeholder="Ask anything..." required autocomplete="off" rows="1"></textarea>
                     <!-- Optional: Clear button can be added here via JS -->
                 </div>
                 <div class="controls-wrapper">
@@ -51,6 +51,7 @@
                             <option value="o3-2025-04-16">o3-2025-04-16</option>
                             <option value="gpt-4o-search-preview-2025-03-11">GPT-4o Search Preview</option>
                             <option value="gpt-image-1">GPT Image 1</option>
+                            <option value="gpt-4.5-preview-2025-02-27">GPT-4.5 Preview</option>
                         </optgroup>
                         <!-- Group xAI Grok models -->
                     </select>
@@ -87,6 +88,6 @@
 
     </div> <!-- End main-container -->
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}?v=20240607"></script>
 </body>
 </html> 
