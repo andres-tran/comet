@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const downloadArea = document.getElementById('download-area'); // Get download area
     const themeToggleButton = document.getElementById('theme-toggle-button'); // Get toggle button
     const body = document.body; // Get body element
+    const metaThemeColor = document.getElementById('theme-color-meta'); // Get theme-color meta tag
 
     // Configure marked.js (optional: customize options here if needed)
     // marked.setOptions({...});
@@ -42,10 +43,12 @@ document.addEventListener('DOMContentLoaded', () => {
             body.classList.add('dark-mode');
             themeToggleButton.innerHTML = '<i class="fas fa-sun"></i>'; // Show sun icon
             localStorage.setItem('theme', 'dark');
+            if (metaThemeColor) metaThemeColor.setAttribute('content', '#000000'); // Update meta tag
         } else {
             body.classList.remove('dark-mode');
             themeToggleButton.innerHTML = '<i class="fas fa-moon"></i>'; // Show moon icon
             localStorage.setItem('theme', 'light');
+            if (metaThemeColor) metaThemeColor.setAttribute('content', '#ffffff'); // Update meta tag
         }
     }
 
