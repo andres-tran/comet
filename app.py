@@ -42,6 +42,7 @@ ALLOWED_MODELS = {
     "o3-2025-04-16",
     "gpt-4o-search-preview-2025-03-11",
     "gpt-image-1", # Image Model
+    "gpt-4.5-preview-2025-02-27", # New model
     # xAI Grok Models - REMOVED
 }
 
@@ -75,23 +76,19 @@ def check_api_keys(model_name):
 def stream_openai(query, model_name):
     """Generator for streaming responses from OpenAI."""
     if not openai_client:
-        yield f"data: {json.dumps({'error': 'OpenAI client not initialized. Check API key.'})}\\n\\n"
+        yield f"data: {json.dumps({'error': 'OpenAI client not initialized. Check API key.'})}\n\n"
         return
 
-    # --- Determine max_completion_tokens based on model ---
     model_token_limits = {
         "gpt-4.1": 32768,
         "o4-mini-2025-04-16": 100000,
         "o3-2025-04-16": 100000,
         "gpt-4o-search-preview-2025-03-11": 16384,
-        # Add other OpenAI models and their limits here if needed
-        # Fallback for any other OpenAI models not explicitly listed
-        "default": 16384 # Keep the original default or choose a suitable one
+        "gpt-4.5-preview-2025-02-27": 16384,
+        "default": 16384
     }
     max_tokens = model_token_limits.get(model_name, model_token_limits["default"])
 
-
-    # --- Prepare API Call Parameters ---
     # Enhanced System Prompt for OpenAI
     enhanced_openai_system_prompt = """You are Comet, a helpful and meticulous AI agent specializing in deep research.
 Your main goal is to give users comprehensive, accurate, and well-explained answers.
@@ -119,32 +116,26 @@ Your main goal is to give users comprehensive, accurate, and well-explained answ
 *   **Stay On Topic:** Focus only on the user's research query.
 """
 
+    messages = [
+        {"role": "system", "content": enhanced_openai_system_prompt},
+        {"role": "user", "content": query}
+    ]
+
     api_params = {
         "model": model_name,
-        "messages": [
-            {"role": "system", "content": enhanced_openai_system_prompt},
-            {"role": "user", "content": query}
-        ],
+        "messages": messages,
         "stream": True,
-        # Use the determined max_tokens
         "max_completion_tokens": max_tokens,
     }
 
     try:
-        print(f"Calling chat.completions.create with params: {api_params}")
+        print(f"Calling chat.completions.create with params: {{'model': {model_name}, 'messages': ...}}")
         stream = openai_client.chat.completions.create(**api_params)
-        
         for chunk in stream:
-            # TODO: Need to inspect chunk structure if tools are used
-            # It might contain tool_calls instead of/in addition to delta.content
-            # For now, assume standard content streaming
             content = chunk.choices[0].delta.content
             if content is not None:
-                # Send chunk data formatted as SSE
                 yield f"data: {json.dumps({'chunk': content})}\n\n"
-        # Signal end of stream (optional, but good practice)
         yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
-
     except openai.APIError as e:
         print(f"OpenAI API error during stream: {e}")
         err_msg = str(e)
@@ -282,30 +273,16 @@ def search():
     # --- Route to Image or Text Streaming --- 
     if selected_model == "gpt-image-1":
         return generate_image(query)
-    # elif selected_model == "grok-2-image": # Removed xAI image model routing
-    #     return generate_xai_image(query)
     else:
-        # Determine if it's standard OpenAI text or Perplexity text
         is_standard_openai_text_model = (
             selected_model.startswith('gpt-') or 
             selected_model == "o4-mini-2025-04-16" or 
             selected_model == "o3-2025-04-16"
-            # Exclude image and search models handled above
         )
-        # is_xai_model = selected_model.startswith('grok-') # Removed
-
-        # Handle potentially removed non-streaming perplexity models if needed
-        # elif selected_model == "sonar-deep-research": 
-        #     return generate_perplexity_non_streaming(query, selected_model)
-
         if is_standard_openai_text_model:
             generator = stream_openai(query, selected_model)
-        # elif is_xai_model: # Removed xAI text model routing
-        #     generator = stream_xai(query, selected_model)
-        else: # Assume Perplexity model (including sonar-deep-research)
+        else:
             generator = stream_perplexity(query, selected_model)
-        
-        # Return the streaming response for text models
         return Response(generator, mimetype='text/event-stream')
 
 # --- Image Generation Function ---

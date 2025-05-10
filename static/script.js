@@ -77,6 +77,10 @@ document.addEventListener('DOMContentLoaded', () => {
         newSearchButton.addEventListener('click', (e) => {
             e.preventDefault();
             input.value = '';
+            if (input.tagName === 'TEXTAREA') {
+                input.style.height = '';
+                input.dispatchEvent(new Event('input'));
+            }
             resultsContainer.innerHTML = '<p class="placeholder-text">Your AI search results will appear here.</p>';
             resultsContainer.style.display = 'block';
             errorContainer.style.display = 'none';
@@ -399,4 +403,15 @@ document.addEventListener('DOMContentLoaded', () => {
             downloadArea.style.display = 'none'; // Also hide download area when clearing error
         }
     });
+
+    // Auto-resize search textarea as user types
+    const searchInput = document.getElementById('search-input');
+    if (searchInput && searchInput.tagName === 'TEXTAREA') {
+        searchInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+        // Optional: trigger resize on page load if there's pre-filled text
+        searchInput.dispatchEvent(new Event('input'));
+    }
 }); 
