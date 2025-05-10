@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeToggleButton = document.getElementById('theme-toggle-button'); // Get toggle button
     const body = document.body; // Get body element
     const metaThemeColor = document.getElementById('theme-color-meta'); // Get theme-color meta tag
+    const newSearchButton = document.getElementById('new-search-button'); // Get new search button
 
     // Configure marked.js (optional: customize options here if needed)
     // marked.setOptions({...});
@@ -70,6 +71,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     // --- End Theme Handling ---
+
+    // New Search button logic
+    if (newSearchButton) {
+        newSearchButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            input.value = '';
+            resultsContainer.innerHTML = '<p class="placeholder-text">Your AI search results will appear here.</p>';
+            resultsContainer.style.display = 'block';
+            errorContainer.style.display = 'none';
+            errorContainer.textContent = '';
+            downloadArea.style.display = 'none';
+            downloadArea.innerHTML = '';
+            input.focus();
+        });
+    }
 
     // Helper function to render Markdown and wrap tables
     function renderAndUpdateTables(container, markdownContent) {
