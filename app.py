@@ -343,27 +343,16 @@ Your goal is to provide accurate, detailed, and well-justified answers and code.
 
 # --- Streaming Generator for OpenRouter ---
 def stream_openrouter(query, model_name_with_suffix):
-    """Generator for streaming responses from OpenRouter, using OpenAI's SDK."""
+    """Generator for responses from OpenRouter.
+    Uses non-streaming for perplexity/sonar-deep-research due to potential streaming issues.
+    Uses streaming for all other OpenRouter models.
+    """
     if not openrouter_api_key:
         yield f"data: {json.dumps({'error': 'OpenRouter API key not configured.'})}\n\n"
         return
 
-    # Model name for OpenRouter API might not include the ':free' suffix
-    actual_model_name = model_name_with_suffix.split(':')[0]
-
-    # Initialize a specific client for OpenRouter
-    try:
-        openrouter_client = openai.OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=openrouter_api_key
-        )
-    except Exception as e:
-        print(f"Failed to initialize OpenRouter client: {e}")
-        yield f"data: {json.dumps({'error': 'Failed to initialize OpenRouter client.'})}\n\n"
-        return
-
-    # Using a similar enhanced system prompt as OpenAI for consistency, can be customized
-    enhanced_openrouter_system_prompt = """You are Comet, an advanced AI agent (via OpenRouter) specializing in deep research, logical reasoning, and code generation.
+    # Enhanced System Prompt for OpenRouter (similar to OpenAI's for consistency)
+    enhanced_openrouter_system_prompt = """You are Comet, an advanced AI agent specializing in deep research, logical reasoning, and code generation.
 Your purpose is to deliver insightful, well-reasoned answers and functional code.
 
 ## Core Competencies:
@@ -373,11 +362,23 @@ Your purpose is to deliver insightful, well-reasoned answers and functional code
 
 ## Operational Approach:
 1.  **Understand & Analyze:** Decipher query intent, complexities, and requirements.
-2.  **Research & Reason:** Access knowledge and apply logical frameworks.
+2.  **Research & Reason:** Access knowledge, perform web research, and apply logical frameworks.
 3.  **Develop & Explain:** Construct comprehensive explanations, generate code, and provide clear justifications.
-4.  **Format Clearly (Markdown):** Utilize Markdown for optimal structure, readability, and presentation.
+4.  **Format Clearly (Markdown):** Utilize Markdown for optimal structure, readability, and presentation (headings, lists, code blocks).
 5.  **Maintain Integrity:** Ensure responses are accurate, objective, and helpful.
 6.  **Acknowledge Limits:** Clearly state if a request is beyond current capabilities.
+
+## Chart Generation:
+*   **Priority:** Provide data/config for interactive Chart.js charts.
+*   **Format:** Use a JSON object (e.g., \"chartjs_config\").
+*   **Fallback:** May use QuickChart.io for static images.
+*   **Reproducibility:** Always provide Python code (Matplotlib/Seaborn) for chart recreation.
+*   **Context:** Explain data and charts in your main response.
+
+## Code-Specific Guidelines:
+*   When providing code, ensure it is well-commented and follows best practices.
+*   Specify the language and any necessary dependencies.
+*   Offer explanations of the code's logic and functionality.
 
 ## Core Directives:
 *   **Ethical Conduct:** No unethical, hateful, biased, or illegal content/code.
@@ -389,84 +390,140 @@ Your purpose is to deliver insightful, well-reasoned answers and functional code
         {"role": "user", "content": query}
     ]
 
-    # Token limits might vary for OpenRouter free models; using a general default or find specific ones
-    # For "microsoft/phi-4-reasoning-plus", context length is high, output might be less constrained by typical free limits
-    # Setting a generous max_tokens for now, but this might need adjustment based on specific model behavior.
-    # OpenRouter itself might enforce limits.
-    max_tokens = 8000 # A reasonable default, adjust if needed
-
-    api_params = {
-        "model": actual_model_name,
-        "messages": messages,
-        "stream": True,
-        "max_completion_tokens": max_tokens, # Note: OpenRouter uses max_tokens in some contexts
-                                         # but OpenAI SDK uses max_completion_tokens.
-                                         # The OpenAI SDK will likely handle this.
-    }
-
-    try:
-        print(f"Calling OpenRouter (via OpenAI SDK) with params: {{'model': {actual_model_name}, 'messages': ...}}")
-        stream = openrouter_client.chat.completions.create(**api_params)
-        buffer = ""
-        # Chart extraction logic is kept from OpenAI for now, can be removed if not applicable to OpenRouter models
-        in_chart_config_block = False
-        chart_config_str = ""
-
-        for chunk in stream:
-            content = chunk.choices[0].delta.content
-            if content is not None:
-                buffer += content
-                # Chart extraction logic (can be removed if OpenRouter models don't use this format)
-                start_marker = "[[CHARTJS_CONFIG_START]]"
-                end_marker = "[[CHARTJS_CONFIG_END]]"
-                if not in_chart_config_block and start_marker in buffer:
-                    pre_block_content = buffer.split(start_marker, 1)[0]
-                    if pre_block_content:
-                        yield f"data: {json.dumps({'chunk': pre_block_content})}\n\n"
-                    buffer = buffer.split(start_marker, 1)[1]
-                    in_chart_config_block = True
-                
-                if in_chart_config_block:
-                    if end_marker in buffer:
-                        block_content, post_block_content = buffer.split(end_marker, 1)
-                        chart_config_str += block_content
-                        try:
-                            chart_json = json.loads(chart_config_str)
-                            yield f"data: {json.dumps({'chart_config': chart_json})}\n\n"
-                        except json.JSONDecodeError as e:
-                            print(f"Error decoding chart_js config from OpenRouter: {e} - data: {chart_config_str}")
-                            yield f"data: {json.dumps({'chunk': start_marker + chart_config_str + end_marker})}" + "\n\n"
-                        buffer = post_block_content
-                        in_chart_config_block = False
-                        chart_config_str = ""
-                    else:
-                        chart_config_str += buffer
-                        buffer = ""
-                
-                if not in_chart_config_block and buffer:
-                    if "\\n" in buffer or len(buffer) > 80:
-                        yield f"data: {json.dumps({'chunk': buffer})}\n\n"
-                        buffer = ""
-
-        if buffer:
-            if in_chart_config_block:
-                 yield f"data: {json.dumps({'chunk': start_marker + chart_config_str + buffer})}" + "\n\n"
+    if model_name_with_suffix == "perplexity/sonar-deep-research":
+        # --- NON-STREAMING LOGIC for perplexity/sonar-deep-research ---
+        openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {openrouter_api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "http://localhost:5000", # Replace with your actual site URL
+            "X-Title": "Comet AI" # Replace with your actual site name
+        }
+        payload = {
+            "model": model_name_with_suffix, # Use the full model name
+            "messages": messages,
+            "stream": False,
+            "max_tokens": 8000 # Added for consistency
+        }
+        try:
+            print(f"Calling OpenRouter (non-streaming) for {model_name_with_suffix}")
+            response = requests.post(openrouter_url, headers=headers, json=payload)
+            response.raise_for_status()
+            data_obj = response.json()
+            if data_obj.get("choices") and len(data_obj["choices"]) > 0:
+                message_content = data_obj["choices"][0].get("message", {}).get("content")
+                if message_content:
+                    yield f"data: {json.dumps({'chunk': message_content})}\n\n"
             else:
-                 yield f"data: {json.dumps({'chunk': buffer})}\n\n"
+                yield f"data: {json.dumps({'error': 'Unexpected response structure or no content from OpenRouter (non-streaming).', 'details': data_obj})}\n\n"
+            yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
+        except requests.exceptions.HTTPError as e:
+            error_content = f"OpenRouter API HTTP error (non-streaming for {model_name_with_suffix}): {e}"
+            try:
+                error_details = e.response.json()
+                error_content += f" - Details: {json.dumps(error_details)}"
+            except json.JSONDecodeError:
+                error_content += f" - Raw Response: {e.response.text}"
+            print(error_content)
+            yield f"data: {json.dumps({'error': error_content})}\n\n"
+        except requests.exceptions.RequestException as e:
+            print(f"OpenRouter request failed (non-streaming for {model_name_with_suffix}): {e}")
+            yield f"data: {json.dumps({'error': f'OpenRouter request failed (non-streaming): {str(e)}'})}\n\n"
+        except Exception as e:
+            print(f"Error during OpenRouter non-streaming request for {model_name_with_suffix}: {e}")
+            traceback.print_exc()
+            yield f"data: {json.dumps({'error': 'An unexpected error occurred during the OpenRouter non-streaming request.'})}\n\n"
+    else:
+        # --- STREAMING LOGIC for other OpenRouter models (using OpenAI SDK) ---
+        try:
+            openrouter_client = openai.OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=openrouter_api_key,
+                default_headers={ # Optional: For site tracking on OpenRouter
+                    "HTTP-Referer": "http://localhost:5000",
+                    "X-Title": "Comet AI"
+                }
+            )
+        except Exception as e:
+            print(f"Failed to initialize OpenRouter client: {e}")
+            yield f"data: {json.dumps({'error': 'Failed to initialize OpenRouter client.'})}\n\n"
+            return
 
-        yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
-    except openai.APIError as e: # Catching OpenAI specific errors as we use that SDK
-        print(f"OpenRouter API error (via OpenAI SDK): {e}")
-        err_msg = str(e)
-        if hasattr(e, 'body') and isinstance(e.body, dict) and 'message' in e.body:
-            err_msg = e.body['message']
-        elif hasattr(e, 'message'):
-             err_msg = e.message
-        yield f"data: {json.dumps({'error': f'OpenRouter API error: {err_msg}'})}\n\n"
-    except Exception as e:
-        print(f"Error during OpenRouter stream: {e}")
-        traceback.print_exc()
-        yield f"data: {json.dumps({'error': 'An unexpected error occurred during the OpenRouter stream.'})}\n\n"
+        actual_model_name_for_sdk = model_name_with_suffix.split(':')[0]
+        max_tokens = 8000
+
+        api_params = {
+            "model": actual_model_name_for_sdk,
+            "messages": messages,
+            "stream": True,
+            "max_completion_tokens": max_tokens 
+        }
+
+        try:
+            print(f"Calling OpenRouter (streaming via OpenAI SDK) for {model_name_with_suffix} (using model ID: {actual_model_name_for_sdk})")
+            stream = openrouter_client.chat.completions.create(**api_params)
+            buffer = ""
+            in_chart_config_block = False
+            chart_config_str = ""
+
+            for chunk in stream:
+                content = chunk.choices[0].delta.content
+                if content is not None:
+                    buffer += content
+                    start_marker = "[[CHARTJS_CONFIG_START]]"
+                    end_marker = "[[CHARTJS_CONFIG_END]]"
+
+                    if not in_chart_config_block and start_marker in buffer:
+                        pre_block_content = buffer.split(start_marker, 1)[0]
+                        if pre_block_content:
+                            yield f"data: {json.dumps({'chunk': pre_block_content})}\n\n"
+                        buffer = buffer.split(start_marker, 1)[1]
+                        in_chart_config_block = True
+                    
+                    if in_chart_config_block:
+                        if end_marker in buffer:
+                            block_content, post_block_content = buffer.split(end_marker, 1)
+                            chart_config_str += block_content
+                            try:
+                                chart_json = json.loads(chart_config_str)
+                                yield f"data: {json.dumps({'chart_config': chart_json})}\n\n"
+                            except json.JSONDecodeError as e:
+                                print(f"Error decoding chart_js config from OpenRouter: {e} - data: {chart_config_str}")
+                                data_to_yield = {'chunk': start_marker + chart_config_str + end_marker}
+                                yield f"data: {json.dumps(data_to_yield)}\n\n"
+                            
+                            buffer = post_block_content
+                            in_chart_config_block = False
+                            chart_config_str = ""
+                        else:
+                            chart_config_str += buffer
+                            buffer = ""
+                    
+                    if not in_chart_config_block and buffer:
+                        if "\n" in buffer or len(buffer) > 80:
+                            yield f"data: {json.dumps({'chunk': buffer})}\n\n"
+                            buffer = ""
+
+            if buffer: 
+                if in_chart_config_block:
+                     data_to_yield = {'chunk': start_marker + chart_config_str + buffer}
+                     yield f"data: {json.dumps(data_to_yield)}\n\n"
+                else:
+                     yield f"data: {json.dumps({'chunk': buffer})}\n\n"
+
+            yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
+        except openai.APIError as e:
+            print(f"OpenRouter API error (streaming for {model_name_with_suffix}): {e}")
+            err_msg = str(e)
+            if hasattr(e, 'body') and isinstance(e.body, dict) and 'message' in e.body:
+                err_msg = e.body['message']
+            elif hasattr(e, 'message'):
+                 err_msg = e.message
+            yield f"data: {json.dumps({'error': f'OpenRouter API error: {err_msg}'})}\n\n"
+        except Exception as e:
+            print(f"Error during OpenRouter stream for {model_name_with_suffix}: {e}")
+            traceback.print_exc()
+            yield f"data: {json.dumps({'error': 'An unexpected error occurred during the OpenRouter stream.'})}\n\n"
 
 # --- Streaming Generator for Gemini ---
 def stream_gemini(query, model_name):
