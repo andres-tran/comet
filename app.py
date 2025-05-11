@@ -396,8 +396,8 @@ Your purpose is to deliver insightful, well-reasoned answers and functional code
         headers = {
             "Authorization": f"Bearer {openrouter_api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "http://localhost:5000", # Replace with your actual site URL
-            "X-Title": "Comet AI" # Replace with your actual site name
+            # "HTTP-Referer": "http://localhost:5000", # Commented out for Vercel testing
+            # "X-Title": "Comet AI" # Commented out for Vercel testing
         }
         payload = {
             "model": model_name_with_suffix, # Use the full model name
@@ -440,8 +440,8 @@ Your purpose is to deliver insightful, well-reasoned answers and functional code
                 base_url="https://openrouter.ai/api/v1",
                 api_key=openrouter_api_key,
                 default_headers={ # Optional: For site tracking on OpenRouter
-                    "HTTP-Referer": "http://localhost:5000",
-                    "X-Title": "Comet AI"
+                    # "HTTP-Referer": "http://localhost:5000",
+                    # "X-Title": "Comet AI"
                 }
             )
         except Exception as e:
