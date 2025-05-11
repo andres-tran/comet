@@ -76,8 +76,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 input.style.height = '';
                 input.dispatchEvent(new Event('input'));
             }
-            resultsContainer.innerHTML = '<p class="placeholder-text">Your AI search results will appear here.</p>';
-            resultsContainer.style.display = 'block';
+            // Keep results container hidden on new search, it will be shown on next query
+            resultsContainer.innerHTML = ''; // Clear content but keep it hidden
+            resultsContainer.style.display = 'none'; 
             errorContainer.style.display = 'none';
             errorContainer.textContent = '';
             downloadArea.style.display = 'none';
@@ -165,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // Reset UI states
-        resultsContainer.style.display = 'block';
+        resultsContainer.style.display = 'block'; // Make sure results container is visible
         resultsContainer.innerHTML = ''; // Clear previous results immediately
         downloadArea.style.display = 'none'; // Hide download area
         downloadArea.innerHTML = ''; // Clear previous button
@@ -181,20 +182,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (selectedModel === 'gpt-image-1') {
             thinkingText.textContent = 'Generating an image...';
         } else {
-            thinkingText.textContent = 'Searching the web...';
+            thinkingText.textContent = 'Thinking...'; // Unified for OpenRouter text models
         }
 
         let accumulatedResponse = "";
         let currentError = null;
 
         // --- Handle Non-Streaming Models (Image Only) ---
-        const nonStreamingModels = ['gpt-image-1'];
+        const nonStreamingModels = ['gpt-image-1']; // Array for clarity, even if only one
         if (nonStreamingModels.includes(selectedModel)) {
-            const isImageModel = selectedModel === 'gpt-image-1';
+            // This block is specifically for gpt-image-1 now
             console.log(`Image model selected: ${selectedModel}. Using non-streaming fetch.`);
             resultsContainer.innerHTML = ''; // Clear results area
-            thinkingIndicator.style.display = 'flex'; // Show thinking indicator
-            thinkingText.textContent = isImageModel ? 'Generating an image...' : 'Searching the web...'; // Custom text
+            resultsContainer.style.display = 'block'; 
+            thinkingIndicator.style.display = 'flex'; 
+            // thinkingText already set above
 
             try {
                 const response = await fetch('/search', {
@@ -202,104 +204,68 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(payload), // Use payload
+                    body: JSON.stringify(payload),
                 });
 
-                thinkingIndicator.style.display = 'none'; // Hide indicator once response received
-                const data = await response.json(); // Expecting JSON for images
+                thinkingIndicator.style.display = 'none';
+                const data = await response.json();
 
                 if (!response.ok) {
-                    // Throw error from JSON response if available, otherwise status text
                     throw new Error(data.error || `Error: ${response.status} ${response.statusText}`);
                 }
-
                 if (data.error) {
                     throw new Error(data.error);
                 }
 
-                if (isImageModel) {
-                    // Handle image response (this is the only case now)
-                    if (data.image_base64) {
-                        const img = document.createElement('img');
-                        img.src = `data:image/jpeg;base64,${data.image_base64}`; // Assuming jpeg for grok, png for openai. Backend sends full data URI for grok.
-                        // To be more robust, backend should ideally send raw base64 and type, or frontend parses the data URI prefix.
-                        // For now, if grok sends `data:image/jpeg;base64,...` this will work.
-                        // If OpenAI also sends `data:image/png;base64,...`, then `img.src = data.image_base64` would be cleaner if backend normalizes it.
-                        // Let's assume backend for grok sends the full data URI string, and for gpt-image-1 it sends raw base64.
-                        if (selectedModel === 'gpt-image-1') {
-                            img.src = `data:image/png;base64,${data.image_base64}`;
-                        }
+                // Handle image response (this is the only case for this block now)
+                if (data.image_base64) {
+                    const img = document.createElement('img');
+                    // gpt-image-1 from direct OpenAI API sends raw base64 for PNG
+                    img.src = `data:image/png;base64,${data.image_base64}`;
+                    img.alt = query;
+                    img.classList.add('generated-image');
+                    resultsContainer.appendChild(img);
 
-                        img.alt = query; // Use prompt as alt text
-                        img.classList.add('generated-image'); // Add class for styling
-                        resultsContainer.appendChild(img);
-
-                        // Display revised prompt if available (for grok-2-image)
-                        if (data.revised_prompt) {
-                            // This was specific to Grok, but could be kept if other models might use it.
-                            // For now, assuming only Grok used it and removing for clarity unless specified otherwise.
-                            // const revisedPromptText = document.createElement('p');
-                            // revisedPromptText.classList.add('revised-prompt-text');
-                            // revisedPromptText.innerHTML = `<strong>Revised Prompt:</strong> ${data.revised_prompt.replace(/</g, "&lt;").replace(/>/g, "&gt;")}`;
-                            // resultsContainer.appendChild(revisedPromptText);
-                        }
-
-                        // Create and add download button
-                        const downloadButton = document.createElement('a');
-                        downloadButton.href = img.src;
-
-                        let filename = `comet-${query.substring(0, 20).replace(/\s+/g, '_') || 'image'}`;
-                        if (selectedModel === 'gpt-image-1') {
-                            filename += '.png';
-                        }
-                        downloadButton.download = filename;
-
-                        downloadButton.textContent = 'Download Image';
-                        downloadButton.classList.add('download-button');
-                        downloadArea.appendChild(downloadButton);
-                        downloadArea.style.display = 'block'; // Show the download area
-                    } else {
-                        throw new Error("Received response but no image data found.");
-                    }
+                    // Create and add download button
+                    const downloadButton = document.createElement('a');
+                    downloadButton.href = img.src;
+                    let filename = `comet-${query.substring(0, 20).replace(/\s+/g, '_') || 'image'}.png`;
+                    downloadButton.download = filename;
+                    downloadButton.textContent = 'Download Image';
+                    downloadButton.classList.add('download-button');
+                    downloadArea.appendChild(downloadButton);
+                    downloadArea.style.display = 'block';
                 } else {
-                    // Handle non-streaming text response (e.g., search models)
-                    if (data.answer) {
-                        // Render the full Markdown response and wrap tables
-                        renderAndUpdateTables(resultsContainer, data.answer); // Use helper function
-                    } else {
-                         throw new Error("Received response but no answer found.");
-                    }
-                } 
+                    throw new Error("Received response but no image data found.");
+                }
 
             } catch (error) {
-                console.error('Search failed:', error);
-                displayError(error.message || 'An unexpected error occurred.');
-                resultsContainer.style.display = 'none'; // Hide results on error
-                resultsContainer.innerHTML = ''; // Clear any partial results
-                thinkingIndicator.style.display = 'none'; // Hide thinking indicator on fetch error
+                console.error('Search failed for image model:', error);
+                displayError(error.message || 'An unexpected error occurred generating the image.');
+                resultsContainer.style.display = 'none';
+                resultsContainer.innerHTML = '';
+                thinkingIndicator.style.display = 'none';
             } finally {
-                // Ensure thinking indicator is hidden if stream ends without data/error (edge case)
                  if (thinkingIndicator.style.display !== 'none') {
                      thinkingIndicator.style.display = 'none';
                  }
-                // Ensure the specific loading text P element is gone
                 const loadingP = resultsContainer.querySelector('p.loading-text');
                 if (loadingP) loadingP.remove();
             }
-            return; // Stop execution for non-streaming models (i.e., image model)
+            return; // Stop execution for gpt-image-1
         }
         // --- End Non-Streaming Handling ---
 
-        // --- Proceed with Text Streaming Logic (Handles all text models including search) --- 
-        console.log("Streaming text model selected. Using streaming fetch.");
-        thinkingText.textContent = 'Thinking...'; // Reset thinking text for streaming
+        // --- Proceed with Text Streaming Logic (Handles all OpenRouter models) --- 
+        console.log("Streaming text model selected (OpenRouter). Using streaming fetch.");
+        // thinkingText already set for OpenRouter models
         try {
             const response = await fetch('/search', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(payload), // Use payload
+                body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
@@ -349,17 +315,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         
                         if (line.startsWith('data:')) {
                             const jsonData = line.substring(5).trim();
-                            if (jsonData === '[DONE]') { // Handle Perplexity [DONE] signal or similar if needed
-                                console.log("Received [DONE] signal in stream.");
-                                // This might be redundant if `end_of_stream` is used by all backends
-                                continue;
-                            }
                             try {
                                 const data = JSON.parse(jsonData);
 
                                 if (!isFirstChunkProcessed) {
                                     thinkingIndicator.style.display = 'none'; // Hide after first actual data
                                     resultsContainer.innerHTML = ''; // Clear any initial "Thinking..." text from results
+                                    resultsContainer.style.display = 'block'; // Explicitly show container
                                     isFirstChunkProcessed = true;
                                 }
 
@@ -470,9 +432,5 @@ document.addEventListener('DOMContentLoaded', () => {
             if(currentResultsWrapper) currentResultsWrapper.appendChild(errorDiv);
             else resultsContainer.appendChild(errorDiv);
         }
-    }
-
-    function renderResponseChunk(chunk) {
-        // ... existing code ...
     }
 }); 
