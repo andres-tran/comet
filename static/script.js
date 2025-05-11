@@ -2,13 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Register Service Worker
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}") /* Use Flask's url_for if this JS is embedded in HTML or adjust path directly */
-            // Correcting the path for a static JS file:
-            // navigator.serviceWorker.register('/static/sw.js') 
-            // The template tag {{ url_for(...) }} won't work directly in a separate .js file.
-            // Assuming script.js is loaded via <script src="{{ url_for('static', filename='script.js') }}"> in index.html,
-            // then the path to sw.js from the root would be /static/sw.js
-            navigator.serviceWorker.register('/static/sw.js') // Correct path for static JS file
+            // Correct path for static JS file
+            navigator.serviceWorker.register('/static/sw.js') 
                 .then(registration => {
                     console.log('ServiceWorker registration successful with scope: ', registration.scope);
                 })
@@ -120,6 +115,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Update the actual container's content
         container.innerHTML = tempDiv.innerHTML;
+    }
+
+    let currentEventSource = null;
+    let currentResultsWrapper = null;
+    let markdownBuffer = ""; // Buffer for accumulating markdown content
+    let chartInstance = null; // To keep track of the chart
+
+    function initializeNewSearch() {
+        markdownBuffer = ""; // Clear buffer for new search
+        if (currentResultsWrapper) {
+            currentResultsWrapper.innerHTML = ''; // Clear previous results content
+        }
+        // Clear any existing chart
+        const chartContainer = document.getElementById('chart-container');
+        if (chartInstance) {
+            chartInstance.destroy();
+            chartInstance = null;
+        }
+        if (chartContainer) chartContainer.style.display = 'none';
+
+        // Create a new results wrapper for this search stream
+        currentResultsWrapper = document.createElement('div');
+        currentResultsWrapper.className = 'response-item'; // Add a class for styling if needed
+        resultsContainer.appendChild(currentResultsWrapper);
+        resultsContainer.querySelector('.placeholder-text').style.display = 'none';
+        thinkingIndicator.style.display = 'flex';
+        errorContainer.textContent = '';
+        errorContainer.style.display = 'none';
+        downloadArea.style.display = 'none';
+        if (downloadArea.firstChild) downloadArea.firstChild.remove(); // Remove old button
     }
 
     form.addEventListener('submit', async (event) => {
@@ -358,6 +383,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                     return; // Or break, depending on if more data could follow `end_of_stream`
                                 }
 
+                                if (data.chart_config) { // Handle chart_config event
+                                    thinkingIndicator.style.display = 'none';
+                                    renderChart(data.chart_config);
+                                }
+
                             } catch (e) {
                                 console.warn('Failed to parse SSE data line:', jsonData, e);
                                 // Decide if this is a fatal error for the stream or can be skipped
@@ -413,5 +443,36 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         // Optional: trigger resize on page load if there's pre-filled text
         searchInput.dispatchEvent(new Event('input'));
+    }
+
+    function renderChart(chartConfig) {
+        const chartContainer = document.getElementById('chart-container');
+        const ctx = document.getElementById('interactive-chart').getContext('2d');
+        
+        if (chartInstance) {
+            chartInstance.destroy(); // Destroy previous chart instance if it exists
+        }
+
+        try {
+            // Basic validation or transformation of config if needed
+            if (typeof chartConfig.options === 'undefined') chartConfig.options = {};
+            if (typeof chartConfig.options.responsive === 'undefined') chartConfig.options.responsive = true;
+            if (typeof chartConfig.options.maintainAspectRatio === 'undefined') chartConfig.options.maintainAspectRatio = true; // Or false if you want to control via CSS strictly
+
+            chartInstance = new Chart(ctx, chartConfig);
+            if (chartContainer) chartContainer.style.display = 'block';
+        } catch (e) {
+            console.error("Error rendering chart:", e);
+            // Optionally display this error to the user
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'chart-render-error';
+            errorDiv.textContent = `Chart.js Error: ${e.message}. Check console for details.`;
+            if(currentResultsWrapper) currentResultsWrapper.appendChild(errorDiv);
+            else resultsContainer.appendChild(errorDiv);
+        }
+    }
+
+    function renderResponseChunk(chunk) {
+        // ... existing code ...
     }
 }); 

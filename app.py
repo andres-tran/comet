@@ -3,6 +3,8 @@ import json
 import openai
 import requests # For Perplexity API
 import google.generativeai as genai # Reverted to official import
+from google.generativeai.types import GenerationConfig # Added for token limits
+# from google.generativeai.types import Tool # For Google Search Grounding (REMOVED as grounding is disabled for now)
 # Add base64 for image handling
 import base64 
 from flask import Flask, render_template, request, jsonify, Response
@@ -19,6 +21,7 @@ app = Flask(__name__)
 openai.api_key = os.getenv("OPENAI_API_KEY") # Keep this for OpenAI
 perplexity_api_key = os.getenv("PERPLEXITY_API_KEY")
 gemini_api_key = os.getenv("GEMINI_API_KEY") # Added for Gemini
+openrouter_api_key = os.getenv("OPENROUTER_API_KEY") # Added for OpenRouter
 # xai_api_key = os.getenv("XAI_API_KEY") # Removed for xAI
 
 # --- API Clients (Optional but good practice) ---
@@ -53,6 +56,19 @@ ALLOWED_MODELS = {
     # xAI Grok Models - REMOVED
     # Gemini Models
     "gemini-2.5-pro", # User-friendly name
+    # OpenRouter Models
+    "microsoft/phi-4-reasoning-plus:free",
+    "deepseek/deepseek-r1:free",
+    "google/gemini-2.5-pro-preview", # New OpenRouter paid model
+    "perplexity/sonar-deep-research", # OpenRouter Perplexity model
+}
+
+# Explicit set of all OpenRouter model IDs
+OPENROUTER_MODELS = {
+    "microsoft/phi-4-reasoning-plus:free",
+    "deepseek/deepseek-r1:free",
+    "google/gemini-2.5-pro-preview",
+    "perplexity/sonar-deep-research",
 }
 
 # Mapping for actual model IDs if they differ from user-friendly names
@@ -74,7 +90,8 @@ def check_api_keys(model_name):
         actual_model_id == "gpt-image-1"
     )
     # is_xai_model = model_name.startswith('grok-') # Removed
-    is_gemini_model = actual_model_id.startswith('gemini-')
+    is_gemini_model = actual_model_id.startswith('gemini-') # This is for direct Gemini API
+    is_openrouter_model = actual_model_id in OPENROUTER_MODELS
 
     missing = []
     if is_openai_model:
@@ -83,9 +100,12 @@ def check_api_keys(model_name):
     # elif is_xai_model: # Removed xAI check
     #     if not xai_api_key or not xai_client:
     #         missing.append("xAI")
-    elif is_gemini_model: # Added Gemini check
+    elif is_gemini_model: # Added Gemini check (for direct Gemini API)
         if not gemini_api_key:
             missing.append("Gemini")
+    elif is_openrouter_model: # Added OpenRouter check (for all OpenRouter models)
+        if not openrouter_api_key:
+            missing.append("OpenRouter")
     else: # Assuming Perplexity otherwise (if not OpenAI or Gemini)
         if not perplexity_api_key:
             missing.append("Perplexity")
@@ -110,30 +130,38 @@ def stream_openai(query, model_name):
     max_tokens = model_token_limits.get(model_name, model_token_limits["default"])
 
     # Enhanced System Prompt for OpenAI
-    enhanced_openai_system_prompt = """You are Comet, a helpful and meticulous AI agent specializing in deep research.
-Your main goal is to give users comprehensive, accurate, and well-explained answers.
+    enhanced_openai_system_prompt = """You are Comet, an advanced AI agent specializing in deep research, logical reasoning, and code generation.
+Your purpose is to deliver insightful, well-reasoned answers and functional code.
 
-## Your Role:
-*   Act as a knowledgeable and objective research assistant.
-*   Avoid personal opinions.
+## Core Competencies:
+*   **Deep Research:** Conduct thorough analysis and synthesize complex information.
+*   **Logical Reasoning:** Deduce, infer, and evaluate information to form sound conclusions.
+*   **Code Generation:** Create, explain, and troubleshoot code in various languages.
 
-## How to Respond:
-1.  **Understand Deeply:** Carefully analyze the user's query to grasp its full meaning and intent.
-2.  **Research Thoroughly:**
-    *   Use your knowledge and web search (if available) to find accurate, up-to-date information.
-    *   Cite sources for external information when possible.
-3.  **Answer Comprehensively:** Provide detailed explanations, covering key aspects of the topic.
-4.  **Format Clearly with Markdown:**
-    *   **Always use Markdown** for your entire response.
-    *   Organize with headings, lists, and tables for readability.
-    *   Use bold/italics for emphasis.
-5.  **Be Professional:** Maintain a helpful, precise, and objective tone.
-6.  **Be Honest About Limits:** If unsure or lacking information, say so clearly.
+## Operational Approach:
+1.  **Understand & Analyze:** Decipher query intent, complexities, and requirements.
+2.  **Research & Reason:** Access knowledge, perform web research, and apply logical frameworks.
+3.  **Develop & Explain:** Construct comprehensive explanations, generate code, and provide clear justifications.
+4.  **Format Clearly (Markdown):** Utilize Markdown for optimal structure, readability, and presentation (headings, lists, code blocks).
+5.  **Maintain Integrity:** Ensure responses are accurate, objective, and helpful.
+6.  **Acknowledge Limits:** Clearly state if a request is beyond current capabilities.
 
-## Important Safety Rules:
-*   **No Harmful Content:** Do not generate unethical, hateful, biased, or illegal content.
-*   **Protect Privacy:** Do not use or request personal information.
-*   **Stay On Topic:** Focus only on the user's research query.
+## Chart Generation:
+*   **Priority:** Provide data/config for interactive Chart.js charts.
+*   **Format:** Use a JSON object (e.g., `\"chartjs_config\"`).
+*   **Fallback:** May use QuickChart.io for static images.
+*   **Reproducibility:** Always provide Python code (Matplotlib/Seaborn) for chart recreation.
+*   **Context:** Explain data and charts in your main response.
+
+## Code-Specific Guidelines:
+*   When providing code, ensure it is well-commented and follows best practices.
+*   Specify the language and any necessary dependencies.
+*   Offer explanations of the code's logic and functionality.
+
+## Core Directives:
+*   **Ethical Conduct:** No unethical, hateful, biased, or illegal content/code.
+*   **Privacy:** Do not use or request personal information.
+*   **Focus:** Address the user's research, reasoning, or coding query.
 """
 
     messages = [
@@ -151,10 +179,62 @@ Your main goal is to give users comprehensive, accurate, and well-explained answ
     try:
         print(f"Calling chat.completions.create with params: {{'model': {model_name}, 'messages': ...}}")
         stream = openai_client.chat.completions.create(**api_params)
+        buffer = ""
+        in_chart_config_block = False
+        chart_config_str = ""
+
         for chunk in stream:
             content = chunk.choices[0].delta.content
             if content is not None:
-                yield f"data: {json.dumps({'chunk': content})}\n\n"
+                buffer += content
+
+                # Attempt to detect and extract chartjs_config block
+                # This is a simple detection logic, could be made more robust
+                start_marker = "[[CHARTJS_CONFIG_START]]"
+                end_marker = "[[CHARTJS_CONFIG_END]]"
+
+                if not in_chart_config_block and start_marker in buffer:
+                    # Emit content before the block
+                    pre_block_content = buffer.split(start_marker, 1)[0]
+                    if pre_block_content:
+                        yield f"data: {json.dumps({'chunk': pre_block_content})}\n\n"
+                    buffer = buffer.split(start_marker, 1)[1]
+                    in_chart_config_block = True
+                
+                if in_chart_config_block:
+                    if end_marker in buffer:
+                        block_content, post_block_content = buffer.split(end_marker, 1)
+                        chart_config_str += block_content
+                        try:
+                            chart_json = json.loads(chart_config_str)
+                            yield f"data: {json.dumps({'chart_config': chart_json})}\n\n"
+                        except json.JSONDecodeError as e:
+                            print(f"Error decoding chart_js config: {e} - data: {chart_config_str}")
+                            # Yield the problematic string as a regular chunk for debugging
+                            yield f"data: {json.dumps({'chunk': start_marker + chart_config_str + end_marker})}" + "\n\n"
+                        
+                        buffer = post_block_content
+                        in_chart_config_block = False
+                        chart_config_str = ""
+                    else:
+                        chart_config_str += buffer
+                        buffer = "" # Consumed into chart_config_str
+                
+                if not in_chart_config_block and buffer:
+                    # Yield remaining buffer if not in a block and buffer is not empty
+                    # This handles cases where buffer doesn't end with a marker or has content after a block
+                    # To avoid sending incomplete chunks too often, we can check for newlines or a certain length
+                    if "\n" in buffer or len(buffer) > 80: # Heuristic to send complete-ish lines
+                        yield f"data: {json.dumps({'chunk': buffer})}\n\n"
+                        buffer = ""
+
+        # Yield any remaining content in the buffer (e.g. if stream ends before end_marker or newline)
+        if buffer: # This includes if in_chart_config_block is true but no end_marker was found
+            if in_chart_config_block: # Means block was not properly terminated
+                 yield f"data: {json.dumps({'chunk': start_marker + chart_config_str + buffer})}" + "\n\n" # yield as text
+            else:
+                 yield f"data: {json.dumps({'chunk': buffer})}\n\n"
+
         yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
     except openai.APIError as e:
         print(f"OpenAI API error during stream: {e}")
@@ -178,28 +258,30 @@ def stream_perplexity(query, model_name):
     }
 
     # Enhanced System Prompt for Perplexity
-    enhanced_perplexity_system_prompt = """You are Comet, a precise and thorough AI agent for deep research.
-Your main goal is to give users accurate, detailed, and well-reasoned answers.
+    enhanced_perplexity_system_prompt = """You are Comet, an AI specializing in meticulous research, step-by-step reasoning, and precise code assistance.
+Your goal is to provide accurate, detailed, and well-justified answers and code.
 
-## Your Role:
-*   Act as a research assistant focused on precision and detail.
-*   Maintain a helpful, precise, and objective tone.
+## Core Strengths:
+*   **Meticulous Research:** Provide precise, current, and verifiable information.
+*   **Step-by-Step Reasoning:** Clearly articulate the logic behind conclusions.
+*   **Precise Code Assistance:** Offer accurate code snippets and explanations.
 
-## How to Respond:
-1.  **Analyze Carefully:** Reason step-by-step to fully understand the user's request.
-2.  **Prioritize Accuracy & Detail:**
-    *   Use your knowledge and web search to provide precise, up-to-date, and verifiable information.
-3.  **Answer In-Depth:** Offer detailed explanations.
-4.  **Format Clearly with Markdown:**
-    *   **Always use Markdown** for your entire response.
-    *   Organize with headings, lists, and tables for easy understanding.
-5.  **Be Objective:** Focus on factual reporting.
-6.  **State Limitations Clearly:** If unsure or can't find information, admit it.
+## Methodology:
+1.  **Analyze & Deconstruct:** Understand requests, employing systematic reasoning.
+2.  **Verify & Justify:** Use knowledge and web search for information, explaining your reasoning.
+3.  **Elaborate & Code:** Offer comprehensive explanations and precise code where applicable.
+4.  **Format (Markdown):** Use Markdown for clarity (headings, lists, code blocks).
+5.  **Objectivity & Precision:** Focus on factual reporting and exactitude.
+6.  **Acknowledge Limits:** Openly state if information or a solution is unavailable.
 
-## Important Safety Rules:
-*   **No Harmful Content:** Do not generate unethical, hateful, biased, illegal, or misleading content.
-*   **Protect Privacy:** Do not use or request personal information.
-*   **Stick to Research:** Avoid off-topic chat.
+## Coding Guidelines:
+*   Provide functional and clear code examples.
+*   Explain the purpose and usage of the code.
+
+## Core Protocols:
+*   **Ethical Conduct:** No unethical, hateful, biased, illegal, or deceptive content/code.
+*   **Privacy:** Do not use or request personal information.
+*   **Focus:** Adhere to the research, reasoning, or coding task.
 """
 
     payload = {
@@ -259,6 +341,133 @@ Your main goal is to give users accurate, detailed, and well-reasoned answers.
         traceback.print_exc()
         yield f"data: {json.dumps({'error': 'An unexpected error occurred during the Perplexity stream.'})}\\n\\n"
 
+# --- Streaming Generator for OpenRouter ---
+def stream_openrouter(query, model_name_with_suffix):
+    """Generator for streaming responses from OpenRouter, using OpenAI's SDK."""
+    if not openrouter_api_key:
+        yield f"data: {json.dumps({'error': 'OpenRouter API key not configured.'})}\n\n"
+        return
+
+    # Model name for OpenRouter API might not include the ':free' suffix
+    actual_model_name = model_name_with_suffix.split(':')[0]
+
+    # Initialize a specific client for OpenRouter
+    try:
+        openrouter_client = openai.OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=openrouter_api_key
+        )
+    except Exception as e:
+        print(f"Failed to initialize OpenRouter client: {e}")
+        yield f"data: {json.dumps({'error': 'Failed to initialize OpenRouter client.'})}\n\n"
+        return
+
+    # Using a similar enhanced system prompt as OpenAI for consistency, can be customized
+    enhanced_openrouter_system_prompt = """You are Comet, an advanced AI agent (via OpenRouter) specializing in deep research, logical reasoning, and code generation.
+Your purpose is to deliver insightful, well-reasoned answers and functional code.
+
+## Core Competencies:
+*   **Deep Research:** Conduct thorough analysis and synthesize complex information.
+*   **Logical Reasoning:** Deduce, infer, and evaluate information to form sound conclusions.
+*   **Code Generation:** Create, explain, and troubleshoot code in various languages.
+
+## Operational Approach:
+1.  **Understand & Analyze:** Decipher query intent, complexities, and requirements.
+2.  **Research & Reason:** Access knowledge and apply logical frameworks.
+3.  **Develop & Explain:** Construct comprehensive explanations, generate code, and provide clear justifications.
+4.  **Format Clearly (Markdown):** Utilize Markdown for optimal structure, readability, and presentation.
+5.  **Maintain Integrity:** Ensure responses are accurate, objective, and helpful.
+6.  **Acknowledge Limits:** Clearly state if a request is beyond current capabilities.
+
+## Core Directives:
+*   **Ethical Conduct:** No unethical, hateful, biased, or illegal content/code.
+*   **Privacy:** Do not use or request personal information.
+*   **Focus:** Address the user's research, reasoning, or coding query.
+"""
+    messages = [
+        {"role": "system", "content": enhanced_openrouter_system_prompt},
+        {"role": "user", "content": query}
+    ]
+
+    # Token limits might vary for OpenRouter free models; using a general default or find specific ones
+    # For "microsoft/phi-4-reasoning-plus", context length is high, output might be less constrained by typical free limits
+    # Setting a generous max_tokens for now, but this might need adjustment based on specific model behavior.
+    # OpenRouter itself might enforce limits.
+    max_tokens = 8000 # A reasonable default, adjust if needed
+
+    api_params = {
+        "model": actual_model_name,
+        "messages": messages,
+        "stream": True,
+        "max_completion_tokens": max_tokens, # Note: OpenRouter uses max_tokens in some contexts
+                                         # but OpenAI SDK uses max_completion_tokens.
+                                         # The OpenAI SDK will likely handle this.
+    }
+
+    try:
+        print(f"Calling OpenRouter (via OpenAI SDK) with params: {{'model': {actual_model_name}, 'messages': ...}}")
+        stream = openrouter_client.chat.completions.create(**api_params)
+        buffer = ""
+        # Chart extraction logic is kept from OpenAI for now, can be removed if not applicable to OpenRouter models
+        in_chart_config_block = False
+        chart_config_str = ""
+
+        for chunk in stream:
+            content = chunk.choices[0].delta.content
+            if content is not None:
+                buffer += content
+                # Chart extraction logic (can be removed if OpenRouter models don't use this format)
+                start_marker = "[[CHARTJS_CONFIG_START]]"
+                end_marker = "[[CHARTJS_CONFIG_END]]"
+                if not in_chart_config_block and start_marker in buffer:
+                    pre_block_content = buffer.split(start_marker, 1)[0]
+                    if pre_block_content:
+                        yield f"data: {json.dumps({'chunk': pre_block_content})}\n\n"
+                    buffer = buffer.split(start_marker, 1)[1]
+                    in_chart_config_block = True
+                
+                if in_chart_config_block:
+                    if end_marker in buffer:
+                        block_content, post_block_content = buffer.split(end_marker, 1)
+                        chart_config_str += block_content
+                        try:
+                            chart_json = json.loads(chart_config_str)
+                            yield f"data: {json.dumps({'chart_config': chart_json})}\n\n"
+                        except json.JSONDecodeError as e:
+                            print(f"Error decoding chart_js config from OpenRouter: {e} - data: {chart_config_str}")
+                            yield f"data: {json.dumps({'chunk': start_marker + chart_config_str + end_marker})}" + "\n\n"
+                        buffer = post_block_content
+                        in_chart_config_block = False
+                        chart_config_str = ""
+                    else:
+                        chart_config_str += buffer
+                        buffer = ""
+                
+                if not in_chart_config_block and buffer:
+                    if "\\n" in buffer or len(buffer) > 80:
+                        yield f"data: {json.dumps({'chunk': buffer})}\n\n"
+                        buffer = ""
+
+        if buffer:
+            if in_chart_config_block:
+                 yield f"data: {json.dumps({'chunk': start_marker + chart_config_str + buffer})}" + "\n\n"
+            else:
+                 yield f"data: {json.dumps({'chunk': buffer})}\n\n"
+
+        yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
+    except openai.APIError as e: # Catching OpenAI specific errors as we use that SDK
+        print(f"OpenRouter API error (via OpenAI SDK): {e}")
+        err_msg = str(e)
+        if hasattr(e, 'body') and isinstance(e.body, dict) and 'message' in e.body:
+            err_msg = e.body['message']
+        elif hasattr(e, 'message'):
+             err_msg = e.message
+        yield f"data: {json.dumps({'error': f'OpenRouter API error: {err_msg}'})}\n\n"
+    except Exception as e:
+        print(f"Error during OpenRouter stream: {e}")
+        traceback.print_exc()
+        yield f"data: {json.dumps({'error': 'An unexpected error occurred during the OpenRouter stream.'})}\n\n"
+
 # --- Streaming Generator for Gemini ---
 def stream_gemini(query, model_name):
     """Generator for streaming responses from Gemini."""
@@ -271,36 +480,53 @@ def stream_gemini(query, model_name):
     try:
         model = genai.GenerativeModel(actual_model_id)
         
-        enhanced_gemini_system_prompt = """You are Comet, an advanced AI research assistant powered by Gemini.
-Your purpose is to provide comprehensive, accurate, and clearly explained answers.
+        enhanced_gemini_system_prompt = """You are Comet, a highly advanced AI (Gemini), functioning as an unparalleled intelligence for research, reasoning, and coding.
+Your objective is to deliver comprehensive, precise, insightful answers, and robust code solutions.
 
-## Your Role:
-*   Function as a highly capable and objective research specialist.
-*   Avoid personal opinions or biases.
+## Core Capabilities:
+*   **Profound Research:** Synthesize complex information with depth and accuracy.
+*   **Sophisticated Reasoning:** Employ advanced logic to analyze and derive conclusions.
+*   **Advanced Coding:** Generate, debug, and explain code across multiple languages.
 
-## How to Respond:
-1.  **Understand Profoundly:** Scrutinize the user's query to fully comprehend its nuances and objectives.
-2.  **Research Rigorously:**
-    *   Leverage your extensive knowledge base and available tools to gather precise, current information.
-    *   Cite sources when applicable, especially for external data.
-3.  **Answer Exhaustively:** Deliver thorough explanations, addressing all key facets of the inquiry.
-4.  **Format Intelligibly with Markdown:**
-    *   **Consistently use Markdown** for the entirety of your response.
-    *   Employ headings, lists, code blocks, and tables to enhance readability and structure.
-    *   Use bold/italics for emphasis where appropriate.
-5.  **Maintain Professionalism:** Adhere to a helpful, exact, and objective communication style.
-6.  **Acknowledge Limitations:** If you encounter uncertainty or a lack of information, state this transparently.
+## Operational Modus:
+1.  **Deconstruct & Understand:** Meticulously analyze queries for intent, assumptions, and technical requirements.
+2.  **Synthesize & Reason:** Integrate knowledge (internal, search) and apply logical frameworks for accurate, well-supported outcomes. Cite sources.
+3.  **Develop & Articulate:** Formulate thorough explanations and generate high-quality code, clearly articulating the rationale.
+4.  **Format (Markdown):** Use Markdown for optimal structure (headings, lists, code blocks, tables).
+5.  **Professionalism & Accuracy:** Be helpful, exact, objective, and ensure technical correctness.
+6.  **Acknowledge Boundaries:** Clearly state limitations in knowledge or capability.
 
-## Important Safety Guidelines:
-*   **No Harmful Content:** Strictly avoid generating content that is unethical, hateful, discriminatory, illegal, or misleading.
-*   **Safeguard Privacy:** Do not solicit or utilize personal information.
-*   **Stay Focused:** Confine your responses to the user's research query.
+## Coding Principles:
+*   Deliver well-structured, efficient, and commented code.
+*   Specify languages, dependencies, and execution environments.
+*   Provide clear explanations of algorithms and design choices.
+
+## Core Directives:
+*   **Ethical Conduct:** No unethical, hateful, discriminatory, illegal, or misleading content/code.
+*   **Privacy:** Do not solicit or use personal information.
+*   **Focus:** Address the user's research, reasoning, or coding query.
 """
         
         full_prompt = f"{enhanced_gemini_system_prompt}\n\nUser Query: {query}"
 
-        print(f"Calling Gemini's generate_content with model: {actual_model_id}")
-        response_stream = model.generate_content(full_prompt, stream=True)
+        # Define the Google Search tool
+        # Using the simpler string-based tool enabling for now
+        # google_search_tool = Tool(google_search_retrieval={}) 
+
+        print(f"Calling Gemini's generate_content with model: {actual_model_id} (Search Grounding Disabled for now)") # Updated log
+        
+        # Configure generation settings for Gemini
+        gen_config = None
+        if actual_model_id == "models/gemini-2.5-pro-exp-03-25":
+            print(f"Applying GenerationConfig with max_output_tokens=65536 for {actual_model_id}")
+            gen_config = GenerationConfig(max_output_tokens=65536)
+
+        response_stream = model.generate_content(
+            full_prompt, 
+            stream=True, 
+            generation_config=gen_config
+            # tools='google_search_retrieval' # Simpler string form - REMOVED to disable grounding
+        )
 
         for chunk in response_stream:
             if chunk.prompt_feedback and chunk.prompt_feedback.block_reason:
@@ -313,37 +539,28 @@ Your purpose is to provide comprehensive, accurate, and clearly explained answer
                 return
 
             if not chunk.candidates:
-                # This case should be rare in normal operation but good to log if it happens.
                 print("Gemini stream: Chunk received with no candidates.")
                 continue
 
-            for candidate_obj in chunk.candidates: # Renamed to avoid conflict with imported Candidate
-                # Check for blocking finish reasons on the candidate
-                # Using integer values for FinishReason: SAFETY = 3, RECITATION = 4
+            for candidate_obj in chunk.candidates:
                 if candidate_obj.finish_reason == 3: # SAFETY
-                    error_msg = 'Content generation stopped: SAFETY.'
+                    error_msg = 'Content generation stopped: SAFETY. The response may have contained sensitive or harmful content.'
                     # Consider logging candidate_obj.safety_ratings for more details
                     print(f"Gemini stream error: {error_msg}")
                     yield f"data: {json.dumps({'error': error_msg})}\n\n"
                     yield f"data: {json.dumps({'end_of_stream': True, 'status': 'blocked_safety'})}\n\n"
-                    return
-                if candidate_obj.finish_reason == 4: # RECITATION
-                    error_msg = 'Content generation stopped: RECITATION.'
+                    return # Stop streaming for this request
+                elif candidate_obj.finish_reason == 4: # RECITATION
+                    error_msg = 'Content generation stopped: RECITATION. The response was too similar to existing content.'
                     print(f"Gemini stream error: {error_msg}")
                     yield f"data: {json.dumps({'error': error_msg})}\n\n"
                     yield f"data: {json.dumps({'end_of_stream': True, 'status': 'blocked_recitation'})}\n\n"
-                    return
+                    return # Stop streaming for this request
                 
-                # If content exists, extract text from parts
                 if candidate_obj.content and candidate_obj.content.parts:
                     for part in candidate_obj.content.parts:
-                        if hasattr(part, 'text') and part.text: # Ensure part has text and it's not empty
+                        if hasattr(part, 'text') and part.text:
                             yield f"data: {json.dumps({'chunk': part.text})}\n\n"
-                # else: (This candidate in this chunk has no text parts)
-                    # This can be normal (e.g. end of stream, empty response for this chunk).
-                    # Log if verbose debugging is needed for finish_reasons other than STOP/MAX_TOKENS here.
-                    # fr_name = candidate_obj.finish_reason.name if hasattr(candidate_obj.finish_reason, 'name') else str(candidate_obj.finish_reason)
-                    # print(f"Gemini stream: Candidate part has no text for this chunk. Finish Reason: {fr_name}")
 
         yield f"data: {json.dumps({'end_of_stream': True, 'status': 'completed'})}\n\n"
 
@@ -408,6 +625,8 @@ def search():
             generator = stream_openai(query, selected_model)
         elif selected_model.startswith('gemini-'):
             generator = stream_gemini(query, selected_model)
+        elif selected_model in OPENROUTER_MODELS: # Routing for all OpenRouter models
+            generator = stream_openrouter(query, selected_model)
         else:
             generator = stream_perplexity(query, selected_model)
         return Response(generator, mimetype='text/event-stream')
@@ -458,14 +677,18 @@ def generate_image(query):
 # --- Main Execution --- 
 if __name__ == '__main__':
     # Startup checks remain the same
-    if not openai_client and not perplexity_api_key: # Updated check
-         print("\n*** WARNING: Neither OpenAI nor Perplexity API keys found in .env ***")
+    if not openai_client and not perplexity_api_key and not openrouter_api_key and not gemini_api_key: # Updated check for all major keys
+         print("\n*** WARNING: No API keys (OpenAI, Perplexity, OpenRouter, Gemini) found in .env ***")
          print("Please add at least one API key to the .env file and restart.\n")
     else:
         if not openai_client:
              print("\n*** WARNING: OpenAI API key not found in .env. OpenAI models will not work. ***\n")
         if not perplexity_api_key:
              print("\n*** WARNING: Perplexity API key not found in .env. Perplexity models will not work. ***\n")
+        if not gemini_api_key:
+             print("\n*** WARNING: Gemini API key not found in .env. Gemini models will not work. ***\n")
+        if not openrouter_api_key:
+             print("\n*** WARNING: OpenRouter API key not found in .env. OpenRouter models will not work. ***\n")
         # if not xai_api_key: # Removed xAI key warning
         #      print("\n*** WARNING: xAI API key not found in .env. Grok models will not work. ***\n")
 

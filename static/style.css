@@ -304,6 +304,16 @@ body {
     min-height: 100px;
     box-shadow: 0 1px 4px var(--results-shadow-color);
     transition: background-color 0.3s ease, border-color 0.3s ease;
+    overflow-wrap: break-word; /* Add this for general text wrapping */
+}
+
+/* General rule for images within the results container to be responsive */
+.results-container-perplexity img {
+    max-width: 100%;
+    height: auto;
+    display: block; /* Prevents bottom margin/spacing issues */
+    margin: 1em auto; /* Center images with some vertical spacing */
+    border-radius: 6px; /* Optional: consistent rounding */
 }
 
 /* Initial Placeholder */
@@ -404,6 +414,7 @@ body {
 
 .results-container-perplexity p {
     margin-bottom: 1em;
+    overflow-wrap: break-word; /* Ensure paragraphs wrap */
 }
 
 .results-container-perplexity ul,
@@ -415,6 +426,7 @@ body {
 
 .results-container-perplexity li {
     margin-bottom: 0.5em;
+    overflow-wrap: break-word; /* Ensure list items wrap */
 }
 
 /* Inline code */
@@ -430,26 +442,21 @@ body {
 
 /* Code blocks */
 .results-container-perplexity pre {
-    white-space: pre-wrap;       /* CSS3 */
-    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
-    white-space: -pre-wrap;      /* Opera 4-6 */
-    white-space: -o-pre-wrap;    /* Opera 7 */
-    word-wrap: break-word;       /* Internet Explorer 5.5+ */
-    overflow-x: auto;            /* Add scrollbar if content still too wide */
-    max-width: 100%;             /* Ensure pre does not overflow container */
-    background-color: var(--pre-bg-color); /* Ensure background color is applied */
-    color: var(--pre-text-color);
     padding: 15px;
-    border-radius: 6px;
-    border: 1px solid var(--pre-border-color);
-    margin-bottom: 1em;
+    border-radius: 8px;
+    background-color: #2c2c2e; /* Slightly lighter than results background for contrast */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    word-wrap: break-word; /* Ensure long words or strings wrap */
+    white-space: pre-wrap; /* Preserve whitespace and wrap lines */
 }
 
 .results-container-perplexity pre code {
-    background-color: transparent;
-    padding: 0;
-    border: none;
-    color: inherit;
+    display: block;
+    padding: 10px;
+    background-color: #1c1c1e; /* Darker background for code block */
+    border-radius: 4px;
+    overflow-x: auto; /* Add horizontal scroll for long code lines */
+    font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
     font-size: 0.9em;
 }
 
@@ -461,6 +468,7 @@ body {
     color: var(--blockquote-color);
     /* font-style: italic; Removed italic for perplexity feel */
     transition: color 0.3s ease, border-color 0.3s ease;
+    overflow-wrap: break-word; /* Ensure blockquotes wrap */
 }
 
 .results-container-perplexity table {
@@ -626,4 +634,19 @@ body {
     top: 50%;
     transform: translateY(-50%);
     pointer-events: none;
+}
+
+/* Chart.js specific styles if needed */
+#chart-container {
+    /* Styles for the chart container are inlined in index.html for now */
+    /* You can add more specific styles here if needed, e.g., for aspect ratio */
+}
+
+.chart-render-error {
+    color: #ff6b6b; /* Light red for error messages */
+    background-color: #3e2e2e;
+    border: 1px solid #7a3b3b;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
 } 

@@ -9,12 +9,13 @@
     <!-- Favicon using SVG Data URL -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☄️</text></svg>">
     <!-- Apple touch icon (optional, but good for iOS 'Add to Home Screen') -->
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192x192.png') }}"> <!-- Use one of your icon sizes -->
+    <link rel="apple-touch-icon" href="/static/icons/icon-192x192.png"> <!-- Use one of your icon sizes -->
     <!-- Consider adding a favicon similar to Perplexity's -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20240607">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- Add Font Awesome for icons (optional, but helps mimic UI) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="main-container">
@@ -59,6 +60,15 @@
                         <optgroup label="Google">
                             <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
                         </optgroup>
+                        <!-- Group OpenRouter Models -->
+                        <optgroup label="OpenRouter (Free)">
+                            <option value="microsoft/phi-4-reasoning-plus:free">Phi-4 Reasoning Plus</option>
+                            <option value="deepseek/deepseek-r1:free">DeepSeek R1</option>
+                        </optgroup>
+                        <optgroup label="OpenRouter (Paid)">
+                            <option value="google/gemini-2.5-pro-preview">Google Gemini 2.5 Pro Preview (OpenRouter)</option>
+                            <option value="perplexity/sonar-deep-research">Sonar Deep Research (OpenRouter)</option>
+                        </optgroup>
                     </select>
                     <button type="submit" id="search-button" title="Submit Search">
                         <i class="fas fa-arrow-right"></i> <!-- Arrow Icon -->
@@ -81,6 +91,10 @@
             <div id="results-container" class="results-container-perplexity">
                 <!-- Initial placeholder message -->
                 <p class="placeholder-text">Your AI search results will appear here.</p>
+                <!-- Chart Placeholder -->
+                <div id="chart-container" style="width: 100%; max-width: 700px; margin: 20px auto; display: none;">
+                    <canvas id="interactive-chart"></canvas>
+                </div>
             </div>
 
             <!-- Download Button Area -->
