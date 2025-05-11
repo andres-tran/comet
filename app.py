@@ -40,35 +40,36 @@ PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions"
 # Allowed models (add more as needed and update frontend)
 ALLOWED_MODELS = {
     # Perplexity (Updated based on table)
-    "sonar-deep-research", # Deep Research Model
-    "sonar",                # 128k
     "sonar-pro",            # 200k
-    "sonar-reasoning",      # 128k
     "sonar-reasoning-pro",  # 128k
     "r1-1776",              # 128k
     # OpenAI
+    "gpt-4.5-preview-2025-02-27", # New model
     "gpt-4.1",
     "o4-mini-2025-04-16",
     "o3-2025-04-16",
     "gpt-4o-search-preview-2025-03-11",
     "gpt-image-1", # Image Model
-    "gpt-4.5-preview-2025-02-27", # New model
     # xAI Grok Models - REMOVED
     # Gemini Models
     "gemini-2.5-pro", # User-friendly name
     # OpenRouter Models
-    "microsoft/phi-4-reasoning-plus:free",
-    "deepseek/deepseek-r1:free",
     "google/gemini-2.5-pro-preview", # New OpenRouter paid model
-    "perplexity/sonar-deep-research", # OpenRouter Perplexity model
+    "x-ai/grok-3-mini-beta:online", # New OpenRouter model, now online
+    "x-ai/grok-3-beta:online", # New OpenRouter model, now online
+    "anthropic/claude-3.7-sonnet", # New OpenRouter model
+    "anthropic/claude-3.7-sonnet:thinking", # New OpenRouter model
+    "openai/gpt-4o:online", # New OpenRouter model
 }
 
 # Explicit set of all OpenRouter model IDs
 OPENROUTER_MODELS = {
-    "microsoft/phi-4-reasoning-plus:free",
-    "deepseek/deepseek-r1:free",
     "google/gemini-2.5-pro-preview",
-    "perplexity/sonar-deep-research",
+    "x-ai/grok-3-mini-beta:online",
+    "x-ai/grok-3-beta:online",
+    "anthropic/claude-3.7-sonnet",
+    "anthropic/claude-3.7-sonnet:thinking",
+    "openai/gpt-4o:online",
 }
 
 # Mapping for actual model IDs if they differ from user-friendly names
@@ -130,39 +131,7 @@ def stream_openai(query, model_name):
     max_tokens = model_token_limits.get(model_name, model_token_limits["default"])
 
     # Enhanced System Prompt for OpenAI
-    enhanced_openai_system_prompt = """You are Comet, an advanced AI agent specializing in deep research, logical reasoning, and code generation.
-Your purpose is to deliver insightful, well-reasoned answers and functional code.
-
-## Core Competencies:
-*   **Deep Research:** Conduct thorough analysis and synthesize complex information.
-*   **Logical Reasoning:** Deduce, infer, and evaluate information to form sound conclusions.
-*   **Code Generation:** Create, explain, and troubleshoot code in various languages.
-
-## Operational Approach:
-1.  **Understand & Analyze:** Decipher query intent, complexities, and requirements.
-2.  **Research & Reason:** Access knowledge, perform web research, and apply logical frameworks.
-3.  **Develop & Explain:** Construct comprehensive explanations, generate code, and provide clear justifications.
-4.  **Format Clearly (Markdown):** Utilize Markdown for optimal structure, readability, and presentation (headings, lists, code blocks).
-5.  **Maintain Integrity:** Ensure responses are accurate, objective, and helpful.
-6.  **Acknowledge Limits:** Clearly state if a request is beyond current capabilities.
-
-## Chart Generation:
-*   **Priority:** Provide data/config for interactive Chart.js charts.
-*   **Format:** Use a JSON object (e.g., `\"chartjs_config\"`).
-*   **Fallback:** May use QuickChart.io for static images.
-*   **Reproducibility:** Always provide Python code (Matplotlib/Seaborn) for chart recreation.
-*   **Context:** Explain data and charts in your main response.
-
-## Code-Specific Guidelines:
-*   When providing code, ensure it is well-commented and follows best practices.
-*   Specify the language and any necessary dependencies.
-*   Offer explanations of the code's logic and functionality.
-
-## Core Directives:
-*   **Ethical Conduct:** No unethical, hateful, biased, or illegal content/code.
-*   **Privacy:** Do not use or request personal information.
-*   **Focus:** Address the user's research, reasoning, or coding query.
-"""
+    enhanced_openai_system_prompt = "You are Comet, an advanced AI agent specializing in deep research, logical reasoning, and code generation."
 
     messages = [
         {"role": "system", "content": enhanced_openai_system_prompt},
@@ -173,7 +142,7 @@ Your purpose is to deliver insightful, well-reasoned answers and functional code
         "model": model_name,
         "messages": messages,
         "stream": True,
-        "max_completion_tokens": max_tokens,
+        "max_tokens": max_tokens,
     }
 
     try:
@@ -342,10 +311,10 @@ Your goal is to provide accurate, detailed, and well-justified answers and code.
         yield f"data: {json.dumps({'error': 'An unexpected error occurred during the Perplexity stream.'})}\\n\\n"
 
 # --- Streaming Generator for OpenRouter ---
-def stream_openrouter(query, model_name_with_suffix):
+def stream_openrouter(query, model_name_with_suffix, reasoning_config=None):
     """Generator for responses from OpenRouter.
-    Uses non-streaming for perplexity/sonar-deep-research due to potential streaming issues.
-    Uses streaming for all other OpenRouter models.
+    Uses streaming for all OpenRouter models.
+    Accepts an optional reasoning_config dictionary.
     """
     if not openrouter_api_key:
         yield f"data: {json.dumps({'error': 'OpenRouter API key not configured.'})}\n\n"
@@ -390,143 +359,120 @@ Your purpose is to deliver insightful, well-reasoned answers and functional code
         {"role": "user", "content": query}
     ]
 
-    if model_name_with_suffix == "perplexity/sonar-deep-research":
-        # --- NON-STREAMING LOGIC for perplexity/sonar-deep-research ---
-        openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {openrouter_api_key}",
-            "Content-Type": "application/json",
-            # "HTTP-Referer": "http://localhost:5000", # Commented out for Vercel testing
-            # "X-Title": "Comet AI" # Commented out for Vercel testing
-        }
-        payload = {
-            "model": model_name_with_suffix, # Use the full model name
-            "messages": messages,
-            "stream": False,
-            "max_tokens": 8000 # Added for consistency
-        }
-        try:
-            print(f"Calling OpenRouter (non-streaming) for {model_name_with_suffix}")
-            response = requests.post(openrouter_url, headers=headers, json=payload, timeout=50) # Reduced timeout to 50
-            response.raise_for_status()
-            data_obj = response.json()
-            if data_obj.get("choices") and len(data_obj["choices"]) > 0:
-                message_content = data_obj["choices"][0].get("message", {}).get("content")
-                if message_content:
-                    yield f"data: {json.dumps({'chunk': message_content})}\n\n"
-            else:
-                yield f"data: {json.dumps({'error': 'Unexpected response structure or no content from OpenRouter (non-streaming).', 'details': data_obj})}\n\n"
-            yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
-        except requests.exceptions.Timeout as e:
-            print(f"OpenRouter request timed out (non-streaming for {model_name_with_suffix}): {e}")
-            yield f"data: {json.dumps({'error': 'The request to the AI model timed out after 50 seconds. This model can take a while. Please try a shorter query, a different model, or try again later.'})}\n\n"
-        except requests.exceptions.HTTPError as e:
-            error_content = f"OpenRouter API HTTP error (non-streaming for {model_name_with_suffix}): {e}"
-            try:
-                error_details = e.response.json()
-                error_content += f" - Details: {json.dumps(error_details)}"
-            except json.JSONDecodeError:
-                error_content += f" - Raw Response: {e.response.text}"
-            print(error_content)
-            yield f"data: {json.dumps({'error': error_content})}\n\n"
-        except requests.exceptions.RequestException as e:
-            print(f"OpenRouter request failed (non-streaming for {model_name_with_suffix}): {e}")
-            yield f"data: {json.dumps({'error': f'OpenRouter request failed (non-streaming): {str(e)}'})}\n\n"
-        except Exception as e:
-            print(f"Error during OpenRouter non-streaming request for {model_name_with_suffix}: {e}")
-            traceback.print_exc()
-            yield f"data: {json.dumps({'error': 'An unexpected error occurred during the OpenRouter non-streaming request.'})}\n\n"
-    else:
-        # --- STREAMING LOGIC for other OpenRouter models (using OpenAI SDK) ---
-        try:
-            openrouter_client = openai.OpenAI(
-                base_url="https://openrouter.ai/api/v1",
-                api_key=openrouter_api_key,
-                default_headers={ # Optional: For site tracking on OpenRouter
-                    # "HTTP-Referer": "http://localhost:5000",
-                    # "X-Title": "Comet AI"
-                }
-            )
-        except Exception as e:
-            print(f"Failed to initialize OpenRouter client: {e}")
-            yield f"data: {json.dumps({'error': 'Failed to initialize OpenRouter client.'})}\n\n"
-            return
+    # --- STREAMING LOGIC for OpenRouter models (using OpenAI SDK) ---
+    try:
+        openrouter_client = openai.OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=openrouter_api_key,
+            default_headers={ # Optional: For site tracking on OpenRouter
+                # "HTTP-Referer": "http://localhost:5000",
+                # "X-Title": "Comet AI"
+            }
+        )
+    except Exception as e:
+        print(f"Failed to initialize OpenRouter client: {e}")
+        yield f"data: {json.dumps({'error': 'Failed to initialize OpenRouter client.'})}\n\n"
+        return
 
-        actual_model_name_for_sdk = model_name_with_suffix.split(':')[0]
-        max_tokens = 8000
+    actual_model_name_for_sdk = model_name_with_suffix
+    max_tokens_val = 30000
 
-        api_params = {
-            "model": actual_model_name_for_sdk,
-            "messages": messages,
-            "stream": True,
-            "max_completion_tokens": max_tokens 
-        }
+    # sdk_params will hold parameters known to the OpenAI SDK
+    sdk_params = {
+        "model": actual_model_name_for_sdk,
+        "messages": messages,
+        "stream": True,
+        "max_tokens": max_tokens_val
+    }
 
-        try:
-            print(f"Calling OpenRouter (streaming via OpenAI SDK) for {model_name_with_suffix} (using model ID: {actual_model_name_for_sdk})")
-            stream = openrouter_client.chat.completions.create(**api_params)
-            buffer = ""
-            in_chart_config_block = False
-            chart_config_str = ""
+    # extra_body will hold custom parameters like 'reasoning' for OpenRouter
+    extra_body_params = {}
+    if reasoning_config: # Add reasoning_config if provided
+        extra_body_params["reasoning"] = reasoning_config
 
-            for chunk in stream:
-                content = chunk.choices[0].delta.content
-                if content is not None:
-                    buffer += content
-                    start_marker = "[[CHARTJS_CONFIG_START]]"
-                    end_marker = "[[CHARTJS_CONFIG_END]]"
+    try:
+        print(f"Calling OpenRouter for {actual_model_name_for_sdk}. Reasoning: {reasoning_config}")
+        # Pass extra_body_params if it's not empty, otherwise pass None or omit
+        if extra_body_params:
+            stream = openrouter_client.chat.completions.create(**sdk_params, extra_body=extra_body_params)
+        else:
+            stream = openrouter_client.chat.completions.create(**sdk_params)
+        buffer = ""
+        reasoning_buffer = ""
+        in_chart_config_block = False
+        chart_config_str = ""
 
-                    if not in_chart_config_block and start_marker in buffer:
-                        pre_block_content = buffer.split(start_marker, 1)[0]
-                        if pre_block_content:
-                            yield f"data: {json.dumps({'chunk': pre_block_content})}\n\n"
-                        buffer = buffer.split(start_marker, 1)[1]
-                        in_chart_config_block = True
-                    
-                    if in_chart_config_block:
-                        if end_marker in buffer:
-                            block_content, post_block_content = buffer.split(end_marker, 1)
-                            chart_config_str += block_content
-                            try:
-                                chart_json = json.loads(chart_config_str)
-                                yield f"data: {json.dumps({'chart_config': chart_json})}\n\n"
-                            except json.JSONDecodeError as e:
-                                print(f"Error decoding chart_js config from OpenRouter: {e} - data: {chart_config_str}")
-                                data_to_yield = {'chunk': start_marker + chart_config_str + end_marker}
-                                yield f"data: {json.dumps(data_to_yield)}\n\n"
-                            
-                            buffer = post_block_content
-                            in_chart_config_block = False
-                            chart_config_str = ""
-                        else:
-                            chart_config_str += buffer
-                            buffer = ""
-                    
-                    if not in_chart_config_block and buffer:
-                        if "\n" in buffer or len(buffer) > 80:
-                            yield f"data: {json.dumps({'chunk': buffer})}\n\n"
-                            buffer = ""
+        for chunk in stream:
+            delta = chunk.choices[0].delta
+            # Check for reasoning content first
+            if hasattr(delta, 'reasoning') and delta.reasoning:
+                reasoning_buffer += delta.reasoning
+                # Yield reasoning chunks as they come, perhaps on newlines or buffer length
+                if "\n" in reasoning_buffer or len(reasoning_buffer) > 80:
+                    yield f"data: {json.dumps({'reasoning_chunk': reasoning_buffer})}\n\n"
+                    reasoning_buffer = ""
+            # Else, check for regular content (mutually exclusive with reasoning in a single delta part based on docs)
+            elif delta.content is not None:
+                buffer += delta.content
+                start_marker = "[[CHARTJS_CONFIG_START]]"
+                end_marker = "[[CHARTJS_CONFIG_END]]"
 
-            if buffer: 
+                if not in_chart_config_block and start_marker in buffer:
+                    pre_block_content = buffer.split(start_marker, 1)[0]
+                    if pre_block_content:
+                        yield f"data: {json.dumps({'chunk': pre_block_content})}\n\n"
+                    buffer = buffer.split(start_marker, 1)[1]
+                    in_chart_config_block = True
+                
                 if in_chart_config_block:
-                     data_to_yield = {'chunk': start_marker + chart_config_str + buffer}
-                     yield f"data: {json.dumps(data_to_yield)}\n\n"
-                else:
-                     yield f"data: {json.dumps({'chunk': buffer})}\n\n"
+                    if end_marker in buffer:
+                        block_content, post_block_content = buffer.split(end_marker, 1)
+                        chart_config_str += block_content
+                        try:
+                            chart_json = json.loads(chart_config_str)
+                            yield f"data: {json.dumps({'chart_config': chart_json})}\n\n"
+                        except json.JSONDecodeError as e:
+                            print(f"Error decoding chart_js config from OpenRouter: {e} - data: {chart_config_str}")
+                            data_to_yield = {'chunk': start_marker + chart_config_str + end_marker}
+                            yield f"data: {json.dumps(data_to_yield)}\n\n"
+                        
+                        buffer = post_block_content
+                        in_chart_config_block = False
+                        chart_config_str = ""
+                    else:
+                        chart_config_str += buffer
+                        buffer = ""
+                
+                if not in_chart_config_block and buffer:
+                    if "\n" in buffer or len(buffer) > 80:
+                        yield f"data: {json.dumps({'chunk': buffer})}\n\n"
+                        buffer = ""
 
-            yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
-        except openai.APIError as e:
-            print(f"OpenRouter API error (streaming for {model_name_with_suffix}): {e}")
-            err_msg = str(e)
-            if hasattr(e, 'body') and isinstance(e.body, dict) and 'message' in e.body:
-                err_msg = e.body['message']
-            elif hasattr(e, 'message'):
-                 err_msg = e.message
-            yield f"data: {json.dumps({'error': f'OpenRouter API error: {err_msg}'})}\n\n"
-        except Exception as e:
-            print(f"Error during OpenRouter stream for {model_name_with_suffix}: {e}")
-            traceback.print_exc()
-            yield f"data: {json.dumps({'error': 'An unexpected error occurred during the OpenRouter stream.'})}\n\n"
+        # Yield any remaining reasoning content
+        if reasoning_buffer:
+            yield f"data: {json.dumps({'reasoning_chunk': reasoning_buffer})}\n\n"
+        
+        # Yield any remaining regular content in the buffer
+        if buffer: 
+            if in_chart_config_block: # Means block was not properly terminated
+                 data_to_yield = {'chunk': start_marker + chart_config_str + buffer} # yield as text
+                 yield f"data: {json.dumps(data_to_yield)}\n\n"
+            else:
+                 yield f"data: {json.dumps({'chunk': buffer})}\n\n"
+
+        yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
+    except openai.APIError as e:
+        print(f"OpenRouter API error (streaming for {model_name_with_suffix}): {e}")
+        err_msg = str(e)
+        if hasattr(e, 'body') and isinstance(e.body, dict) and 'message' in e.body:
+            err_msg = e.body['message']
+        elif hasattr(e, 'message'):
+             err_msg = e.message
+        yield f"data: {json.dumps({'error': f'OpenRouter API error: {err_msg}'})}\n\n"
+    except Exception as e:
+        print(f"Error during OpenRouter stream for {model_name_with_suffix}: {e}")
+        traceback.print_exc()
+        yield f"data: {json.dumps({'error': 'An unexpected error occurred during the OpenRouter stream.'})}\n\n"
 
 # --- Streaming Generator for Gemini ---
 def stream_gemini(query, model_name):
@@ -653,6 +599,7 @@ def search():
     print("--- Request received at /search endpoint ---") # Log Route Entry
     query = request.json.get('query')
     selected_model = request.json.get('model')
+    reasoning_config = request.json.get('reasoning_config') # Get reasoning_config
 
     # Basic validation
     if not query:
@@ -662,6 +609,12 @@ def search():
     if not selected_model or selected_model not in ALLOWED_MODELS:
         print(f"Warning: Invalid or missing model '{selected_model}'. Defaulting to sonar-pro.")
         selected_model = "sonar-pro" # Defaulting is safer than erroring pre-stream
+
+    # If an OpenRouter :thinking model is selected and no specific reasoning_config is passed,
+    # set a default to explicitly request high-effort reasoning and include its output.
+    if selected_model in OPENROUTER_MODELS and selected_model.endswith(':thinking') and reasoning_config is None:
+        print(f"Model {selected_model} is a :thinking model. Setting default reasoning_config.")
+        reasoning_config = {"effort": "high", "exclude": False}
 
     missing_keys = check_api_keys(selected_model)
     if missing_keys:
@@ -686,7 +639,7 @@ def search():
         elif selected_model.startswith('gemini-'):
             generator = stream_gemini(query, selected_model)
         elif selected_model in OPENROUTER_MODELS: # Routing for all OpenRouter models
-            generator = stream_openrouter(query, selected_model)
+            generator = stream_openrouter(query, selected_model, reasoning_config) # Pass reasoning_config
         else:
             generator = stream_perplexity(query, selected_model)
         return Response(generator, mimetype='text/event-stream')

@@ -38,21 +38,18 @@
                      <select id="model-select">
                         <!-- Group Perplexity models -->
                         <optgroup label="Perplexity">
-                            <option value="sonar-deep-research">Sonar Deep Research</option>
-                            <option value="sonar">Sonar</option>
                             <option value="sonar-pro" selected>Sonar Pro</option>
-                            <option value="sonar-reasoning">Sonar Reasoning</option>
                             <option value="sonar-reasoning-pro">Sonar Reasoning Pro</option>
                             <option value="r1-1776">r1-1776</option>
                         </optgroup>
                          <!-- Group OpenAI models -->
                         <optgroup label="OpenAI">
+                            <option value="gpt-4.5-preview-2025-02-27">GPT-4.5 Preview</option>
                             <option value="gpt-4.1">GPT-4.1</option>
                             <option value="o4-mini-2025-04-16">o4-mini-2025-04-16</option>
                             <option value="o3-2025-04-16">o3-2025-04-16</option>
                             <option value="gpt-4o-search-preview-2025-03-11">GPT-4o Search Preview</option>
                             <option value="gpt-image-1">GPT Image 1</option>
-                            <option value="gpt-4.5-preview-2025-02-27">GPT-4.5 Preview</option>
                         </optgroup>
                         <!-- Group xAI Grok models -->
                         <!-- Group Google models -->
@@ -60,13 +57,13 @@
                             <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
                         </optgroup>
                         <!-- Group OpenRouter Models -->
-                        <optgroup label="OpenRouter (Free)">
-                            <option value="microsoft/phi-4-reasoning-plus:free">Phi-4 Reasoning Plus</option>
-                            <option value="deepseek/deepseek-r1:free">DeepSeek R1</option>
-                        </optgroup>
-                        <optgroup label="OpenRouter (Paid)">
-                            <option value="google/gemini-2.5-pro-preview">Google Gemini 2.5 Pro Preview (OpenRouter)</option>
-                            <option value="perplexity/sonar-deep-research">Sonar Deep Research (OpenRouter)</option>
+                        <optgroup label="OpenRouter">
+                            <option value="google/gemini-2.5-pro-preview">Gemini 2.5 Pro Preview</option>
+                            <option value="x-ai/grok-3-mini-beta:online">Grok 3 Mini Beta (Online)</option>
+                            <option value="x-ai/grok-3-beta:online">Grok 3 Beta (Online)</option>
+                            <option value="anthropic/claude-3.7-sonnet">Claude 3.7 Sonnet (OpenRouter)</option>
+                            <option value="anthropic/claude-3.7-sonnet:thinking">Claude 3.7 Sonnet Thinking (OpenRouter)</option>
+                            <option value="openai/gpt-4o:online">GPT-4o (OpenRouter)</option>
                         </optgroup>
                     </select>
                     <button type="submit" id="search-button" title="Submit Search">
