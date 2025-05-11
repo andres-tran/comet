@@ -485,6 +485,8 @@ body {
 .results-container-perplexity a {
     color: var(--link-color);
     text-decoration: none;
+    overflow-wrap: break-word;
+    word-break: break-all;
 }
 
 .results-container-perplexity a:hover {
@@ -586,6 +588,11 @@ body {
         font-size: 0.8rem;
         text-align: center;
         margin-top: 5px;
+    }
+
+    .results-container-perplexity a {
+        overflow-wrap: break-word;
+        word-break: break-all;
     }
 }
 

@@ -31,6 +31,7 @@ PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions"
 # Allowed models (add more as needed and update frontend)
 ALLOWED_MODELS = {
     # Perplexity (Updated based on table)
+    "sonar-deep-research", # Deep Research Model
     "sonar",                # 128k
     "sonar-pro",            # 200k
     "sonar-reasoning",      # 128k
