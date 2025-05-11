@@ -407,7 +407,7 @@ Your purpose is to deliver insightful, well-reasoned answers and functional code
         }
         try:
             print(f"Calling OpenRouter (non-streaming) for {model_name_with_suffix}")
-            response = requests.post(openrouter_url, headers=headers, json=payload)
+            response = requests.post(openrouter_url, headers=headers, json=payload, timeout=55) # Added timeout
             response.raise_for_status()
             data_obj = response.json()
             if data_obj.get("choices") and len(data_obj["choices"]) > 0:
@@ -417,6 +417,9 @@ Your purpose is to deliver insightful, well-reasoned answers and functional code
             else:
                 yield f"data: {json.dumps({'error': 'Unexpected response structure or no content from OpenRouter (non-streaming).', 'details': data_obj})}\n\n"
             yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
+        except requests.exceptions.Timeout as e:
+            print(f"OpenRouter request timed out (non-streaming for {model_name_with_suffix}): {e}")
+            yield f"data: {json.dumps({'error': 'The request to the AI model timed out after 55 seconds. Please try a shorter query or a different model.'})}\n\n"
         except requests.exceptions.HTTPError as e:
             error_content = f"OpenRouter API HTTP error (non-streaming for {model_name_with_suffix}): {e}"
             try:
