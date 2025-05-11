@@ -4,5 +4,6 @@ flask
 openai
 python-dotenv
 requests
+google-generativeai
 
 # Using uv for installation, but listing dependencies here 

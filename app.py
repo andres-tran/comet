@@ -2,6 +2,7 @@ import os
 import json
 import openai
 import requests # For Perplexity API
+import google.generativeai as genai # Reverted to official import
 # Add base64 for image handling
 import base64 
 from flask import Flask, render_template, request, jsonify, Response
@@ -17,6 +18,7 @@ app = Flask(__name__)
 # Configure API keys (ensure they are set in .env)
 openai.api_key = os.getenv("OPENAI_API_KEY") # Keep this for OpenAI
 perplexity_api_key = os.getenv("PERPLEXITY_API_KEY")
+gemini_api_key = os.getenv("GEMINI_API_KEY") # Added for Gemini
 # xai_api_key = os.getenv("XAI_API_KEY") # Removed for xAI
 
 # --- API Clients (Optional but good practice) ---
@@ -24,6 +26,10 @@ perplexity_api_key = os.getenv("PERPLEXITY_API_KEY")
 openai_client = openai.OpenAI() if openai.api_key else None
 # Initialize xAI client
 # xai_client = openai.OpenAI(base_url="https://api.x.ai/v1", api_key=xai_api_key) if xai_api_key else None # Removed
+
+# Configure Gemini client
+if gemini_api_key:
+    genai.configure(api_key=gemini_api_key)
 
 # Perplexity API endpoint
 PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions"
@@ -45,20 +51,30 @@ ALLOWED_MODELS = {
     "gpt-image-1", # Image Model
     "gpt-4.5-preview-2025-02-27", # New model
     # xAI Grok Models - REMOVED
+    # Gemini Models
+    "gemini-2.5-pro", # User-friendly name
+}
+
+# Mapping for actual model IDs if they differ from user-friendly names
+MODEL_ID_MAPPING = {
+    "gemini-2.5-pro": "models/gemini-2.5-pro-exp-03-25" 
 }
 
 # --- Error Handling --- 
 def check_api_keys(model_name):
     """Checks if the necessary API key for the selected model is loaded."""
+    actual_model_id = MODEL_ID_MAPPING.get(model_name, model_name) # Get actual ID for checks
+
     # Check if it's an OpenAI model (standard prefix or specific custom names)
     is_openai_model = (
-        model_name.startswith('gpt-') or 
-        model_name == "o4-mini-2025-04-16" or 
-        model_name == "o3-2025-04-16" or
-        model_name == "gpt-4o-search-preview-2025-03-11" or
-        model_name == "gpt-image-1"
+        actual_model_id.startswith('gpt-') or 
+        actual_model_id == "o4-mini-2025-04-16" or 
+        actual_model_id == "o3-2025-04-16" or
+        actual_model_id == "gpt-4o-search-preview-2025-03-11" or
+        actual_model_id == "gpt-image-1"
     )
     # is_xai_model = model_name.startswith('grok-') # Removed
+    is_gemini_model = actual_model_id.startswith('gemini-')
 
     missing = []
     if is_openai_model:
@@ -67,7 +83,10 @@ def check_api_keys(model_name):
     # elif is_xai_model: # Removed xAI check
     #     if not xai_api_key or not xai_client:
     #         missing.append("xAI")
-    else: # Assuming Perplexity otherwise (if not OpenAI)
+    elif is_gemini_model: # Added Gemini check
+        if not gemini_api_key:
+            missing.append("Gemini")
+    else: # Assuming Perplexity otherwise (if not OpenAI or Gemini)
         if not perplexity_api_key:
             missing.append("Perplexity")
     return missing
@@ -240,6 +259,111 @@ Your main goal is to give users accurate, detailed, and well-reasoned answers.
         traceback.print_exc()
         yield f"data: {json.dumps({'error': 'An unexpected error occurred during the Perplexity stream.'})}\\n\\n"
 
+# --- Streaming Generator for Gemini ---
+def stream_gemini(query, model_name):
+    """Generator for streaming responses from Gemini."""
+    actual_model_id = MODEL_ID_MAPPING.get(model_name, model_name)
+
+    if not gemini_api_key:
+        yield f"data: {json.dumps({'error': 'Gemini API key not configured.'})}\n\n"
+        return
+
+    try:
+        model = genai.GenerativeModel(actual_model_id)
+        
+        enhanced_gemini_system_prompt = """You are Comet, an advanced AI research assistant powered by Gemini.
+Your purpose is to provide comprehensive, accurate, and clearly explained answers.
+
+## Your Role:
+*   Function as a highly capable and objective research specialist.
+*   Avoid personal opinions or biases.
+
+## How to Respond:
+1.  **Understand Profoundly:** Scrutinize the user's query to fully comprehend its nuances and objectives.
+2.  **Research Rigorously:**
+    *   Leverage your extensive knowledge base and available tools to gather precise, current information.
+    *   Cite sources when applicable, especially for external data.
+3.  **Answer Exhaustively:** Deliver thorough explanations, addressing all key facets of the inquiry.
+4.  **Format Intelligibly with Markdown:**
+    *   **Consistently use Markdown** for the entirety of your response.
+    *   Employ headings, lists, code blocks, and tables to enhance readability and structure.
+    *   Use bold/italics for emphasis where appropriate.
+5.  **Maintain Professionalism:** Adhere to a helpful, exact, and objective communication style.
+6.  **Acknowledge Limitations:** If you encounter uncertainty or a lack of information, state this transparently.
+
+## Important Safety Guidelines:
+*   **No Harmful Content:** Strictly avoid generating content that is unethical, hateful, discriminatory, illegal, or misleading.
+*   **Safeguard Privacy:** Do not solicit or utilize personal information.
+*   **Stay Focused:** Confine your responses to the user's research query.
+"""
+        
+        full_prompt = f"{enhanced_gemini_system_prompt}\n\nUser Query: {query}"
+
+        print(f"Calling Gemini's generate_content with model: {actual_model_id}")
+        response_stream = model.generate_content(full_prompt, stream=True)
+
+        for chunk in response_stream:
+            if chunk.prompt_feedback and chunk.prompt_feedback.block_reason:
+                reason_enum = chunk.prompt_feedback.block_reason
+                reason_name = reason_enum.name if hasattr(reason_enum, 'name') else str(reason_enum)
+                error_msg = f'Content generation issue: {reason_name} (prompt feedback).'
+                print(f"Gemini stream error: {error_msg}")
+                yield f"data: {json.dumps({'error': error_msg})}\n\n"
+                yield f"data: {json.dumps({'end_of_stream': True, 'status': 'blocked_prompt'})}\n\n"
+                return
+
+            if not chunk.candidates:
+                # This case should be rare in normal operation but good to log if it happens.
+                print("Gemini stream: Chunk received with no candidates.")
+                continue
+
+            for candidate_obj in chunk.candidates: # Renamed to avoid conflict with imported Candidate
+                # Check for blocking finish reasons on the candidate
+                # Using integer values for FinishReason: SAFETY = 3, RECITATION = 4
+                if candidate_obj.finish_reason == 3: # SAFETY
+                    error_msg = 'Content generation stopped: SAFETY.'
+                    # Consider logging candidate_obj.safety_ratings for more details
+                    print(f"Gemini stream error: {error_msg}")
+                    yield f"data: {json.dumps({'error': error_msg})}\n\n"
+                    yield f"data: {json.dumps({'end_of_stream': True, 'status': 'blocked_safety'})}\n\n"
+                    return
+                if candidate_obj.finish_reason == 4: # RECITATION
+                    error_msg = 'Content generation stopped: RECITATION.'
+                    print(f"Gemini stream error: {error_msg}")
+                    yield f"data: {json.dumps({'error': error_msg})}\n\n"
+                    yield f"data: {json.dumps({'end_of_stream': True, 'status': 'blocked_recitation'})}\n\n"
+                    return
+                
+                # If content exists, extract text from parts
+                if candidate_obj.content and candidate_obj.content.parts:
+                    for part in candidate_obj.content.parts:
+                        if hasattr(part, 'text') and part.text: # Ensure part has text and it's not empty
+                            yield f"data: {json.dumps({'chunk': part.text})}\n\n"
+                # else: (This candidate in this chunk has no text parts)
+                    # This can be normal (e.g. end of stream, empty response for this chunk).
+                    # Log if verbose debugging is needed for finish_reasons other than STOP/MAX_TOKENS here.
+                    # fr_name = candidate_obj.finish_reason.name if hasattr(candidate_obj.finish_reason, 'name') else str(candidate_obj.finish_reason)
+                    # print(f"Gemini stream: Candidate part has no text for this chunk. Finish Reason: {fr_name}")
+
+        yield f"data: {json.dumps({'end_of_stream': True, 'status': 'completed'})}\n\n"
+
+    except genai.types.BlockedPromptException as e:
+        print(f"Gemini API BlockedPromptException: {e}")
+        yield f"data: {json.dumps({'error': f'Your prompt was blocked by the API. {str(e)}'})}\n\n"
+        yield f"data: {json.dumps({'end_of_stream': True, 'status': 'blocked_prompt_exception'})}\n\n"
+    except genai.types.StopCandidateException as e:
+        print(f"Gemini API StopCandidateException: {e}") # Should be handled by finish_reason generally
+        yield f"data: {json.dumps({'error': f'Content generation stopped unexpectedly. {str(e)}'})}\n\n"
+        yield f"data: {json.dumps({'end_of_stream': True, 'status': 'stopped_candidate_exception'})}\n\n"
+    except Exception as e:
+        print(f"Error during Gemini stream: {e}")
+        traceback.print_exc()
+        # Try to get a more specific error message if available
+        error_message = str(e)
+        if hasattr(e, 'message'): # Some specific API errors might have this
+             error_message = e.message
+        yield f"data: {json.dumps({'error': f'Gemini API error: {error_message}'})}\n\n"
+
 # --- Routes --- 
 @app.route('/')
 def index():
@@ -282,6 +406,8 @@ def search():
         )
         if is_standard_openai_text_model:
             generator = stream_openai(query, selected_model)
+        elif selected_model.startswith('gemini-'):
+            generator = stream_gemini(query, selected_model)
         else:
             generator = stream_perplexity(query, selected_model)
         return Response(generator, mimetype='text/event-stream')
@@ -343,4 +469,4 @@ if __name__ == '__main__':
         # if not xai_api_key: # Removed xAI key warning
         #      print("\n*** WARNING: xAI API key not found in .env. Grok models will not work. ***\n")
 
-    app.run(debug=True, threaded=True) # Added threaded=True, often helpful for streaming 
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), threaded=True) 
