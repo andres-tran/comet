@@ -106,10 +106,6 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None):
     if reasoning_config:
         extra_body_params["reasoning"] = reasoning_config
 
-    # Add web_search_options for specific models
-    if actual_model_name_for_sdk == "openai/gpt-4.1":
-        extra_body_params["web_search_options"] = {"search_context_size": "high"}
-
     try:
         print(f"Calling OpenRouter for {actual_model_name_for_sdk}. Reasoning: {reasoning_config}. Extra Body: {extra_body_params}")
         stream = openrouter_client_instance.chat.completions.create(**sdk_params, extra_body=extra_body_params)
