@@ -26,7 +26,11 @@ OPENROUTER_MODELS = {
     "x-ai/grok-3-beta:online",
     "anthropic/claude-3.7-sonnet",
     "anthropic/claude-3.7-sonnet:thinking",
-    "openai/gpt-4o:online",
+    "openai/gpt-4o-2024-11-20:online",
+    "openai/gpt-4.1",
+    "perplexity/sonar-reasoning-pro",
+    "openai/gpt-4o-search-preview",
+    "openai/gpt-4.5-preview",
 }
 ALLOWED_MODELS = OPENROUTER_MODELS.copy()
 ALLOWED_MODELS.add("gpt-image-1")
@@ -77,7 +81,18 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None):
         return
 
     actual_model_name_for_sdk = model_name_with_suffix
-    max_tokens_val = 30000
+    max_tokens_val = 30000 # Default value for most models
+
+    # Adjust max_tokens based on model specifics
+    if actual_model_name_for_sdk == "perplexity/sonar-reasoning-pro": # 128,000 total context
+        max_tokens_val = 128000 - 4096 # Reserve 4096 for prompt (Perplexity specific)
+    elif actual_model_name_for_sdk == "openai/gpt-4.1": # Stated 32,768 generation capacity
+        max_tokens_val = 32768
+    elif actual_model_name_for_sdk == "openai/gpt-4o-search-preview": # Stated 16,384 generation capacity
+        max_tokens_val = 16384
+    elif actual_model_name_for_sdk == "openai/gpt-4.5-preview": # Stated 16,384 generation capacity
+        max_tokens_val = 16384
+    # For other models, max_tokens_val remains the default of 30000
 
     sdk_params = {
         "model": actual_model_name_for_sdk,
@@ -88,8 +103,12 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None):
 
     extra_body_params = {}
     # If reasoning_config is passed (e.g. for :thinking models with exclude: True)
-    if reasoning_config: 
+    if reasoning_config:
         extra_body_params["reasoning"] = reasoning_config
+
+    # Add web_search_options for specific models
+    if actual_model_name_for_sdk == "openai/gpt-4.1":
+        extra_body_params["web_search_options"] = {"search_context_size": "high"}
 
     try:
         print(f"Calling OpenRouter for {actual_model_name_for_sdk}. Reasoning: {reasoning_config}. Extra Body: {extra_body_params}")
