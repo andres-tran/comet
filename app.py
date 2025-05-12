@@ -97,10 +97,12 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None):
         buffer = ""
         in_chart_config_block = False
         chart_config_str = ""
+        content_received_from_openrouter = False # Flag to track content
 
         for chunk in stream:
             delta = chunk.choices[0].delta
             if delta.content is not None:
+                content_received_from_openrouter = True # Mark that content was received
                 buffer += delta.content
                 start_marker = "[[CHARTJS_CONFIG_START]]"
                 end_marker = "[[CHARTJS_CONFIG_END]]"
@@ -142,6 +144,9 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None):
                  yield f"data: {json.dumps(data_to_yield)}\n\n"
             else:
                  yield f"data: {json.dumps({'chunk': buffer})}\n\n"
+
+        if not content_received_from_openrouter:
+            print(f"Warning: OpenRouter stream for {actual_model_name_for_sdk} finished without yielding any content chunks.")
 
         yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
     except openai.APIError as e:
