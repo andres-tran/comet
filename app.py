@@ -221,7 +221,7 @@ def generate_image(query):
             model="gpt-image-1",
             prompt=query,
             size="1024x1024",
-            response_format="b64_json"
+            n=1
         )
         
         if result.data and result.data[0].b64_json:
