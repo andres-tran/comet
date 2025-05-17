@@ -107,28 +107,40 @@ body {
     position: absolute;
     top: 5px; /* Adjust as needed */
     right: 0;
+    display: flex; /* Added to align items if multiple controls are here */
+    gap: 5px; /* Added space between buttons in this container */
 }
 
-#theme-toggle-button {
-    background: none;
-    border: 1px solid var(--border-color);
+#theme-toggle-button,
+#new-search-button {
+    background-color: var(--select-bg-color);
+    border: 1px solid var(--select-border-color);
     color: var(--text-muted-color);
-    padding: 6px 10px;
+    padding: 0 10px; /* Consistent padding for icon buttons */
     border-radius: 18px;
     cursor: pointer;
-    font-size: 0.9rem;
-    transition: color 0.2s ease, border-color 0.2s ease;
+    font-size: 0.85rem; /* Consistent font size */
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    height: 36px; /* Consistent height */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px; /* Ensure a minimum tap/click target size */
 }
 
-#theme-toggle-button:hover {
-    color: var(--text-color);
-    border-color: var(--text-color);
+#theme-toggle-button:hover,
+#new-search-button:hover {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background-color: var(--select-bg-color); /* Keep background on hover, or make it slightly different if desired */
 }
 
 /* Focus visible styles for better accessibility */
 #model-select:focus-visible,
 #search-button:focus-visible,
-#theme-toggle-button:focus-visible {
+#theme-toggle-button:focus-visible,
+#new-search-button:focus-visible, /* Added new-search-button */
+#attach-file-button:focus-visible { /* Added attach-file-button */
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
@@ -182,10 +194,10 @@ body {
 }
 
 .search-header h1 {
-    font-size: 1.5rem; /* Smaller heading */
+    font-size: 1.7rem; /* Increased from 1.6rem */
     font-weight: 500;
     color: var(--text-muted-color);
-    margin-bottom: 15px;
+    margin-bottom: 50px; /* Increased from 45px */
     text-align: center;
 }
 
@@ -369,24 +381,36 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 30px 0;
-    gap: 10px; /* Space between spinner and text */
+    padding: 20px 0; /* Reduced padding, primarily for vertical spacing */
     width: 100%;
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    /* gap, transition not needed here, will be on content */
+}
+
+.thinking-indicator-content {
+    display: inline-flex; /* To make it wrap content tightly */
+    align-items: center;
+    gap: 8px; /* Space between spinner and text */
+    padding: 0 12px; /* Horizontal padding */
+    height: 36px; /* Match height of other controls */
+    background-color: var(--select-bg-color);
+    border: 1px solid var(--select-border-color);
+    border-radius: 18px; /* Consistent rounded corners */
+    box-sizing: border-box;
 }
 
 .spinner {
-    border: 4px solid var(--spinner-base-color);
+    border: 3px solid var(--spinner-base-color); /* Slightly thinner border */
     border-left-color: var(--spinner-accent-color);
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    width: 16px;  /* Smaller spinner */
+    height: 16px; /* Smaller spinner */
     animation: spin 1s linear infinite;
 }
 
-.thinking-indicator span {
-    font-style: italic;
-    color: var(--thinking-text-color);
+#thinking-text { /* Changed from .thinking-indicator span */
+    font-style: normal; /* Remove italic */
+    color: var(--text-color); /* Use standard text color */
+    font-size: 0.85rem; /* Match other controls */
 }
 
 @keyframes spin {
@@ -658,22 +682,16 @@ body.dark-mode .results-container-perplexity pre {
     position: absolute;
     top: 5px;
     left: 0;
+    display: flex; /* Added to align items if multiple controls are here */
+    gap: 5px; /* Added space between buttons in this container */
 }
 
 #new-search-button {
-    background: none;
-    border: 1px solid var(--border-color);
-    color: var(--text-muted-color);
-    padding: 6px 10px;
-    border-radius: 18px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: color 0.2s ease, border-color 0.2s ease;
+    /* Styles are now combined with #theme-toggle-button */
 }
 
 #new-search-button:hover {
-    color: var(--text-color);
-    border-color: var(--text-color);
+    /* Styles are now combined with #theme-toggle-button */
 }
 
 .search-icon {
@@ -699,4 +717,38 @@ body.dark-mode .results-container-perplexity pre {
     padding: 10px;
     border-radius: 4px;
     margin-top: 10px;
+}
+
+/* Reasoning Container Styling */
+.reasoning-container-perplexity {
+    width: 100%;
+    background-color: var(--code-block-outer-bg); /* Use a slightly different background */
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin-bottom: 20px; /* Space before main results */
+    font-size: 0.9em;
+    color: var(--text-muted-color);
+    display: none; /* Hidden by default */
+}
+
+.reasoning-container-perplexity h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--text-color);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+#reasoning-content {
+    white-space: pre-wrap; /* Preserve whitespace and newlines */
+    word-wrap: break-word;
+    max-height: 300px; /* Optional: limit height and make scrollable */
+    overflow-y: auto;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 0.95em;
+    line-height: 1.5;
+    color: var(--code-text-color); /* Use code text color for reasoning */
 } 
