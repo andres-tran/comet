@@ -5,6 +5,7 @@ import base64
 from flask import Flask, render_template, request, jsonify, Response
 from dotenv import load_dotenv
 import traceback
+import io # Added for image editing
 
 # Load environment variables
 load_dotenv()
@@ -32,6 +33,7 @@ OPENROUTER_MODELS = {
     "openai/gpt-4o-search-preview",
     "openai/gpt-4.5-preview",
     "openai/codex-mini",
+    "openai/o4-mini-high",
 }
 ALLOWED_MODELS = OPENROUTER_MODELS.copy()
 ALLOWED_MODELS.add("gpt-image-1")
@@ -65,17 +67,32 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
 
     if uploaded_file_data and file_type:
         if file_type == "image":
-            if not uploaded_file_data.startswith("data:image"):
-                # Basic check, could be more robust
-                yield f"data: {json.dumps({'error': 'Invalid image data format. Expected data URL.'})}\n\n"
+            # Validate against supported image types for general multimodal input
+            is_valid_image_type = False
+            supported_image_prefixes = [
+                "data:image/png;base64,",
+                "data:image/jpeg;base64,",
+                "data:image/jpg;base64,", # Common alternative for jpeg
+                "data:image/webp;base64,",
+                "data:image/gif;base64,"  # Non-animated GIF
+            ]
+            for prefix in supported_image_prefixes:
+                if uploaded_file_data.startswith(prefix):
+                    is_valid_image_type = True
+                    break
+            
+            if not is_valid_image_type:
+                yield f"data: {json.dumps({'error': 'Invalid image data format. Expected PNG, JPEG, WEBP, or GIF data URL.'})}\n\n"
                 return
+
             user_content_parts.append({
                 "type": "image_url",
                 "image_url": {
-                    "url": uploaded_file_data
+                    "url": uploaded_file_data,
+                    "detail": "high"
                 }
             })
-            print(f"Image data included for OpenRouter. Type: {file_type}, Data starts with: {uploaded_file_data[:50]}...")
+            print(f"Image data included for OpenRouter. Type: {file_type}, Detail: high, Data starts with: {uploaded_file_data[:50]}...")
         elif file_type == "pdf":
             if not uploaded_file_data.startswith("data:application/pdf"):
                 # Basic check
@@ -127,6 +144,8 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         max_tokens_val = 16384
     elif actual_model_name_for_sdk == "openai/gpt-4.5-preview": # Stated 16,384 generation capacity
         max_tokens_val = 16384
+    elif actual_model_name_for_sdk == "openai/o4-mini-high": # Was 100,000. Total context 200k. Reducing to leave more room for prompt.
+        max_tokens_val = 95000
     # For other models, max_tokens_val remains the default of 30000
 
     sdk_params = {
@@ -141,6 +160,29 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
     if reasoning_config:
         extra_body_params["reasoning"] = reasoning_config
 
+    # Explicitly use pdf-text parser for o4-mini-high with PDFs
+    if actual_model_name_for_sdk == "openai/o4-mini-high" and file_type == "pdf":
+        print(f"Using explicit pdf-text parser for {actual_model_name_for_sdk} with PDF.")
+        if "plugins" not in extra_body_params: # Ensure plugins is initialized
+            extra_body_params["plugins"] = []
+        
+        # Check if file-parser is already added to avoid duplicates if we extend this logic
+        parser_exists = False
+        for plugin in extra_body_params["plugins"]:
+            if plugin.get("id") == "file-parser":
+                parser_exists = True
+                if "pdf" not in plugin: # Should not happen if id is file-parser
+                    plugin["pdf"] = {}
+                plugin["pdf"]["engine"] = "pdf-text" # Ensure it's set to pdf-text
+                break
+        if not parser_exists:
+            extra_body_params["plugins"].append({
+                "id": "file-parser",
+                "pdf": {
+                    "engine": "pdf-text" # Free and good for text-based PDFs
+                }
+            })
+    
     try:
         print(f"Calling OpenRouter for {actual_model_name_for_sdk}. Reasoning: {reasoning_config}. Extra Body: {extra_body_params}")
         stream = openrouter_client_instance.chat.completions.create(**sdk_params, extra_body=extra_body_params)
@@ -150,6 +192,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         content_received_from_openrouter = False # Flag to track content
 
         for chunk in stream:
+            print(f"Debug: Raw chunk for {actual_model_name_for_sdk}: {chunk}")
             delta = chunk.choices[0].delta
             if delta.content is not None:
                 content_received_from_openrouter = True # Mark that content was received
@@ -258,9 +301,13 @@ def search():
     query = request.json.get('query')
     selected_model = request.json.get('model')
     uploaded_file_data = request.json.get('uploaded_file_data')
-    file_type = request.json.get('file_type')
+    file_type = request.json.get('file_type') # e.g., 'image', 'pdf'
 
-    if not query:
+    # Default query to "edit image" if not provided but an image is for editing
+    if not query and selected_model == "gpt-image-1" and uploaded_file_data and file_type == 'image':
+        query = "Perform edits based on the prompt, or a general enhancement if no specific edit prompt."
+
+    if not query: # Now check query after potential default
         return jsonify({'error': 'No query provided'}), 400
     
     default_model_for_error = "openai/gpt-4o:online"
@@ -280,7 +327,12 @@ def search():
     print(f"Received query: {query}, Model: {selected_model}")
 
     if selected_model == "gpt-image-1":
-        return generate_image(query)
+        if uploaded_file_data and file_type == 'image':
+            print(f"Routing to OpenAI Image Edit. Query: '{query}'")
+            return edit_image(query, uploaded_file_data)
+        else:
+            print(f"Routing to OpenAI Image Generation. Query: '{query}'")
+            return generate_image(query)
     elif selected_model in OPENROUTER_MODELS:
         reasoning_config_to_pass = None # Initialize
         if selected_model.endswith(':thinking'):
@@ -334,16 +386,124 @@ def generate_image(query):
 
     except openai.APIError as e:
         print(f"ERROR: generate_image - OpenAI APIError caught: {e}")
-        err_msg = str(e)
-        if hasattr(e, 'body') and isinstance(e.body, dict) and 'message' in e.body:
-            err_msg = e.body['message']
-        elif hasattr(e, 'message'):
-            err_msg = e.message
-        return jsonify({'error': f'OpenAI API error: {err_msg}'}), 500
+        err_msg = "An API error occurred."
+        status_code = 500
+        if hasattr(e, 'status_code') and e.status_code:
+            status_code = e.status_code
+
+        # Try to get a more specific message
+        try:
+            if hasattr(e, 'body') and isinstance(e.body, dict) and 'error' in e.body:
+                error_detail = e.body['error']
+                if isinstance(error_detail, dict) and 'message' in error_detail and error_detail['message']:
+                    err_msg = error_detail['message']
+                elif isinstance(error_detail, str):
+                    err_msg = error_detail
+            elif hasattr(e, 'message') and e.message:
+                err_msg = e.message
+        except Exception as parsing_exc:
+            print(f"Exception while parsing APIError details for generate_image: {parsing_exc}")
+        
+        # Ensure err_msg is a string before checking substrings
+        if not isinstance(err_msg, str):
+            err_msg = str(err_msg) # Convert to string if it's None or other type
+
+        if "model_not_found" in err_msg or "does not support" in err_msg or "incorrect API key" in err_msg or "authentication" in err_msg:
+            err_msg = f"The image generation model ('gpt-image-1' or its backend like 'dall-e-2') might be unavailable, not supported by your key, or an authentication issue occurred: {err_msg}"
+        elif "Invalid image" in err_msg or "must be a PNG" in err_msg or "square" in err_msg or "size" in err_msg:
+            err_msg = f"Image validation failed. Ensure it's a square PNG under 4MB: {err_msg}"
+        
+        return jsonify({'error': f'OpenAI API error during image generation: {err_msg}'}), status_code
     except Exception as e:
         print(f"ERROR: generate_image - Unexpected Exception caught: {e}")
         traceback.print_exc()
-        return jsonify({'error': 'An internal server error occurred during image generation.'}), 500
+        # Ensure a JSON response even for unexpected errors
+        return jsonify({'error': 'An internal server error occurred during image generation. Please check server logs.'}), 500
+
+# --- Image Editing Function ---
+def edit_image(prompt, image_data_url):
+    """Edits an image using OpenAI and returns base64 data or error."""
+    print(f"--- Entering edit_image function. Prompt: {prompt[:100]}... ---")
+    if not openai_client:
+        print("ERROR: edit_image - Direct OpenAI client not initialized.")
+        return jsonify({'error': 'OpenAI client not initialized. Check direct OpenAI API key.'}), 500
+
+    try:
+        # Decode the base64 image data URL
+        # Format: "data:image/png;base64,iVBORw0KGgo..."
+        # For images.edit, OpenAI API requires a valid PNG file.
+        if not image_data_url.startswith("data:image/png;base64,"):
+            print("ERROR: edit_image - Invalid image data URL format. Must be a PNG base64 data URL for editing.")
+            return jsonify({'error': 'Invalid image format for editing. Please upload a PNG image.'}), 400
+        
+        header, encoded_data = image_data_url.split(',', 1)
+        image_bytes = base64.b64decode(encoded_data)
+        
+        # Use io.BytesIO to treat the bytes as a file
+        image_file_like = io.BytesIO(image_bytes)
+        image_file_like.name = "uploaded_image.png" # API might need a filename
+
+        print(f"Editing image with gpt-image-1. Prompt: {prompt[:100]}..., Image size: {len(image_bytes)} bytes")
+        
+        result = openai_client.images.edit(
+            image=image_file_like,
+            # mask= can be added here if we implement mask uploads
+            prompt=prompt,
+            model="gpt-image-1", # Explicitly use gpt-image-1
+            n=1,
+            size="1024x1024" # Ensure this size is supported by gpt-image-1 for edits or if it needs to match original
+        )
+
+        if result.data and result.data[0].b64_json:
+            edited_image_base64 = result.data[0].b64_json
+            print("SUCCESS: edit_image - Image edited, returning JSON (b64_json expected).")
+            # The response is b64_json, so it's already base64 encoded.
+            return jsonify({'image_base64': edited_image_base64, 'is_edit': True}) 
+        elif result.data and result.data[0].url:
+            # Sometimes the API might return a URL instead, though b64_json is preferred for this flow
+            print(f"WARNING: edit_image - Image edited, but received URL: {result.data[0].url}. This app expects b64_json for direct display.")
+            # For simplicity, we'll ask the user to try again or indicate we can't load from URL directly in this flow.
+            # Ideally, we'd fetch the URL and convert to base64, but that adds complexity and another request.
+            return jsonify({'error': 'Image edited, but received a URL. Please try again or contact support if this persists. This version expects base64 data.'}), 500
+        else:
+            print("ERROR: edit_image - No b64_json or URL data received from OpenAI edit API.")
+            return jsonify({'error': 'No image data received from OpenAI API after edit.'}), 500
+
+    except openai.APIError as e:
+        print(f"ERROR: edit_image - OpenAI APIError caught: {e}")
+        err_msg = "An API error occurred."
+        status_code = 500
+        if hasattr(e, 'status_code') and e.status_code:
+            status_code = e.status_code
+
+        # Try to get a more specific message
+        try:
+            if hasattr(e, 'body') and isinstance(e.body, dict) and 'error' in e.body:
+                error_detail = e.body['error']
+                if isinstance(error_detail, dict) and 'message' in error_detail and error_detail['message']:
+                    err_msg = error_detail['message']
+                elif isinstance(error_detail, str):
+                    err_msg = error_detail
+            elif hasattr(e, 'message') and e.message:
+                err_msg = e.message
+        except Exception as parsing_exc:
+            print(f"Exception while parsing APIError details for edit_image: {parsing_exc}")
+        
+        # Ensure err_msg is a string before checking substrings
+        if not isinstance(err_msg, str):
+            err_msg = str(err_msg) # Convert to string if it's None or other type
+
+        if "model_not_found" in err_msg or "does not support" in err_msg or "incorrect API key" in err_msg or "authentication" in err_msg:
+            err_msg = f"The image editing model ('dall-e-2') might be unavailable, not supported by your key, or an authentication issue occurred: {err_msg}"
+        elif "Invalid image" in err_msg or "must be a PNG" in err_msg or "square" in err_msg or "size" in err_msg:
+            err_msg = f"Image validation failed. Ensure it's a square PNG under 4MB: {err_msg}"
+        
+        return jsonify({'error': f'OpenAI API error during image edit: {err_msg}'}), status_code
+    except Exception as e:
+        print(f"ERROR: edit_image - Unexpected Exception caught: {e}")
+        traceback.print_exc()
+        # Ensure a JSON response even for unexpected errors
+        return jsonify({'error': 'An internal server error occurred during image editing. Please check server logs.'}), 500
 
 # --- Main Execution --- 
 if __name__ == '__main__':
