@@ -36,7 +36,9 @@
                     <!-- Optional: Clear button can be added here via JS -->
                 </div>
                 <div class="controls-wrapper">
-                     <select id="model-select">
+                    <input type="file" id="file-input" accept="image/png, image/jpeg, image/webp, application/pdf" style="display: none;"> 
+                    <button type="button" id="attach-file-button" title="Attach File"><i class="fas fa-paperclip"></i></button>
+                    <select id="model-select">
                         <!-- Group OpenAI models -->
                         <optgroup label="OpenAI">
                             <option value="gpt-image-1">GPT Image 1</option>

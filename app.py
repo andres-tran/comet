@@ -49,19 +49,53 @@ def check_api_keys(model_name):
     return missing
 
 # --- Streaming Generator for OpenRouter ---
-def stream_openrouter(query, model_name_with_suffix, reasoning_config=None):
+def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uploaded_file_data=None, file_type=None):
     """Generator for responses from OpenRouter.
     Uses streaming for all OpenRouter models.
     Accepts an optional reasoning_config dictionary.
+    Accepts optional uploaded_file_data (base64 data URL) and file_type ('image' or 'pdf').
     """
     if not openrouter_api_key:
         yield f"data: {json.dumps({'error': 'OpenRouter API key not configured.'})}\n\n"
         return
 
     enhanced_openrouter_system_prompt = "You are Comet, a helpful and fun AI agent."
+    
+    user_content_parts = [{"type": "text", "text": query}]
+
+    if uploaded_file_data and file_type:
+        if file_type == "image":
+            if not uploaded_file_data.startswith("data:image"):
+                # Basic check, could be more robust
+                yield f"data: {json.dumps({'error': 'Invalid image data format. Expected data URL.'})}\n\n"
+                return
+            user_content_parts.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": uploaded_file_data
+                }
+            })
+            print(f"Image data included for OpenRouter. Type: {file_type}, Data starts with: {uploaded_file_data[:50]}...")
+        elif file_type == "pdf":
+            if not uploaded_file_data.startswith("data:application/pdf"):
+                # Basic check
+                yield f"data: {json.dumps({'error': 'Invalid PDF data format. Expected data URL.'})}\n\n"
+                return
+            user_content_parts.append({
+                "type": "file",
+                "file": {
+                    "filename": "uploaded_document.pdf", # Generic filename for now
+                    "file_data": uploaded_file_data
+                }
+            })
+            print(f"PDF data included for OpenRouter. Type: {file_type}, Data starts with: {uploaded_file_data[:50]}...")
+        else:
+            yield f"data: {json.dumps({'error': 'Unsupported file_type for multimodal input.'})}\n\n"
+            return
+        
     messages = [
         {"role": "system", "content": enhanced_openrouter_system_prompt},
-        {"role": "user", "content": query}
+        {"role": "user", "content": user_content_parts if uploaded_file_data else query}
     ]
 
     try:
@@ -190,6 +224,8 @@ def search():
     print("--- Request received at /search endpoint ---")
     query = request.json.get('query')
     selected_model = request.json.get('model')
+    uploaded_file_data = request.json.get('uploaded_file_data')
+    file_type = request.json.get('file_type')
 
     if not query:
         return jsonify({'error': 'No query provided'}), 400
@@ -217,7 +253,21 @@ def search():
         if selected_model.endswith(':thinking'):
             print(f"Model {selected_model} is a :thinking model. Setting default reasoning_config with exclude:True.")
             reasoning_config_to_pass = {"effort": "high", "exclude": True}
-        generator = stream_openrouter(query, selected_model, reasoning_config_to_pass)
+        
+        print_query = query[:100] + "..." if query and len(query) > 100 else query
+        print_file_data = ""
+        if uploaded_file_data:
+            print_file_data = f", FileType: {file_type}, FileData (starts with): {uploaded_file_data[:50]}..."
+        
+        print(f"Routing to OpenRouter. Query: '{print_query}'{print_file_data}, Model: {selected_model}")
+
+        generator = stream_openrouter(
+            query, 
+            selected_model, 
+            reasoning_config_to_pass,
+            uploaded_file_data=uploaded_file_data,
+            file_type=file_type
+        )
         return Response(generator, mimetype='text/event-stream')
     else:
         print(f"Error: Model '{selected_model}' is in ALLOWED_MODELS but not recognized for routing logic.")

@@ -248,16 +248,50 @@ body {
     border-radius: 18px;
     background-color: var(--select-bg-color);
     color: var(--text-color);
-    outline: none;
-    cursor: pointer;
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    background-repeat: no-repeat;
-    background-position: right 10px top 50%;
-    background-size: .65em auto;
-    padding-right: 30px;
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    text-align: left;
+    height: 36px;
+    line-height: normal;
+}
+
+#model-select:hover {
+    border-color: var(--primary-color);
+}
+
+#attach-file-button {
+    font-size: 0.85rem;
+    padding: 0 10px;
+    margin-right: 5px;
+    border: 1px solid var(--select-border-color);
+    border-radius: 18px;
+    background-color: var(--select-bg-color);
+    color: var(--text-muted-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    text-align: center;
+}
+
+#attach-file-button:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+#attach-file-button.file-attached {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+#attach-file-button i {
+    font-size: 1em;
 }
 
 #model-select optgroup {

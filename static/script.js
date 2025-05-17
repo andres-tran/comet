@@ -25,6 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const body = document.body; // Get body element
     const metaThemeColor = document.getElementById('theme-color-meta'); // Get theme-color meta tag
     const newSearchButton = document.getElementById('new-search-button'); // Get new search button
+    const fileInput = document.getElementById('file-input'); // Get file input
+    const attachFileButton = document.getElementById('attach-file-button'); // Get attach file button
+
+    // --- State for uploaded file ---
+    let uploadedFileBase64 = null;
+    let uploadedFileType = null;
+    let uploadedFileName = null;
 
     // Configure marked.js (optional: customize options here if needed)
     // marked.setOptions({...});
@@ -83,8 +90,52 @@ document.addEventListener('DOMContentLoaded', () => {
             errorContainer.textContent = '';
             downloadArea.style.display = 'none';
             downloadArea.innerHTML = '';
+            clearAttachedFile(); // Clear any attached file
             input.focus();
         });
+    }
+
+    // --- File Input Handling ---
+    if (attachFileButton && fileInput) {
+        attachFileButton.addEventListener('click', () => {
+            fileInput.click(); // Trigger the hidden file input
+        });
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedFileBase64 = e.target.result;
+                    uploadedFileType = file.type;
+                    uploadedFileName = file.name;
+                    console.log("File attached:", uploadedFileName, uploadedFileType);
+                    // Visual feedback: Change button to indicate file is attached
+                    attachFileButton.innerHTML = '<i class="fas fa-file-alt"></i>'; // Change icon to represent a file
+                    attachFileButton.title = `Attached: ${uploadedFileName}`; 
+                };
+                reader.onerror = (err) => {
+                    console.error("Error reading file:", err);
+                    displayError("Error reading file. Please try again.");
+                    clearAttachedFile();
+                };
+                reader.readAsDataURL(file);
+            }
+            // Reset file input value so change event fires for same file
+            fileInput.value = null; 
+        });
+    }
+
+    function clearAttachedFile() {
+        uploadedFileBase64 = null;
+        uploadedFileType = null;
+        uploadedFileName = null;
+        if (fileInput) fileInput.value = null; // Clear the file input element
+        if (attachFileButton) {
+            attachFileButton.innerHTML = '<i class="fas fa-paperclip"></i>'; // Reset icon
+            attachFileButton.title = 'Attach File';
+        }
+        console.log("Cleared attached file.");
     }
 
     // Helper function to render Markdown and wrap tables
@@ -154,16 +205,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const query = input.value.trim();
         const selectedModel = modelSelect.value;
 
-        if (!query) {
-            displayError("Please enter a search query.");
+        if (!query && !uploadedFileBase64) { // Require query if no file, or file if no query
+            displayError("Please enter a search query or attach a file.");
             return;
+        }
+        if (!query && uploadedFileBase64) {
+             // If only a file is present, we might need a default query for some models
+             // For now, let's allow it and the backend can decide. Or we can enforce a query.
+             console.log("Proceeding with file only, no text query.");
         }
 
         // Prepare payload
         const payload = {
-            query: query,
+            query: query, // Query can be empty if a file is attached
             model: selectedModel
         };
+
+        if (uploadedFileBase64 && uploadedFileType) {
+            payload.uploaded_file_data = uploadedFileBase64;
+            if (uploadedFileType.startsWith('image/')) {
+                payload.file_type = 'image';
+            } else if (uploadedFileType === 'application/pdf') {
+                payload.file_type = 'pdf';
+            } else {
+                console.warn("Unsupported file type stored:", uploadedFileType);
+                // displayError might be too disruptive here, backend will validate.
+            }
+        }
 
         // Reset UI states
         resultsContainer.style.display = 'block'; // Make sure results container is visible
