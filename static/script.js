@@ -257,7 +257,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Set appropriate thinking text
         if (selectedModel === 'gpt-image-1') {
-            thinkingText.textContent = 'Generating an image...';
+            if (payload.uploaded_file_data && payload.file_type === 'image') {
+                thinkingText.textContent = 'Editing image...'; // New text for editing
+            } else {
+                thinkingText.textContent = 'Generating image...';
+            }
         } else {
             thinkingText.textContent = 'Thinking...'; // Unified for OpenRouter text models
         }
@@ -300,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const img = document.createElement('img');
                     // gpt-image-1 from direct OpenAI API sends raw base64 for PNG
                     img.src = `data:image/png;base64,${data.image_base64}`;
-                    img.alt = query;
+                    img.alt = data.is_edit ? "Edited Image: " + query : "Generated Image: " + query;
                     img.classList.add('generated-image');
                     resultsContainer.appendChild(img);
 
