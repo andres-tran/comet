@@ -612,8 +612,8 @@ body.dark-mode .results-container-perplexity pre {
         font-size: 1.8rem; /* Slightly smaller logo */
     }
     .search-header h1 {
-        font-size: 1.2rem; /* Smaller subtitle */
-        margin-bottom: 15px;
+        font-size: 1.4rem; /* Smaller subtitle, was 1.2rem */
+        margin-bottom: 30px; /* Was 15px */
     }
     .search-form-perplexity {
         flex-direction: column; /* Stack input and controls */
