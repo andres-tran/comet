@@ -182,7 +182,28 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
                     "engine": "pdf-text" # Free and good for text-based PDFs
                 }
             })
-    
+    # Also use pdf-text parser for gpt-4.1 with PDFs
+    elif actual_model_name_for_sdk == "openai/gpt-4.1" and file_type == "pdf":
+        print(f"Using explicit pdf-text parser for {actual_model_name_for_sdk} with PDF.")
+        if "plugins" not in extra_body_params:
+            extra_body_params["plugins"] = []
+        
+        parser_exists = False
+        for plugin in extra_body_params["plugins"]:
+            if plugin.get("id") == "file-parser":
+                parser_exists = True
+                if "pdf" not in plugin:
+                    plugin["pdf"] = {}
+                plugin["pdf"]["engine"] = "pdf-text"
+                break
+        if not parser_exists:
+            extra_body_params["plugins"].append({
+                "id": "file-parser",
+                "pdf": {
+                    "engine": "pdf-text"
+                }
+            })
+
     try:
         print(f"Calling OpenRouter for {actual_model_name_for_sdk}. Reasoning: {reasoning_config}. Extra Body: {extra_body_params}")
         stream = openrouter_client_instance.chat.completions.create(**sdk_params, extra_body=extra_body_params)
