@@ -31,6 +31,7 @@ OPENROUTER_MODELS = {
     "perplexity/sonar-reasoning-pro",
     "openai/gpt-4o-search-preview",
     "openai/gpt-4.5-preview",
+    "openai/codex-mini",
 }
 ALLOWED_MODELS = OPENROUTER_MODELS.copy()
 ALLOWED_MODELS.add("gpt-image-1")
