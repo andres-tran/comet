@@ -200,13 +200,46 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
 
         yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
     except openai.APIError as e:
-        print(f"OpenRouter API error (streaming for {model_name_with_suffix}): {e}")
-        err_msg = str(e)
-        if hasattr(e, 'body') and isinstance(e.body, dict) and 'message' in e.body:
-            err_msg = e.body['message']
-        elif hasattr(e, 'message'):
-             err_msg = e.message
-        yield f"data: {json.dumps({'error': f'OpenRouter API error: {err_msg}'})}\n\n"
+        print(f"OpenRouter API error (streaming for {model_name_with_suffix}): {e.status_code if hasattr(e, 'status_code') else 'N/A'} - {e}")
+        error_payload = {
+            'message': str(e), # Default message
+            'code': e.status_code if hasattr(e, 'status_code') else None
+        }
+        try:
+            # According to OpenRouter docs, error details are in e.body or e.json()
+            # The openai-python library often puts the parsed JSON error in e.body directly for APIError
+            if hasattr(e, 'body') and isinstance(e.body, dict) and 'error' in e.body:
+                # If e.body has the structured error (e.g., {'error': {'code': ..., 'message': ...}})
+                error_detail = e.body['error']
+                if isinstance(error_detail, dict):
+                    error_payload['message'] = error_detail.get('message', error_payload['message'])
+                    error_payload['code'] = error_detail.get('code', error_payload['code'])
+                    if 'metadata' in error_detail:
+                        error_payload['metadata'] = error_detail['metadata']
+                elif isinstance(error_detail, str): # Sometimes it might just be a string message
+                     error_payload['message'] = error_detail
+            elif hasattr(e, 'message') and e.message: # Fallback to e.message if e.body is not as expected
+                error_payload['message'] = e.message
+            
+            # If the error is from a non-200 HTTP response and body might be raw JSON string
+            # This case might be less common with the openai client library but good to consider.
+            elif hasattr(e, 'response') and hasattr(e.response, 'text'):
+                try:
+                    response_json = json.loads(e.response.text)
+                    if 'error' in response_json and isinstance(response_json['error'], dict):
+                        error_detail = response_json['error']
+                        error_payload['message'] = error_detail.get('message', error_payload['message'])
+                        error_payload['code'] = error_detail.get('code', error_payload['code'])
+                        if 'metadata' in error_detail:
+                            error_payload['metadata'] = error_detail['metadata']
+                except json.JSONDecodeError:
+                    print("Could not parse e.response.text as JSON for detailed error.")
+
+        except Exception as parsing_exc:
+            print(f"Exception while parsing APIError details: {parsing_exc}")
+            # Stick with the basic error_payload if parsing fails
+
+        yield f"data: {json.dumps({'error': error_payload})}\n\n"
     except Exception as e:
         print(f"Error during OpenRouter stream for {model_name_with_suffix}: {e}")
         traceback.print_exc()
@@ -251,8 +284,9 @@ def search():
     elif selected_model in OPENROUTER_MODELS:
         reasoning_config_to_pass = None # Initialize
         if selected_model.endswith(':thinking'):
-            print(f"Model {selected_model} is a :thinking model. Setting default reasoning_config with exclude:True.")
-            reasoning_config_to_pass = {"effort": "high", "exclude": True}
+            print(f"Model {selected_model} is a :thinking model. Setting reasoning_config for high effort and including reasoning tokens.")
+            # Set exclude to False (or omit) to include reasoning tokens in the response
+            reasoning_config_to_pass = {"effort": "high", "exclude": False}
         
         print_query = query[:100] + "..." if query and len(query) > 100 else query
         print_file_data = ""

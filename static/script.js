@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const newSearchButton = document.getElementById('new-search-button'); // Get new search button
     const fileInput = document.getElementById('file-input'); // Get file input
     const attachFileButton = document.getElementById('attach-file-button'); // Get attach file button
+    const reasoningContainer = document.getElementById('reasoning-container'); // Get reasoning container
+    const reasoningContent = document.getElementById('reasoning-content'); // Get reasoning content div
 
     // --- State for uploaded file ---
     let uploadedFileBase64 = null;
@@ -172,10 +174,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentEventSource = null;
     let currentResultsWrapper = null;
     let markdownBuffer = ""; // Buffer for accumulating markdown content
+    let reasoningBuffer = ""; // Buffer for accumulating reasoning content
     let chartInstance = null; // To keep track of the chart
 
     function initializeNewSearch() {
         markdownBuffer = ""; // Clear buffer for new search
+        reasoningBuffer = ""; // Clear reasoning buffer
         if (currentResultsWrapper) {
             currentResultsWrapper.innerHTML = ''; // Clear previous results content
         }
@@ -191,7 +195,12 @@ document.addEventListener('DOMContentLoaded', () => {
         currentResultsWrapper = document.createElement('div');
         currentResultsWrapper.className = 'response-item'; // Add a class for styling if needed
         resultsContainer.appendChild(currentResultsWrapper);
-        resultsContainer.querySelector('.placeholder-text').style.display = 'none';
+        const placeholder = resultsContainer.querySelector('.placeholder-text');
+        if(placeholder) placeholder.style.display = 'none';
+
+        if (reasoningContainer) reasoningContainer.style.display = 'none'; // Hide reasoning container
+        if (reasoningContent) reasoningContent.innerHTML = ''; // Clear old reasoning
+
         thinkingIndicator.style.display = 'flex';
         errorContainer.textContent = '';
         errorContainer.style.display = 'none';
@@ -279,10 +288,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.error || `Error: ${response.status} ${response.statusText}`);
+                    // data.error here should be the structured error from Flask's jsonify
+                    throw data.error || new Error(`Error: ${response.status} ${response.statusText}`);
                 }
-                if (data.error) {
-                    throw new Error(data.error);
+                if (data.error) { // This might be redundant if !response.ok covers it via jsonify
+                    throw data.error; 
                 }
 
                 // Handle image response (this is the only case for this block now)
@@ -309,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } catch (error) {
                 console.error('Search failed for image model:', error);
-                displayError(error.message || 'An unexpected error occurred generating the image.');
+                displayError(error); // Pass the whole error object or message string
                 resultsContainer.style.display = 'none';
                 resultsContainer.innerHTML = '';
                 thinkingIndicator.style.display = 'none';
@@ -338,13 +348,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 // Handle immediate HTTP errors (e.g., 404, 500 before streaming starts)
-                let errorMessage = `Error: ${response.status} ${response.statusText}`;
+                let errorToThrow;
                 try {
                     // Try to get error from body if available
                     const errorData = await response.json(); // Non-streaming error response
-                    errorMessage = errorData.error || errorMessage;
-                } catch (e) { /* Ignore if body isn't JSON */ }
-                throw new Error(errorMessage);
+                    errorToThrow = errorData.error || new Error(`Error: ${response.status} ${response.statusText}`);
+                } catch (e) { 
+                    errorToThrow = new Error(`Error: ${response.status} ${response.statusText}. Could not parse error response.`);
+                }
+                throw errorToThrow;
             }
 
             // --- Revert to Live Text Streaming Logic ---
@@ -396,10 +408,19 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (data.error) {
                                     console.error("Error from stream data:", data.error);
                                     currentError = data.error; // Store the error
-                                    // Optionally, display error directly and stop further processing
-                                    displayError(data.error);
+                                    displayError(data.error); // Pass the structured error from stream
                                     resultsContainer.style.display = 'none'; 
                                     return; // Stop processing this stream
+                                }
+
+                                if (data.reasoning) {
+                                    reasoningBuffer += data.reasoning;
+                                    if (reasoningContent) {
+                                        reasoningContent.textContent = reasoningBuffer; // Display raw reasoning text
+                                    }
+                                    if (reasoningContainer && reasoningBuffer.trim() !== '') {
+                                        reasoningContainer.style.display = 'block'; // Show if there's content
+                                    }
                                 }
 
                                 if (data.chunk) {
@@ -410,6 +431,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (data.end_of_stream) {
                                     console.log('End of stream signal received from backend.');
                                     // The main loop's `done` condition will handle final cleanup.
+                                    if (reasoningBuffer.trim() === '' && reasoningContainer) {
+                                        reasoningContainer.style.display = 'none'; // Hide if empty
+                                    }
                                     return; // Or break, depending on if more data could follow `end_of_stream`
                                 }
 
@@ -434,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('Search failed:', error);
-            displayError(error.message || 'An unexpected error occurred.');
+            displayError(error); // Pass the whole error object or message string
             resultsContainer.style.display = 'none'; // Hide results on error
             resultsContainer.innerHTML = ''; // Clear any partial results
             thinkingIndicator.style.display = 'none'; // Hide thinking indicator on fetch error
@@ -449,8 +473,52 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function displayError(message) {
-        errorContainer.textContent = message;
+    function displayError(errorInput) {
+        let displayHTML = '';
+        if (typeof errorInput === 'string') {
+            displayHTML = `<p>${errorInput}</p>`;
+        } else if (errorInput && typeof errorInput === 'object') {
+            // Main message
+            displayHTML = `<p>${errorInput.message || 'An unspecified error occurred.'}</p>`;
+            
+            // Code
+            if (errorInput.code) {
+                displayHTML += `<p><small>Error Code: ${errorInput.code}</small></p>`;
+            }
+
+            // Metadata
+            if (errorInput.metadata) {
+                let metadataHTML = '<div class="error-metadata"><small><strong>Details:</strong><ul>';
+                if (errorInput.metadata.provider_name) {
+                    metadataHTML += `<li>Provider: ${errorInput.metadata.provider_name}</li>`;
+                }
+                if (errorInput.metadata.reasons && Array.isArray(errorInput.metadata.reasons)) {
+                    metadataHTML += '<li>Reasons:<ul>';
+                    errorInput.metadata.reasons.forEach(reason => {
+                        metadataHTML += `<li>${reason}</li>`;
+                    });
+                    metadataHTML += '</ul></li>';
+                }
+                if (errorInput.metadata.flagged_input) {
+                    // Sanitize flagged_input before displaying to prevent XSS
+                    const flaggedInputText = document.createElement('textarea');
+                    flaggedInputText.textContent = errorInput.metadata.flagged_input;
+                    metadataHTML += `<li>Flagged Input: <pre><code>${flaggedInputText.innerHTML}</code></pre></li>`;
+                }
+                // Could add more specific metadata handling here if needed
+                if (errorInput.metadata.raw && typeof errorInput.metadata.raw === 'string') {
+                     metadataHTML += `<li>Raw details: ${errorInput.metadata.raw.substring(0,100)}...</li>`;
+                } else if (errorInput.metadata.raw && typeof errorInput.metadata.raw === 'object') {
+                    metadataHTML += `<li>Raw details: ${JSON.stringify(errorInput.metadata.raw).substring(0,100)}...</li>`;
+                }
+                metadataHTML += '</ul></small></div>';
+                displayHTML += metadataHTML;
+            }
+        } else {
+            displayHTML = '<p>An unexpected error occurred. Check the console for details.</p>';
+        }
+
+        errorContainer.innerHTML = displayHTML;
         errorContainer.style.display = 'block';
         resultsContainer.classList.add('error'); // Add error class for potential styling
         downloadArea.style.display = 'none'; // Hide download area on error
