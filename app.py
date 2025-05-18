@@ -34,6 +34,9 @@ OPENROUTER_MODELS = {
     "openai/gpt-4.5-preview",
     "openai/codex-mini",
     "openai/o4-mini-high",
+    "deepseek/deepseek-r1",
+    "google/gemini-2.5-flash-preview:thinking",
+    "openai/o3-mini-high",
 }
 ALLOWED_MODELS = OPENROUTER_MODELS.copy()
 ALLOWED_MODELS.add("gpt-image-1")
@@ -146,6 +149,12 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         max_tokens_val = 16384
     elif actual_model_name_for_sdk == "openai/o4-mini-high": # Was 100,000. Total context 200k. Reducing to leave more room for prompt.
         max_tokens_val = 95000
+    elif actual_model_name_for_sdk == "deepseek/deepseek-r1:free":
+        max_tokens_val = 163800 # Reduced slightly to accommodate prompt tokens
+    elif actual_model_name_for_sdk == "google/gemini-2.5-flash-preview:thinking":
+        max_tokens_val = 65535
+    elif actual_model_name_for_sdk == "openai/o3-mini-high":
+        max_tokens_val = 100000
     # For other models, max_tokens_val remains the default of 30000
 
     sdk_params = {
