@@ -23,22 +23,13 @@ openai_client = openai.OpenAI(api_key=openai_api_key) if openai_api_key else Non
 # Allowed models
 OPENROUTER_MODELS = {
     "google/gemini-2.5-pro-preview",
-    "x-ai/grok-3-mini-beta:online",
-    "x-ai/grok-3-beta:online",
-    "anthropic/claude-3.7-sonnet",
-    "anthropic/claude-3.7-sonnet:thinking",
-    "openai/gpt-4o-2024-11-20:online",
-    "openai/gpt-4.1",
     "perplexity/sonar-reasoning-pro",
-    "openai/gpt-4o-search-preview",
+    "openai/gpt-4.1",
     "openai/gpt-4.5-preview",
     "openai/codex-mini",
-    "openai/o4-mini-high",
-    "deepseek/deepseek-r1",
-    "google/gemini-2.5-flash-preview:thinking",
-    "openai/o3-mini-high",
     "anthropic/claude-sonnet-4",
     "anthropic/claude-opus-4",
+    "google/gemini-2.5-flash-preview-05-20:thinking",
 }
 ALLOWED_MODELS = OPENROUTER_MODELS.copy()
 ALLOWED_MODELS.add("gpt-image-1")
@@ -159,6 +150,8 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         max_tokens_val = 100000
     elif actual_model_name_for_sdk == "anthropic/claude-opus-4": # 32,000 token context window
         max_tokens_val = 32000
+    elif actual_model_name_for_sdk == "google/gemini-2.5-flash-preview-05-20:thinking": # 1,048,576 token context window
+        max_tokens_val = 1048576
     # For other models, max_tokens_val remains the default of 30000
 
     sdk_params = {
