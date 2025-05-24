@@ -134,8 +134,8 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
     # Adjust max_tokens based on model specifics
     if actual_model_name_for_sdk == "perplexity/sonar-reasoning-pro": # 128,000 total context
         max_tokens_val = 128000 - 4096 # Reserve 4096 for prompt (Perplexity specific)
-    elif actual_model_name_for_sdk == "openai/gpt-4.1": # Stated 32,768 generation capacity
-        max_tokens_val = 32768
+    elif actual_model_name_for_sdk == "openai/gpt-4.1": # 1,047,576 token context window
+        max_tokens_val = 1047576 - 4096  # Reserve 4096 tokens for prompt
     elif actual_model_name_for_sdk == "openai/gpt-4o-search-preview": # Stated 16,384 generation capacity
         max_tokens_val = 16384
     elif actual_model_name_for_sdk == "openai/gpt-4.5-preview": # 128,000 token context window
