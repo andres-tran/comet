@@ -151,7 +151,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
     elif actual_model_name_for_sdk == "anthropic/claude-opus-4": # 32,000 token context window
         max_tokens_val = 32000
     elif actual_model_name_for_sdk == "google/gemini-2.5-flash-preview-05-20:thinking": # 1,048,576 token context window
-        max_tokens_val = 1048576
+        max_tokens_val = 1048576 - 4096  # Reserve 4096 tokens for prompt, similar to Perplexity
     # For other models, max_tokens_val remains the default of 30000
 
     sdk_params = {
