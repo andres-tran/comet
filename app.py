@@ -138,8 +138,8 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         max_tokens_val = 32768
     elif actual_model_name_for_sdk == "openai/gpt-4o-search-preview": # Stated 16,384 generation capacity
         max_tokens_val = 16384
-    elif actual_model_name_for_sdk == "openai/gpt-4.5-preview": # Stated 16,384 generation capacity
-        max_tokens_val = 16384
+    elif actual_model_name_for_sdk == "openai/gpt-4.5-preview": # 128,000 token context window
+        max_tokens_val = 128000 - 4096  # Reserve 4096 tokens for prompt
     elif actual_model_name_for_sdk == "openai/o4-mini-high": # Was 100,000. Total context 200k. Reducing to leave more room for prompt.
         max_tokens_val = 95000
     elif actual_model_name_for_sdk == "deepseek/deepseek-r1:free":
@@ -154,6 +154,8 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         max_tokens_val = 200000 - 4096  # Reserve 4096 tokens for prompt
     elif actual_model_name_for_sdk == "google/gemini-2.5-flash-preview-05-20:thinking": # 1,048,576 token context window
         max_tokens_val = 1048576 - 4096  # Reserve 4096 tokens for prompt, similar to Perplexity
+    elif actual_model_name_for_sdk == "openai/codex-mini": # 200,000 token context window
+        max_tokens_val = 200000 - 4096  # Reserve 4096 tokens for prompt
     # For other models, max_tokens_val remains the default of 30000
 
     sdk_params = {
