@@ -37,6 +37,7 @@ OPENROUTER_MODELS = {
     "deepseek/deepseek-r1",
     "google/gemini-2.5-flash-preview:thinking",
     "openai/o3-mini-high",
+    "anthropic/claude-sonnet-4",
 }
 ALLOWED_MODELS = OPENROUTER_MODELS.copy()
 ALLOWED_MODELS.add("gpt-image-1")
