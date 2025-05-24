@@ -38,6 +38,7 @@ OPENROUTER_MODELS = {
     "google/gemini-2.5-flash-preview:thinking",
     "openai/o3-mini-high",
     "anthropic/claude-sonnet-4",
+    "anthropic/claude-opus-4",
 }
 ALLOWED_MODELS = OPENROUTER_MODELS.copy()
 ALLOWED_MODELS.add("gpt-image-1")
@@ -405,6 +406,8 @@ I'm here to assist you with your tasks and look forward to working together to a
         max_tokens_val = 65535
     elif actual_model_name_for_sdk == "openai/o3-mini-high":
         max_tokens_val = 100000
+    elif actual_model_name_for_sdk == "anthropic/claude-opus-4": # 32,000 token context window
+        max_tokens_val = 32000
     # For other models, max_tokens_val remains the default of 30000
 
     sdk_params = {
