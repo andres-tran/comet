@@ -57,7 +57,13 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         yield f"data: {json.dumps({'error': 'OpenRouter API key not configured.'})}\n\n"
         return
 
-    enhanced_openrouter_system_prompt = 'You are a helpful assistant.'
+    # Improved system prompt for better responses
+    enhanced_openrouter_system_prompt = (
+        "You are Comet, an expert, friendly, and detail-oriented AI assistant. "
+        "Always provide clear, accurate, and actionable answers. "
+        "When appropriate, show your reasoning step by step, and ask clarifying questions if the user's request is ambiguous. "
+        "Format your responses for readability, using lists, headings, and code blocks as needed."
+    )
     
     user_content_parts = [{"type": "text", "text": query}]
 
@@ -160,17 +166,24 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         max_tokens_val = 200000 - 4096  # Reserve 4096 tokens for prompt
     # For other models, max_tokens_val remains the default of 30000
 
+    # Always enable reasoning for models that support it (e.g., :thinking or reasoning_config)
+    reasoning_config_to_pass = None
+    if model_name_with_suffix.endswith(':thinking') or 'thinking' in model_name_with_suffix or 'reasoning' in model_name_with_suffix:
+        reasoning_config_to_pass = {"effort": "high", "exclude": False}
+
     sdk_params = {
         "model": actual_model_name_for_sdk,
         "messages": messages,
         "stream": True,
-        "max_tokens": max_tokens_val
+        "max_tokens": max_tokens_val,
+        "temperature": 0.7,  # More creative, but not too random
+        "top_p": 0.95        # Encourage diversity
     }
 
     extra_body_params = {}
     # If reasoning_config is passed (e.g. for :thinking models with exclude: True)
-    if reasoning_config:
-        extra_body_params["reasoning"] = reasoning_config
+    if reasoning_config_to_pass:
+        extra_body_params["reasoning"] = reasoning_config_to_pass
 
     # Explicitly use pdf-text parser for o4-mini-high with PDFs
     if actual_model_name_for_sdk == "openai/o4-mini-high" and file_type == "pdf":
@@ -217,7 +230,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
             })
 
     try:
-        print(f"Calling OpenRouter for {actual_model_name_for_sdk}. Reasoning: {reasoning_config}. Extra Body: {extra_body_params}")
+        print(f"Calling OpenRouter for {actual_model_name_for_sdk}. Reasoning: {reasoning_config_to_pass}. Extra Body: {extra_body_params}")
         stream = openrouter_client_instance.chat.completions.create(**sdk_params, extra_body=extra_body_params)
         buffer = ""
         in_chart_config_block = False
@@ -367,12 +380,6 @@ def search():
             print(f"Routing to OpenAI Image Generation. Query: '{query}'")
             return generate_image(query)
     elif selected_model in OPENROUTER_MODELS:
-        reasoning_config_to_pass = None # Initialize
-        if selected_model.endswith(':thinking'):
-            print(f"Model {selected_model} is a :thinking model. Setting reasoning_config for high effort and including reasoning tokens.")
-            # Set exclude to False (or omit) to include reasoning tokens in the response
-            reasoning_config_to_pass = {"effort": "high", "exclude": False}
-        
         print_query = query[:100] + "..." if query and len(query) > 100 else query
         print_file_data = ""
         if uploaded_file_data:
@@ -383,7 +390,7 @@ def search():
         generator = stream_openrouter(
             query, 
             selected_model, 
-            reasoning_config_to_pass,
+            reasoning_config=None,
             uploaded_file_data=uploaded_file_data,
             file_type=file_type
         )
