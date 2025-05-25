@@ -751,4 +751,99 @@ body.dark-mode .results-container-perplexity pre {
     font-size: 0.95em;
     line-height: 1.5;
     color: var(--code-text-color); /* Use code text color for reasoning */
+}
+
+/* === Modern Card/Panel Effects === */
+.results-container-perplexity, .reasoning-container-perplexity {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1.5px 6px rgba(0,0,0,0.04);
+    border-radius: 18px;
+    background: var(--results-bg-color);
+    border: 1.5px solid var(--results-border-color);
+    margin-bottom: 24px;
+    transition: box-shadow 0.3s, background 0.3s, border 0.3s;
+}
+
+/* === File Preview Area === */
+#file-preview-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 10px 0 0 0;
+    padding: 8px 12px;
+    background: var(--code-block-outer-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    min-height: 44px;
+    font-size: 0.95em;
+    color: var(--text-color);
+    box-shadow: 0 1px 4px var(--results-shadow-color);
+    position: relative;
+}
+#file-preview-area img, #file-preview-area .pdf-icon {
+    max-width: 40px;
+    max-height: 40px;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px var(--results-shadow-color);
+}
+#file-preview-area .remove-file-btn {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-size: 1.1em;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: color 0.2s;
+}
+#file-preview-area .remove-file-btn:hover {
+    color: var(--primary-hover-color);
+}
+
+/* === Copy Buttons === */
+.copy-btn {
+    background: var(--select-bg-color);
+    border: 1px solid var(--select-border-color);
+    color: var(--text-muted-color);
+    border-radius: 8px;
+    padding: 4px 10px;
+    margin-left: 8px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.copy-btn:hover {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* === Skeleton Loader === */
+.skeleton-loader {
+    width: 100%;
+    min-height: 120px;
+    background: linear-gradient(90deg, var(--code-block-outer-bg) 25%, var(--code-block-inner-bg) 50%, var(--code-block-outer-bg) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.2s infinite linear;
+    border-radius: 14px;
+    margin: 18px 0;
+}
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* === Enhanced Spinner === */
+.spinner {
+    width: 28px;
+    height: 28px;
+    border-width: 4px;
+}
+
+/* === Smooth Dark Mode Transition === */
+body, .main-container, .results-container-perplexity, .reasoning-container-perplexity, #file-preview-area {
+    transition: background 0.3s, color 0.3s, border 0.3s, box-shadow 0.3s;
+}
+
+/* === Accessibility: Focus States === */
+.copy-btn:focus-visible, .remove-file-btn:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
 } 

@@ -98,11 +98,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- File Input Handling ---
+    const filePreviewArea = document.getElementById('file-preview-area');
+    function updateFilePreview() {
+        if (!uploadedFileBase64 || !uploadedFileType) {
+            filePreviewArea.style.display = 'none';
+            filePreviewArea.innerHTML = '';
+            return;
+        }
+        filePreviewArea.style.display = 'flex';
+        let previewHTML = '';
+        if (uploadedFileType.startsWith('image/')) {
+            previewHTML = `<img src="${uploadedFileBase64}" alt="Preview" />`;
+        } else if (uploadedFileType === 'application/pdf') {
+            previewHTML = `<span class="pdf-icon"><i class="fas fa-file-pdf"></i></span>`;
+        }
+        previewHTML += `<span>${uploadedFileName || 'File attached'}</span>`;
+        previewHTML += `<button class="remove-file-btn" title="Remove file" tabindex="0"><i class="fas fa-times"></i></button>`;
+        filePreviewArea.innerHTML = previewHTML;
+        // Remove file event
+        const removeBtn = filePreviewArea.querySelector('.remove-file-btn');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                clearAttachedFile();
+                updateFilePreview();
+            });
+        }
+    }
+
     if (attachFileButton && fileInput) {
         attachFileButton.addEventListener('click', () => {
-            fileInput.click(); // Trigger the hidden file input
+            fileInput.click();
         });
-
         fileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -111,33 +138,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     uploadedFileBase64 = e.target.result;
                     uploadedFileType = file.type;
                     uploadedFileName = file.name;
-                    console.log("File attached:", uploadedFileName, uploadedFileType);
-                    // Visual feedback: Change button to indicate file is attached
-                    attachFileButton.innerHTML = '<i class="fas fa-file-alt"></i>'; // Change icon to represent a file
-                    attachFileButton.title = `Attached: ${uploadedFileName}`; 
+                    attachFileButton.innerHTML = '<i class="fas fa-file-alt"></i>';
+                    attachFileButton.title = `Attached: ${uploadedFileName}`;
+                    updateFilePreview();
                 };
                 reader.onerror = (err) => {
-                    console.error("Error reading file:", err);
                     displayError("Error reading file. Please try again.");
                     clearAttachedFile();
+                    updateFilePreview();
                 };
                 reader.readAsDataURL(file);
             }
-            // Reset file input value so change event fires for same file
-            fileInput.value = null; 
+            fileInput.value = null;
         });
     }
-
     function clearAttachedFile() {
         uploadedFileBase64 = null;
         uploadedFileType = null;
         uploadedFileName = null;
-        if (fileInput) fileInput.value = null; // Clear the file input element
+        if (fileInput) fileInput.value = null;
         if (attachFileButton) {
-            attachFileButton.innerHTML = '<i class="fas fa-paperclip"></i>'; // Reset icon
+            attachFileButton.innerHTML = '<i class="fas fa-paperclip"></i>';
             attachFileButton.title = 'Attach File';
         }
-        console.log("Cleared attached file.");
+        filePreviewArea.style.display = 'none';
+        filePreviewArea.innerHTML = '';
     }
 
     // Helper function to render Markdown and wrap tables
@@ -475,6 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const loadingP = resultsContainer.querySelector('p.loading-text');
             if (loadingP) loadingP.remove();
         }
+        hideSkeletonLoader();
     });
 
     function displayError(errorInput) {
@@ -572,5 +598,55 @@ document.addEventListener('DOMContentLoaded', () => {
             if(currentResultsWrapper) currentResultsWrapper.appendChild(errorDiv);
             else resultsContainer.appendChild(errorDiv);
         }
+    }
+
+    // --- Skeleton Loader ---
+    const skeletonLoader = document.getElementById('skeleton-loader');
+    function showSkeletonLoader() {
+        if (skeletonLoader) skeletonLoader.style.display = 'block';
+    }
+    function hideSkeletonLoader() {
+        if (skeletonLoader) skeletonLoader.style.display = 'none';
+    }
+
+    // --- Copy to Clipboard Buttons ---
+    function copyToClipboard(text) {
+        if (!navigator.clipboard) {
+            // fallback
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        } else {
+            navigator.clipboard.writeText(text);
+        }
+    }
+    const copyResultsBtn = document.getElementById('copy-results-btn');
+    const copyReasoningBtn = document.getElementById('copy-reasoning-btn');
+    if (copyResultsBtn) {
+        copyResultsBtn.addEventListener('click', () => {
+            const text = resultsContainer ? resultsContainer.innerText : '';
+            copyToClipboard(text);
+            copyResultsBtn.classList.add('copied');
+            copyResultsBtn.title = 'Copied!';
+            setTimeout(() => {
+                copyResultsBtn.classList.remove('copied');
+                copyResultsBtn.title = 'Copy Results';
+            }, 1200);
+        });
+    }
+    if (copyReasoningBtn) {
+        copyReasoningBtn.addEventListener('click', () => {
+            const text = reasoningContent ? reasoningContent.innerText : '';
+            copyToClipboard(text);
+            copyReasoningBtn.classList.add('copied');
+            copyReasoningBtn.title = 'Copied!';
+            setTimeout(() => {
+                copyReasoningBtn.classList.remove('copied');
+                copyReasoningBtn.title = 'Copy Reasoning';
+            }, 1200);
+        });
     }
 }); 

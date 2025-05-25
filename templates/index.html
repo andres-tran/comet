@@ -36,8 +36,9 @@
                     <!-- Optional: Clear button can be added here via JS -->
                 </div>
                 <div class="controls-wrapper">
-                    <input type="file" id="file-input" accept="image/png, image/jpeg, image/webp, application/pdf" style="display: none;"> 
+                    <input type="file" id="file-input" accept="image/png, image/jpeg, image/webp, application/pdf" style="display: none;">
                     <button type="button" id="attach-file-button" title="Attach File"><i class="fas fa-paperclip"></i></button>
+                    <div id="file-preview-area" style="display:none;"></div>
                     <select id="model-select">
                         <!-- Group OpenAI models -->
                         <optgroup label="OpenAI">
@@ -56,44 +57,33 @@
                         </optgroup>
                     </select>
                     <button type="submit" id="search-button" title="Submit Search">
-                        <i class="fas fa-arrow-right"></i> <!-- Arrow Icon -->
+                        <i class="fas fa-arrow-right"></i>
                     </button>
                 </div>
             </form>
         </header>
 
         <main class="results-area">
-            <!-- Error Container -->
             <div id="error-container" class="error-perplexity"></div>
-
-            <!-- Thinking Indicator -->
             <div class="thinking-indicator" style="display: none;">
                 <div class="thinking-indicator-content">
                     <div class="spinner"></div>
                     <span id="thinking-text">Thinking...</span>
                 </div>
             </div>
-
-            <!-- Reasoning Area -->
+            <div id="skeleton-loader" class="skeleton-loader" style="display:none;"></div>
             <div id="reasoning-container" class="reasoning-container-perplexity" style="display: none;">
-                <h4>Reasoning Steps:</h4>
+                <h4>Reasoning Steps <button id="copy-reasoning-btn" title="Copy Reasoning" class="copy-btn"><i class="fas fa-copy"></i></button></h4>
                 <div id="reasoning-content"></div>
             </div>
-
-            <!-- Results Area -->
             <div id="results-container" class="results-container-perplexity" style="display: none;">
-                <!-- Initial placeholder message -->
                 <p class="placeholder-text">Your AI search results will appear here.</p>
-                <!-- Chart Placeholder -->
+                <button id="copy-results-btn" title="Copy Results" class="copy-btn"><i class="fas fa-copy"></i></button>
                 <div id="chart-container" style="width: 100%; max-width: 700px; margin: 20px auto; display: none;">
                     <canvas id="interactive-chart"></canvas>
                 </div>
             </div>
-
-            <!-- Download Button Area -->
-            <div id="download-area" style="text-align: center; margin-top: 15px; display: none;">
-                <!-- Download button will be added here -->
-            </div>
+            <div id="download-area" style="text-align: center; margin-top: 15px; display: none;"></div>
         </main>
 
          <!-- Optional: Footer can go here -->
