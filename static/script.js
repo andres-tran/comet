@@ -98,9 +98,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- File Input Handling ---
-    // Remove file preview logic
-    // Remove updateFilePreview and clearAttachedFile functions
-    // Remove file input and attachFileButton event listeners related to preview
+    if (attachFileButton && fileInput) {
+        attachFileButton.addEventListener('click', () => {
+            fileInput.click();
+        });
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedFileBase64 = e.target.result;
+                    uploadedFileType = file.type;
+                    uploadedFileName = file.name;
+                    attachFileButton.innerHTML = '<i class="fas fa-file-alt"></i>';
+                    attachFileButton.title = `Attached: ${uploadedFileName}`;
+                };
+                reader.onerror = (err) => {
+                    displayError("Error reading file. Please try again.");
+                    clearAttachedFile();
+                };
+                reader.readAsDataURL(file);
+            }
+            fileInput.value = null;
+        });
+    }
+    function clearAttachedFile() {
+        uploadedFileBase64 = null;
+        uploadedFileType = null;
+        uploadedFileName = null;
+        if (fileInput) fileInput.value = null;
+        if (attachFileButton) {
+            attachFileButton.innerHTML = '<i class="fas fa-paperclip"></i>';
+            attachFileButton.title = 'Attach File';
+        }
+    }
 
     // Helper function to render Markdown and wrap tables
     function renderAndUpdateTables(container, markdownContent) {
