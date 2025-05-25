@@ -91,7 +91,7 @@ body {
 
 .main-container {
     width: 100%;
-    max-width: 768px; /* Typical content width */
+    max-width: 1024px; /* Increased from 768px */
     padding: 0 20px;
     display: flex;
     flex-direction: column;
@@ -214,24 +214,27 @@ body {
 }
 
 .input-wrapper {
-    flex: 1;
+    flex: 2; /* Make input take more space */
+    min-width: 0;
     display: flex;
     align-items: center;
     position: relative;
-    padding-left: 15px; /* Space for icon */
+    padding-left: 15px;
 }
 
 #search-input {
     width: 100%;
-    padding: 10px 15px 10px 35px; /* Top/Bottom, Right, Left (make space for icon) */
-    font-size: 1rem;
+    min-width: 400px; /* Wider minimum width */
+    max-width: 700px; /* Allow it to grow wider */
+    padding: 10px 15px 10px 35px;
+    font-size: 1.1rem;
     border: none;
     outline: none;
     background: transparent;
     color: var(--text-color);
     border-radius: 18px;
     resize: none;
-    height: 40px;
+    height: 44px;
     box-sizing: border-box;
     font-family: inherit;
     overflow-y: auto;
