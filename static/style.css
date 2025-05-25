@@ -209,7 +209,7 @@ body {
     background-color: var(--input-bg-color);
     box-shadow: 0 2px 8px var(--results-shadow-color); /* Use shadow color var */
     overflow: hidden; /* Clip children to rounded corners */
-    padding: 5px; /* Padding around the internal elements */
+    padding: 8px; /* Increased padding */
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
@@ -226,7 +226,7 @@ body {
     width: 100%;
     min-width: 400px; /* Wider minimum width */
     max-width: 700px; /* Allow it to grow wider */
-    padding: 10px 15px 10px 35px;
+    padding: 15px 15px 15px 35px; /* Increased padding */
     font-size: 1.1rem;
     border: none;
     outline: none;
@@ -234,7 +234,7 @@ body {
     color: var(--text-color);
     border-radius: 18px;
     resize: none;
-    height: 44px;
+    height: 60px; /* Increased from 44px */
     box-sizing: border-box;
     font-family: inherit;
     overflow-y: auto;
@@ -269,7 +269,7 @@ body {
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease;
     text-align: left;
-    height: 36px;
+    height: 60px; /* Match search input height */
     line-height: normal;
 }
 
@@ -287,7 +287,7 @@ body {
     color: var(--text-muted-color);
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-    height: 36px;
+    height: 60px; /* Match search input height */
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -316,7 +316,7 @@ body {
 }
 
 #search-button {
-    padding: 10px 12px;
+    padding: 15px 12px; /* Increased padding */
     font-size: 1rem;
     background-color: var(--primary-color);
     color: var(--button-text-color);
@@ -327,6 +327,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    height: 60px; /* Match search input height */
 }
 
 #search-button:hover {
