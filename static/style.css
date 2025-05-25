@@ -222,11 +222,37 @@ body {
     padding-left: 15px;
 }
 
+.input-icon-button {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted-color);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 8px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    transition: color 0.2s ease, background-color 0.2s ease;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.input-icon-button:hover {
+    color: var(--primary-color);
+    background-color: var(--select-bg-color);
+}
+
 #search-input {
     width: 100%;
-    min-width: 400px; /* Wider minimum width */
-    max-width: 700px; /* Allow it to grow wider */
-    padding: 15px 15px 15px 35px; /* Increased padding */
+    min-width: 400px;
+    max-width: 700px;
+    padding: 15px 15px 15px 50px; /* Increased left padding to accommodate the icon button */
     font-size: 1.1rem;
     border: none;
     outline: none;
@@ -234,7 +260,7 @@ body {
     color: var(--text-color);
     border-radius: 18px;
     resize: none;
-    height: 60px; /* Increased from 44px */
+    height: 60px;
     box-sizing: border-box;
     font-family: inherit;
     overflow-y: auto;
@@ -316,18 +342,20 @@ body {
 }
 
 #search-button {
-    padding: 15px 12px; /* Increased padding */
+    padding: 0;
     font-size: 1rem;
     background-color: var(--primary-color);
     color: var(--button-text-color);
     border: none;
-    border-radius: 18px; /* Rounded */
+    border-radius: 50%;
     cursor: pointer;
     transition: background-color 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 60px; /* Match search input height */
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
 }
 
 #search-button:hover {
@@ -699,13 +727,7 @@ body.dark-mode .results-container-perplexity pre {
 }
 
 .search-icon {
-    color: var(--input-placeholder-color);
-    font-size: 0.9rem;
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
+    display: none;
 }
 
 /* Chart.js specific styles if needed */
