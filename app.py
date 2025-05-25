@@ -176,9 +176,23 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         "messages": messages,
         "stream": True,
         "max_tokens": max_tokens_val,
-        "temperature": 0.7,  # More creative, but not too random
         "top_p": 0.95        # Encourage diversity
     }
+
+    # Only include temperature for models that support it
+    MODELS_WITH_TEMPERATURE = {
+        "perplexity/sonar-reasoning-pro",
+        "openai/gpt-4.1",
+        "openai/gpt-4.5-preview",
+        "openai/codex-mini",
+        "anthropic/claude-sonnet-4",
+        "anthropic/claude-opus-4",
+        "openai/o4-mini-high",
+        "openai/o3-mini-high",
+        # Add more as needed
+    }
+    if actual_model_name_for_sdk in MODELS_WITH_TEMPERATURE:
+        sdk_params["temperature"] = 0.7  # More creative, but not too random
 
     extra_body_params = {}
     # If reasoning_config is passed (e.g. for :thinking models with exclude: True)
