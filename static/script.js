@@ -98,72 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- File Input Handling ---
-    const filePreviewArea = document.getElementById('file-preview-area');
-    function updateFilePreview() {
-        if (!uploadedFileBase64 || !uploadedFileType) {
-            filePreviewArea.style.display = 'none';
-            filePreviewArea.innerHTML = '';
-            return;
-        }
-        filePreviewArea.style.display = 'flex';
-        let previewHTML = '';
-        if (uploadedFileType.startsWith('image/')) {
-            previewHTML = `<img src="${uploadedFileBase64}" alt="Preview" />`;
-        } else if (uploadedFileType === 'application/pdf') {
-            previewHTML = `<span class="pdf-icon"><i class="fas fa-file-pdf"></i></span>`;
-        }
-        previewHTML += `<span>${uploadedFileName || 'File attached'}</span>`;
-        previewHTML += `<button class="remove-file-btn" title="Remove file" tabindex="0"><i class="fas fa-times"></i></button>`;
-        filePreviewArea.innerHTML = previewHTML;
-        // Remove file event
-        const removeBtn = filePreviewArea.querySelector('.remove-file-btn');
-        if (removeBtn) {
-            removeBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                clearAttachedFile();
-                updateFilePreview();
-            });
-        }
-    }
-
-    if (attachFileButton && fileInput) {
-        attachFileButton.addEventListener('click', () => {
-            fileInput.click();
-        });
-        fileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    uploadedFileBase64 = e.target.result;
-                    uploadedFileType = file.type;
-                    uploadedFileName = file.name;
-                    attachFileButton.innerHTML = '<i class="fas fa-file-alt"></i>';
-                    attachFileButton.title = `Attached: ${uploadedFileName}`;
-                    updateFilePreview();
-                };
-                reader.onerror = (err) => {
-                    displayError("Error reading file. Please try again.");
-                    clearAttachedFile();
-                    updateFilePreview();
-                };
-                reader.readAsDataURL(file);
-            }
-            fileInput.value = null;
-        });
-    }
-    function clearAttachedFile() {
-        uploadedFileBase64 = null;
-        uploadedFileType = null;
-        uploadedFileName = null;
-        if (fileInput) fileInput.value = null;
-        if (attachFileButton) {
-            attachFileButton.innerHTML = '<i class="fas fa-paperclip"></i>';
-            attachFileButton.title = 'Attach File';
-        }
-        filePreviewArea.style.display = 'none';
-        filePreviewArea.innerHTML = '';
-    }
+    // Remove file preview logic
+    // Remove updateFilePreview and clearAttachedFile functions
+    // Remove file input and attachFileButton event listeners related to preview
 
     // Helper function to render Markdown and wrap tables
     function renderAndUpdateTables(container, markdownContent) {
