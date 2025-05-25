@@ -23,13 +23,13 @@ openai_client = openai.OpenAI(api_key=openai_api_key) if openai_api_key else Non
 # Allowed models
 OPENROUTER_MODELS = {
     "google/gemini-2.5-pro-preview",
+    "google/gemini-2.5-flash-preview-05-20:thinking",
     "perplexity/sonar-reasoning-pro",
     "openai/gpt-4.1",
     "openai/gpt-4.5-preview",
     "openai/codex-mini",
     "anthropic/claude-sonnet-4",
     "anthropic/claude-opus-4",
-    "google/gemini-2.5-flash-preview-05-20:thinking",
 }
 ALLOWED_MODELS = OPENROUTER_MODELS.copy()
 ALLOWED_MODELS.add("gpt-image-1")
