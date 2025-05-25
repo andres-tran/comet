@@ -100,85 +100,130 @@ body {
 /* === Search Header === */
 .search-header {
     margin-bottom: 40px;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-}
-
-.header-left-controls {
-    position: absolute;
-    top: 5px;
-    left: 0;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    height: 36px;
+    position: relative; /* For positioning header controls */
 }
 
 .header-controls {
     position: absolute;
-    top: 5px;
+    top: 5px; /* Adjust as needed */
     right: 0;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    height: 36px;
+    display: flex; /* Added to align items if multiple controls are here */
+    gap: 5px; /* Added space between buttons in this container */
 }
 
+#theme-toggle-button,
+#new-search-button {
+    background-color: var(--select-bg-color);
+    border: 1px solid var(--select-border-color);
+    color: var(--text-muted-color);
+    padding: 0 10px; /* Consistent padding for icon buttons */
+    border-radius: 18px;
+    cursor: pointer;
+    font-size: 0.85rem; /* Consistent font size */
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    height: 36px; /* Consistent height */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px; /* Ensure a minimum tap/click target size */
+}
+
+#theme-toggle-button:hover,
+#new-search-button:hover {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background-color: var(--select-bg-color); /* Keep background on hover, or make it slightly different if desired */
+}
+
+/* Focus visible styles for better accessibility */
+#model-select:focus-visible,
+#search-button:focus-visible,
+#theme-toggle-button:focus-visible,
+#new-search-button:focus-visible, /* Added new-search-button */
+#attach-file-button:focus-visible { /* Added attach-file-button */
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+#model-select:focus,
+#model-select:focus-visible {
+    outline: none;
+}
+
+/* Remove outline from search input on focus, as it's handled by the form's box-shadow or other indicators */
+#search-input:focus,
+#search-input:focus-visible {
+    outline: none;
+}
+
+/* Glowing orange effect when search input is focused */
+.search-form-perplexity:focus-within {
+    border-color: var(--primary-color);
+    box-shadow:
+        0 0 0 3px rgba(249, 115, 22, 0.20),   /* softer inner glow */
+        0 0 35px 10px rgba(249, 115, 22, 0.38); /* more diffused outer glow */
+    transition: box-shadow 0.5s ease-out;
+}
+
+.search-form-perplexity:hover {
+    border-color: var(--primary-color);
+    box-shadow:
+        0 0 0 3px rgba(249, 115, 22, 0.20),
+        0 0 35px 10px rgba(249, 115, 22, 0.38);
+    transition: box-shadow 0.5s ease-out;
+}
+
+/* Added styling for the Comet logo title */
 .logo-title {
     text-align: center;
-    font-size: 2rem;
+    font-size: 2rem; 
     font-weight: 600;
     color: var(--logo-color);
-    margin-bottom: 10px;
-    display: flex;
+    margin-bottom: 10px; /* Space below Comet title */
+    display: flex; /* Align emoji and text */
     justify-content: center;
     align-items: center;
-    gap: 0.3em;
-    width: 100%;
+    gap: 0.3em; /* Space between emoji and text */
+}
+
+.comet-emoji {
+    /* Optional: Adjust emoji size/position slightly if needed */
+    /* font-size: 0.9em; */ 
+    /* position: relative; */
+    /* top: -0.05em; */
 }
 
 .search-header h1 {
-    font-size: 1.7rem;
+    font-size: 1.7rem; /* Increased from 1.6rem */
     font-weight: 500;
     color: var(--text-muted-color);
-    margin-bottom: 50px;
+    margin-bottom: 50px; /* Increased from 45px */
     text-align: center;
-    width: 100%;
 }
 
 .search-form-perplexity {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
+    align-items: stretch; /* Make items same height */
     border: 1px solid var(--border-color);
-    border-radius: 24px;
+    border-radius: 24px; /* Rounded corners like Perplexity */
     background-color: var(--input-bg-color);
-    box-shadow: 0 2px 8px var(--results-shadow-color);
-    overflow: hidden;
-    padding: 5px 12px;
+    box-shadow: 0 2px 8px var(--results-shadow-color); /* Use shadow color var */
+    overflow: hidden; /* Clip children to rounded corners */
+    padding: 5px; /* Padding around the internal elements */
     transition: background-color 0.3s ease, border-color 0.3s ease;
-    width: 100%;
-    max-width: 700px;
-    margin: 0 auto;
 }
 
 .input-wrapper {
-    flex: 1 1 0%;
+    flex: 1;
     display: flex;
     align-items: center;
     position: relative;
-    padding-left: 15px;
-    min-width: 0;
-    gap: 0;
+    padding-left: 15px; /* Space for icon */
 }
 
 #search-input {
     width: 100%;
-    padding: 10px 15px 10px 35px;
+    padding: 10px 15px 10px 35px; /* Top/Bottom, Right, Left (make space for icon) */
     font-size: 1rem;
     border: none;
     outline: none;
@@ -190,7 +235,6 @@ body {
     box-sizing: border-box;
     font-family: inherit;
     overflow-y: auto;
-    display: block;
 }
 
 #search-input::placeholder {
@@ -200,9 +244,7 @@ body {
 .controls-wrapper {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding-left: 5px;
-    min-width: 0;
+    padding-left: 5px; /* Space between input and controls */
 }
 
 #model-select {
@@ -562,30 +604,9 @@ body.dark-mode .results-container-perplexity pre {
     .main-container {
         padding: 0 15px; /* Reduce side padding */
     }
-    .search-header {
-        align-items: stretch;
-    }
-    .search-form-perplexity {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-        padding: 10px;
-        max-width: 100%;
-    }
-    .input-wrapper {
-        padding-left: 10px;
-        margin-bottom: 10px;
-    }
-    .controls-wrapper {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-        padding-left: 0;
-        width: 100%;
-    }
-    #file-preview-area {
-        margin: 8px 0 0 0;
-        width: 100%;
+    .header-controls {
+        top: 2px; /* Adjust if needed */
+        right: 5px;
     }
     .logo-title {
         font-size: 1.8rem; /* Slightly smaller logo */
@@ -594,8 +615,37 @@ body.dark-mode .results-container-perplexity pre {
         font-size: 1.4rem; /* Smaller subtitle, was 1.2rem */
         margin-bottom: 30px; /* Was 15px */
     }
+    .search-form-perplexity {
+        flex-direction: column; /* Stack input and controls */
+        padding: 10px; /* Adjust padding for stacked layout */
+        border-radius: 18px; /* Maybe slightly smaller radius */
+    }
+    .input-wrapper {
+        padding-left: 10px; /* Adjust padding */
+        margin-bottom: 10px; /* Space when stacked */
+    }
+     #search-input {
+        padding: 10px 10px 10px 30px; /* Adjust padding */
+        font-size: 1rem; /* Changed from 0.95rem to 1rem (typically 16px) to prevent iOS zoom */
+    }
     .search-icon {
         left: 10px; /* Adjust icon position */
+    }
+    .controls-wrapper {
+        padding-left: 0; /* Remove padding when stacked */
+        justify-content: space-between; /* Space out select and button */
+        width: 100%; /* Make controls full width */
+    }
+    #model-select {
+        flex-grow: 1; /* Allow select to take more space */
+        margin-right: 8px; /* Adjust space */
+        padding: 9px 10px;
+        padding-right: 28px; /* Adjust for arrow */
+        font-size: 0.85rem;
+    }
+    #search-button {
+        padding: 9px 10px;
+        font-size: 0.9rem;
     }
     .results-container-perplexity {
         font-size: 0.95rem; /* Slightly smaller base font for results on mobile */
@@ -626,6 +676,22 @@ body.dark-mode .results-container-perplexity pre {
         overflow-wrap: break-word;
         word-break: break-all;
     }
+}
+
+.header-left-controls {
+    position: absolute;
+    top: 5px;
+    left: 0;
+    display: flex; /* Added to align items if multiple controls are here */
+    gap: 5px; /* Added space between buttons in this container */
+}
+
+#new-search-button {
+    /* Styles are now combined with #theme-toggle-button */
+}
+
+#new-search-button:hover {
+    /* Styles are now combined with #theme-toggle-button */
 }
 
 .search-icon {
@@ -699,9 +765,19 @@ body.dark-mode .results-container-perplexity pre {
 
 /* === File Preview Area === */
 #file-preview-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     margin: 10px 0 0 0;
-    width: 100%;
-    box-sizing: border-box;
+    padding: 8px 12px;
+    background: var(--code-block-outer-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    min-height: 44px;
+    font-size: 0.95em;
+    color: var(--text-color);
+    box-shadow: 0 1px 4px var(--results-shadow-color);
+    position: relative;
 }
 #file-preview-area img, #file-preview-area .pdf-icon {
     max-width: 40px;
@@ -770,133 +846,4 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
 .copy-btn:focus-visible, .remove-file-btn:focus-visible {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
-}
-
-/* === Consistent Button Styles === */
-.btn, #search-button, #attach-file-button, #theme-toggle-button, #new-search-button, .copy-btn, .remove-file-btn, #download-area a.download-button {
-    font-family: inherit;
-    font-size: 1rem;
-    border-radius: 18px;
-    border: 1px solid var(--select-border-color);
-    background: var(--select-bg-color);
-    color: var(--text-color);
-    padding: 8px 16px;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s, border 0.2s, box-shadow 0.2s;
-    box-shadow: 0 1px 2px var(--results-shadow-color);
-    outline: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5em;
-}
-.btn:hover, #search-button:hover, #attach-file-button:hover, #theme-toggle-button:hover, #new-search-button:hover, .copy-btn:hover, .remove-file-btn:hover, #download-area a.download-button:hover {
-    background: var(--primary-color);
-    color: var(--button-text-color);
-    border-color: var(--primary-color);
-}
-.btn:focus-visible, #search-button:focus-visible, #attach-file-button:focus-visible, #theme-toggle-button:focus-visible, #new-search-button:focus-visible, .copy-btn:focus-visible, .remove-file-btn:focus-visible, #download-area a.download-button:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-}
-
-/* Consistent Select and Input Styles */
-#model-select, #search-input, textarea {
-    font-family: inherit;
-    font-size: 1rem;
-    border-radius: 18px;
-    border: 1px solid var(--select-border-color);
-    background: var(--input-bg-color);
-    color: var(--text-color);
-    padding: 10px 15px;
-    transition: background 0.2s, color 0.2s, border 0.2s;
-    box-shadow: 0 1px 2px var(--results-shadow-color);
-    outline: none;
-}
-#model-select:focus, #search-input:focus, textarea:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px var(--primary-color);
-}
-
-/* Consistent File Preview */
-#file-preview-area {
-    background: var(--select-bg-color);
-    border: 1px solid var(--select-border-color);
-    border-radius: 12px;
-    box-shadow: 0 1px 2px var(--results-shadow-color);
-    color: var(--text-color);
-    font-size: 1rem;
-    padding: 8px 12px;
-    margin: 10px 0 0 0;
-    width: 100%;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-#file-preview-area img, #file-preview-area .pdf-icon {
-    max-width: 40px;
-    max-height: 40px;
-    border-radius: 8px;
-    box-shadow: 0 1px 2px var(--results-shadow-color);
-}
-#file-preview-area .remove-file-btn {
-    background: none;
-    border: none;
-    color: var(--primary-color);
-    font-size: 1.1em;
-    cursor: pointer;
-    margin-left: 8px;
-    transition: color 0.2s;
-    border-radius: 50%;
-    padding: 4px;
-    min-width: 32px;
-    min-height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-#file-preview-area .remove-file-btn:hover {
-    background: var(--primary-hover-color);
-    color: #fff;
-}
-
-/* Consistent Download Button */
-#download-area a.download-button {
-    background: var(--primary-color);
-    color: var(--button-text-color);
-    border: 1px solid var(--primary-color);
-    border-radius: 18px;
-    font-size: 1rem;
-    font-weight: 500;
-    padding: 8px 22px;
-    box-shadow: 0 1px 2px var(--results-shadow-color);
-    transition: background 0.2s, color 0.2s, border 0.2s;
-}
-#download-area a.download-button:hover {
-    background: var(--primary-hover-color);
-    border-color: var(--primary-hover-color);
-    color: #fff;
-}
-
-/* Consistent Copy Button */
-.copy-btn {
-    background: var(--select-bg-color);
-    border: 1px solid var(--select-border-color);
-    color: var(--text-muted-color);
-    border-radius: 18px;
-    padding: 6px 14px;
-    font-size: 1rem;
-    margin-left: 8px;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s, border 0.2s;
-    box-shadow: 0 1px 2px var(--results-shadow-color);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5em;
-}
-.copy-btn:hover {
-    background: var(--primary-color);
-    color: var(--button-text-color);
-    border-color: var(--primary-color);
 } 
