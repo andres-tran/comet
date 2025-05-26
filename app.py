@@ -1366,15 +1366,23 @@ def run_agentic_loop(query, model_name, max_iterations=5):
         "🛠️ **AVAILABLE TOOLS & CAPABILITIES:**\n"
         "🕒 **get_current_time**: Get current date and time for temporal context\n"
         "🧮 **calculate_math**: Perform mathematical calculations and analysis\n"
-        "🔍 **search_web_tool**: Enhanced web search with intelligent type detection\n"
+        "🔍 **search_web_tool**: Enhanced web search with intelligent type detection (Tavily-powered)\n"
         "   - Auto-detects search type (news, general, deep research)\n"
         "   - Returns quality-ranked results with metadata\n"
         "   - Configurable depth and result count\n"
+        "🌐 **search_web_openrouter**: OpenRouter web search via Perplexity (Real-time web access)\n"
+        "   - Uses Perplexity's sonar-reasoning-pro with built-in web search\n"
+        "   - Provides real-time web information with citations\n"
+        "   - Configurable search context size and detail level\n"
         "📝 **create_note**: Create and save structured notes or summaries\n"
         "🔬 **research_topic**: Comprehensive multi-step research workflow\n"
         "   - Combines overview, news, and analysis searches\n"
         "   - Aggregates findings from multiple sources\n"
-        "   - Provides quality distribution and research summary\n\n"
+        "   - Provides quality distribution and research summary\n"
+        "🔬 **advanced_research_with_synthesis**: Advanced multi-step research with synthesis\n"
+        "   - Demonstrates tool chaining and context preservation\n"
+        "   - Quality assessment and intelligent synthesis\n"
+        "   - Multi-angle information gathering\n\n"
         
         "📋 **ENHANCED AGENTIC WORKFLOW & ORCHESTRATION:**\n"
         "1. **UNDERSTAND** - Parse the user's request and identify implicit needs\n"
@@ -1388,11 +1396,14 @@ def run_agentic_loop(query, model_name, max_iterations=5):
         "🎯 **INTELLIGENT TOOL SELECTION STRATEGY:**\n"
         "- **Simple factual queries**: Use search_web_tool with auto-detection\n"
         "- **Current events/breaking news**: Use search_web_tool with type='news'\n"
+        "- **Real-time web information needed**: Use search_web_openrouter for current data\n"
+        "- **Comprehensive research with citations**: Use search_web_openrouter with context_size='high'\n"
         "- **Complex research topics**: Use research_topic for multi-angle analysis\n"
         "- **Technical tutorials/guides**: Use search_web_tool with type='general'\n"
-        "- **Academic/detailed analysis**: Use search_web_tool with type='deep'\n"
+        "- **Academic/detailed analysis**: Use search_web_tool with type='deep' or search_web_openrouter for real-time data\n"
         "- **Calculations/quantitative analysis**: Use calculate_math\n"
         "- **Information organization**: Use create_note to structure findings\n"
+        "- **Advanced synthesis**: Use advanced_research_with_synthesis for complex topics\n"
         "- **Multi-step problems**: Chain tools together logically\n\n"
         
         "🔍 **QUALITY ASSURANCE & VALIDATION:**\n"
@@ -1856,6 +1867,117 @@ AGENTIC_TOOLS.append({
 
 # Update tool mapping
 TOOL_MAPPING["advanced_research_with_synthesis"] = advanced_research_with_synthesis
+
+def search_web_openrouter(query, max_results=5, search_context_size="medium"):
+    """
+    Enhanced web search using OpenRouter's native web search capability.
+    Uses models with built-in web search like Perplexity or web-enabled models.
+    """
+    if not openrouter_api_key:
+        return {"error": "OpenRouter API key not configured"}
+    
+    try:
+        openrouter_client_instance = openai.OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=openrouter_api_key,
+            default_headers={
+                "HTTP-Referer": os.getenv("APP_SITE_URL", "http://localhost:8080"),
+                "X-Title": os.getenv("APP_SITE_TITLE", "Comet AI Search")
+            }
+        )
+        
+        # Use a web-search enabled model like Perplexity
+        web_search_prompt = (
+            f"Search the web for comprehensive information about: {query}\n\n"
+            f"Please provide:\n"
+            f"1. A comprehensive answer based on current web sources\n"
+            f"2. Include clickable source links in markdown format: [source title](URL)\n"
+            f"3. Cite {max_results} high-quality sources\n"
+            f"4. Focus on {search_context_size} level of detail\n"
+            f"5. Ensure all information is current and well-sourced"
+        )
+        
+        # Use Perplexity which has built-in web search capabilities
+        response = openrouter_client_instance.chat.completions.create(
+            model="perplexity/sonar-reasoning-pro",
+            messages=[
+                {
+                    "role": "system", 
+                    "content": "You are a web search assistant with access to real-time web information. Provide comprehensive, well-cited responses with clickable source links in markdown format."
+                },
+                {
+                    "role": "user", 
+                    "content": web_search_prompt
+                }
+            ],
+            max_tokens=2000,
+            temperature=0.3
+        )
+        
+        message = response.choices[0].message
+        content = message.content
+        
+        # Extract URLs from markdown links in the content
+        import re
+        url_pattern = r'\[([^\]]+)\]\((https?://[^\)]+)\)'
+        citations = []
+        
+        for match in re.finditer(url_pattern, content):
+            title = match.group(1)
+            url = match.group(2)
+            citations.append({
+                "title": title,
+                "url": url,
+                "source": "perplexity_web_search"
+            })
+        
+        return {
+            "success": True,
+            "query": query,
+            "search_type": "openrouter_perplexity",
+            "content": content,
+            "citations": citations,
+            "search_context_size": search_context_size,
+            "total_citations": len(citations),
+            "model_used": "perplexity/sonar-reasoning-pro"
+        }
+        
+    except Exception as e:
+        print(f"OpenRouter web search error: {e}")
+        return {"error": f"OpenRouter web search failed: {str(e)}"}
+
+# Add OpenRouter web search as a new tool option
+AGENTIC_TOOLS.append(    {
+        "type": "function",
+        "function": {
+            "name": "search_web_openrouter",
+            "description": "Search the web using OpenRouter's Perplexity model with real-time web access. Provides current information with citations and comprehensive analysis.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query to find current information on the web"
+                    },
+                    "max_results": {
+                        "type": "integer",
+                        "description": "Maximum number of sources to cite (default: 5, max: 10)",
+                        "minimum": 1,
+                        "maximum": 10
+                    },
+                    "search_context_size": {
+                        "type": "string",
+                        "description": "Detail level: 'low' (brief), 'medium' (moderate), 'high' (comprehensive)",
+                        "enum": ["low", "medium", "high"]
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    })
+
+# Update tool mapping
+TOOL_MAPPING["search_web_openrouter"] = search_web_openrouter
 
 # --- Main Execution --- 
 if __name__ == '__main__':
