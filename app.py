@@ -1282,6 +1282,30 @@ TOOL_MAPPING = {
     "research_topic": research_topic
 }
 
+def get_tool_response_single(response, tool_call):
+    """Process a single tool call - helper function"""
+    tool_name = tool_call.function.name
+    tool_args = json.loads(tool_call.function.arguments)
+    
+    print(f"Executing tool: {tool_name} with args: {tool_args}")
+    
+    # Look up the correct tool locally, and call it with the provided arguments
+    if tool_name in TOOL_MAPPING:
+        try:
+            tool_result = TOOL_MAPPING[tool_name](**tool_args)
+            print(f"Tool result: {tool_result}")
+        except Exception as e:
+            tool_result = {"error": f"Tool execution failed: {str(e)}"}
+    else:
+        tool_result = {"error": f"Unknown tool: {tool_name}"}
+    
+    return {
+        "role": "tool",
+        "tool_call_id": tool_call.id,
+        "name": tool_name,
+        "content": json.dumps(tool_result),
+    }
+
 def log_agent_performance(task_plan, total_tools_used, iteration_count, success=True):
     """
     Log agent performance metrics for monitoring and evaluation.
@@ -1406,7 +1430,25 @@ def run_agentic_loop(query, model_name, max_iterations=5):
                 tools=AGENTIC_TOOLS,
                 messages=msgs
             )
-            msgs.append(resp.choices[0].message.dict())
+            # Convert message to dict format compatible with OpenAI API
+            message = resp.choices[0].message
+            message_dict = {
+                "role": message.role,
+                "content": message.content
+            }
+            if message.tool_calls:
+                message_dict["tool_calls"] = [
+                    {
+                        "id": tc.id,
+                        "type": tc.type,
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments
+                        }
+                    }
+                    for tc in message.tool_calls
+                ]
+            msgs.append(message_dict)
             return resp
 
         def get_tool_response(response):
@@ -1548,31 +1590,19 @@ def run_agentic_loop(query, model_name, max_iterations=5):
 
     except Exception as e:
         print(f"Error in agentic loop: {e}")
-        yield f"data: {json.dumps({'error': f'Agentic loop error: {str(e)}'})}\n\n"
-
-def get_tool_response_single(response, tool_call):
-    """Process a single tool call - helper function"""
-    tool_name = tool_call.function.name
-    tool_args = json.loads(tool_call.function.arguments)
-    
-    print(f"Executing tool: {tool_name} with args: {tool_args}")
-    
-    # Look up the correct tool locally, and call it with the provided arguments
-    if tool_name in TOOL_MAPPING:
-        try:
-            tool_result = TOOL_MAPPING[tool_name](**tool_args)
-            print(f"Tool result: {tool_result}")
-        except Exception as e:
-            tool_result = {"error": f"Tool execution failed: {str(e)}"}
-    else:
-        tool_result = {"error": f"Unknown tool: {tool_name}"}
-    
-    return {
-        "role": "tool",
-        "tool_call_id": tool_call.id,
-        "name": tool_name,
-        "content": json.dumps(tool_result),
-    }
+        import traceback
+        traceback.print_exc()
+        
+        # Provide a more detailed error response
+        error_message = f"Agentic loop error: {str(e)}"
+        if "NameError" in str(e):
+            error_message += " (Function definition issue - please check server logs)"
+        elif "APIError" in str(e):
+            error_message += " (API communication issue - please check API keys and connectivity)"
+        elif "JSONDecodeError" in str(e):
+            error_message += " (Response parsing issue - please try again)"
+        
+        yield f"data: {json.dumps({'error': error_message})}\n\n"
 
 @app.route('/debug')
 def debug_info():
