@@ -527,7 +527,6 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         "perplexity/sonar-reasoning-pro",
         "openai/gpt-4.1",
         "openai/gpt-4.5-preview",
-        "openai/codex-mini",
         "anthropic/claude-sonnet-4",
         "anthropic/claude-opus-4",
         "openai/o4-mini-high",
