@@ -651,87 +651,7 @@ body {
     padding: 20px;
 }
 
-/* === Responsive Adjustments (Basic) === */
-@media (max-width: 600px) {
-    body {
-        padding-top: 20px; /* Reduce top padding */
-    }
-    .main-container {
-        padding: 0 15px; /* Reduce side padding */
-    }
-    .header-controls {
-        top: 2px; /* Adjust if needed */
-        right: 5px;
-    }
-    .logo-title {
-        font-size: 1.8rem; /* Slightly smaller logo */
-    }
-    .search-header h1 {
-        font-size: 1.4rem; /* Smaller subtitle, was 1.2rem */
-        margin-bottom: 30px; /* Was 15px */
-    }
-    .search-form-perplexity {
-        flex-direction: column; /* Stack input and controls */
-        padding: 10px; /* Adjust padding for stacked layout */
-        border-radius: 18px; /* Maybe slightly smaller radius */
-    }
-    .input-wrapper {
-        padding-left: 10px; /* Adjust padding */
-        margin-bottom: 10px; /* Space when stacked */
-    }
-     #search-input {
-        padding: 10px 10px 10px 30px; /* Adjust padding */
-        font-size: 1rem; /* Changed from 0.95rem to 1rem (typically 16px) to prevent iOS zoom */
-    }
-    .search-icon {
-        left: 10px; /* Adjust icon position */
-    }
-    .controls-wrapper {
-        padding-left: 0; /* Remove padding when stacked */
-        justify-content: space-between; /* Space out select and button */
-        width: 100%; /* Make controls full width */
-    }
-    #model-select {
-        flex-grow: 1; /* Allow select to take more space */
-        margin-right: 8px; /* Adjust space */
-        padding: 9px 10px;
-        padding-right: 28px; /* Adjust for arrow */
-        font-size: 0.85rem;
-    }
-    #search-button {
-        padding: 9px 10px;
-        font-size: 0.9rem;
-    }
-    .results-container-perplexity {
-        font-size: 0.95rem; /* Slightly smaller base font for results on mobile */
-        padding: 15px; /* Adjust padding for mobile */
-    }
-
-    .results-container-perplexity h1, 
-    .results-container-perplexity h2, 
-    .results-container-perplexity h3 {
-        font-size: 1.2em; /* Adjust heading sizes within results for mobile */
-    }
-
-    /* Ensure generated images are responsive */
-    .generated-image {
-        max-width: 100%;
-        height: auto;
-        display: block; /* Remove extra space below image */
-        margin: 10px auto; /* Center image */
-    }
-
-    .revised-prompt-text {
-        font-size: 0.8rem;
-        text-align: center;
-        margin-top: 5px;
-    }
-
-    .results-container-perplexity a {
-        overflow-wrap: break-word;
-        word-break: break-all;
-    }
-}
+/* Legacy mobile styles removed - replaced with enhanced responsive design */
 
 .header-left-controls {
     position: absolute;
@@ -1067,18 +987,7 @@ body.dark-mode .reasoning-content pre {
     opacity: 1;
 }
 
-/* Mobile responsive copy button */
-@media (max-width: 768px) {
-    .copy-btn {
-        padding: 6px 10px;
-        font-size: 0.8rem;
-    }
-    
-    .results-container-perplexity > .copy-btn {
-        top: 15px;
-        right: 15px;
-    }
-}
+/* Mobile copy button styles moved to main responsive section */
 
 /* === Skeleton Loader === */
 .skeleton-loader {
@@ -1131,74 +1040,240 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
 
 /* === Responsive Adjustments === */
 @media (max-width: 768px) {
+    body {
+        padding-top: 15px;
+    }
+    
+    .main-container {
+        padding: 0 12px;
+        max-width: 100%;
+    }
+    
+    .header-controls {
+        top: 2px;
+        right: 5px;
+    }
+    
+    .header-left-controls {
+        top: 2px;
+        left: 5px;
+    }
+    
+    .logo-title {
+        font-size: 1.7rem;
+        margin-bottom: 8px;
+    }
+    
+    .search-header h1 {
+        font-size: 1.3rem;
+        margin-bottom: 25px;
+    }
+    
+    /* Enhanced search form for mobile */
     .search-form-perplexity {
         flex-direction: column;
-        padding: 10px;
-        gap: 10px;
-        max-width: 100%; /* Ensure it doesn't overflow on mobile */
+        padding: 12px;
+        gap: 12px;
+        border-radius: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        max-width: 100%;
+        margin: 0 auto;
     }
-
+    
     .input-wrapper {
         width: 100%;
-        padding-left: 0;
+        padding: 0;
+        margin-bottom: 0;
     }
-
+    
     #search-input {
+        width: 100%;
         min-width: 100%;
-        max-width: 100%; /* Ensure it fills the container on mobile */
-        height: 60px;
-        padding: 15px;
-        font-size: 1rem;
+        max-width: 100%;
+        min-height: 56px;
+        padding: 16px 18px;
+        font-size: 1rem; /* Prevents iOS zoom */
+        line-height: 1.4;
+        border-radius: 16px;
+        background: var(--input-bg-color);
+        border: 1px solid var(--border-color);
+        resize: vertical;
+        max-height: 120px;
     }
-
+    
+    #search-input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+    }
+    
     .controls-wrapper {
         width: 100%;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        padding: 0;
     }
-
+    
     #model-select {
         flex: 1;
         min-width: 0;
         max-width: none;
+        height: 48px;
+        padding: 12px 14px;
+        font-size: 0.9rem;
+        border-radius: 12px;
         margin: 0;
+        background: var(--select-bg-color);
+        border: 1px solid var(--select-border-color);
     }
-
+    
     .circular-button {
-        width: 44px; /* Slightly larger on mobile for better touch targets */
-        height: 44px;
-        min-width: 44px;
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 12px;
+        font-size: 1.1rem;
     }
-
-    #model-select {
-        height: 44px; /* Match button height on mobile */
+    
+    #attach-file-button {
+        background: var(--select-bg-color);
+        border: 1px solid var(--select-border-color);
+        color: var(--text-muted-color);
+    }
+    
+    #search-button {
+        background: var(--primary-color);
+        border: 1px solid var(--primary-color);
+        color: white;
+    }
+    
+    /* Mobile copy button adjustments */
+    .copy-btn {
+        padding: 8px 12px;
+        font-size: 0.85rem;
+        border-radius: 10px;
+    }
+    
+    .results-container-perplexity > .copy-btn {
+        top: 12px;
+        right: 12px;
+    }
+    
+    /* Mobile results adjustments */
+    .results-container-perplexity {
+        font-size: 1rem;
+        padding: 20px 16px;
+        border-radius: 16px;
+        margin-bottom: 20px;
+    }
+    
+    .results-container-perplexity h1, 
+    .results-container-perplexity h2, 
+    .results-container-perplexity h3 {
+        font-size: 1.3em;
+    }
+    
+    /* Mobile reasoning container */
+    .reasoning-container-perplexity {
+        border-radius: 16px;
+        margin-bottom: 20px;
+    }
+    
+    .reasoning-header {
+        padding: 16px 20px;
+    }
+    
+    .reasoning-content {
+        padding: 20px;
+    }
+    
+    /* Mobile thinking indicator */
+    .thinking-indicator-content {
+        padding: 0 16px;
+        height: 40px;
+        border-radius: 20px;
+    }
+    
+    /* Mobile generated images */
+    .generated-image {
+        max-width: 100%;
+        height: auto;
+        margin: 15px auto;
+        border-radius: 12px;
+    }
+    
+    /* Mobile download button */
+    #download-area a.download-button {
+        padding: 12px 24px;
+        font-size: 1rem;
+        border-radius: 12px;
+        margin-top: 16px;
     }
 }
 
-/* Additional mobile optimizations for very small screens */
+/* Additional optimizations for very small screens */
 @media (max-width: 480px) {
     .main-container {
-        padding: 0 10px;
+        padding: 0 8px;
     }
-
+    
     .search-header h1 {
-        font-size: 1.3rem;
-        margin-bottom: 25px;
+        font-size: 1.2rem;
+        margin-bottom: 20px;
     }
-
+    
     .logo-title {
-        font-size: 1.6rem;
+        font-size: 1.5rem;
     }
-
+    
+    .search-form-perplexity {
+        padding: 10px;
+        gap: 10px;
+        border-radius: 18px;
+    }
+    
+    #search-input {
+        min-height: 52px;
+        padding: 14px 16px;
+        font-size: 1rem;
+        border-radius: 14px;
+    }
+    
     .controls-wrapper {
-        gap: 6px;
+        gap: 8px;
     }
-
+    
     #model-select {
-        font-size: 0.8rem;
-        padding: 5px 6px;
+        height: 44px;
+        padding: 10px 12px;
+        font-size: 0.85rem;
+        border-radius: 10px;
+    }
+    
+    .circular-button {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 10px;
+        font-size: 1rem;
+    }
+    
+    .results-container-perplexity {
+        padding: 16px 12px;
+        border-radius: 14px;
+    }
+    
+    .reasoning-container-perplexity {
+        border-radius: 14px;
+    }
+    
+    .reasoning-header {
+        padding: 14px 16px;
+    }
+    
+    .reasoning-content {
+        padding: 16px;
     }
 }
 
