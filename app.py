@@ -28,6 +28,7 @@ OPENROUTER_MODELS = {
     "google/gemini-2.5-pro-preview",
     "google/gemini-2.5-flash-preview-05-20:thinking",
     "perplexity/sonar-reasoning-pro",
+    "perplexity/sonar-deep-research", # Added new model
     "openai/gpt-4.1",
     "openai/gpt-4.5-preview",
     "openai/codex-mini",
@@ -472,6 +473,8 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
     # Adjust max_tokens based on model specifics
     if actual_model_name_for_sdk == "perplexity/sonar-reasoning-pro": # 128,000 total context
         max_tokens_val = 128000 - 4096 # Reserve 4096 for prompt (Perplexity specific)
+    elif actual_model_name_for_sdk == "perplexity/sonar-deep-research": # 128,000 total context, can generate 128,000 tokens
+        max_tokens_val = 128000 - 1024 # Reserve 1024 tokens for prompt and overhead
     elif actual_model_name_for_sdk == "openai/gpt-4.1": # 1,047,576 token context window
         max_tokens_val = 1047576 - 4096  # Reserve 4096 tokens for prompt
     elif actual_model_name_for_sdk == "openai/gpt-4o-search-preview": # Stated 16,384 generation capacity
