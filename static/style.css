@@ -175,19 +175,19 @@ body {
     text-align: center;
     font-size: 2rem; 
     font-weight: 600;
-    color: var(--logo-color);
+    color: var(--text-color);
     margin-bottom: 10px; /* Space below Comet title */
-    display: flex; /* Align emoji and text */
+    display: flex; /* Align logo and text */
     justify-content: center;
     align-items: center;
-    gap: 0.3em; /* Space between emoji and text */
+    gap: 0.4em; /* Space between logo and text */
 }
 
-.comet-emoji {
-    /* Optional: Adjust emoji size/position slightly if needed */
-    /* font-size: 0.9em; */ 
-    /* position: relative; */
-    /* top: -0.05em; */
+.comet-logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
 }
 
 .search-header h1 {
@@ -1011,6 +1011,11 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
         margin-bottom: 8px;
     }
     
+    .comet-logo {
+        width: 28px;
+        height: 28px;
+    }
+    
     .search-header h1 {
         font-size: 1.3rem;
         margin-bottom: 25px;
@@ -1083,6 +1088,11 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
     
     .logo-title {
         font-size: 1.5rem;
+    }
+    
+    .comet-logo {
+        width: 24px;
+        height: 24px;
     }
     
     .search-form-perplexity {
