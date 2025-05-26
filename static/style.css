@@ -214,7 +214,10 @@ body {
     max-width: 100%;
     margin: 0 auto;
     scroll-margin: 0;
-    contain: layout;
+    contain: layout style;
+    overflow-anchor: none;
+    scroll-snap-type: none;
+    position: relative;
 }
 
 .input-wrapper {
@@ -262,7 +265,7 @@ body {
     background: var(--input-bg-color);
     color: var(--text-color);
     border-radius: 16px;
-    resize: vertical;
+    resize: none;
     height: auto;
     min-height: 56px;
     max-height: 120px;
@@ -275,6 +278,8 @@ body {
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
     scroll-margin: 0;
     scroll-behavior: auto;
+    overflow-anchor: none;
+    scroll-snap-type: none;
 }
 
 #search-input::placeholder {

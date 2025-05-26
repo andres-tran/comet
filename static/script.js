@@ -689,29 +689,101 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Auto-resize search textarea as user types
+    // Auto-resize search textarea as user types with scroll prevention
     const searchInput = document.getElementById('search-input');
     if (searchInput && searchInput.tagName === 'TEXTAREA') {
+        let isResizing = false;
+        let savedScrollPosition = { top: 0, left: 0 };
+        
+        // Function to save current scroll position
+        const saveScrollPosition = () => {
+            savedScrollPosition = {
+                top: window.pageYOffset || document.documentElement.scrollTop,
+                left: window.pageXOffset || document.documentElement.scrollLeft
+            };
+        };
+        
+        // Function to restore scroll position
+        const restoreScrollPosition = () => {
+            window.scrollTo(savedScrollPosition.left, savedScrollPosition.top);
+        };
+        
         searchInput.addEventListener('input', function() {
-            // Store current scroll position
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            if (isResizing) return;
+            isResizing = true;
             
+            // Save current scroll position
+            saveScrollPosition();
+            
+            // Temporarily disable scroll restoration and smooth scrolling
+            const originalScrollBehavior = document.documentElement.style.scrollBehavior;
+            const originalOverflow = document.body.style.overflow;
+            
+            document.documentElement.style.scrollBehavior = 'auto';
+            
+            // Resize the textarea
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
             
-            // Restore scroll position to prevent unwanted scrolling
-            window.scrollTo(0, scrollTop);
+            // Immediately restore scroll position multiple times to ensure it sticks
+            restoreScrollPosition();
+            requestAnimationFrame(() => {
+                restoreScrollPosition();
+                requestAnimationFrame(() => {
+                    restoreScrollPosition();
+                });
+            });
+            
+            // Restore original styles
+            document.documentElement.style.scrollBehavior = originalScrollBehavior;
+            
+            // Reset flag after a brief delay
+            setTimeout(() => {
+                isResizing = false;
+            }, 50);
         });
         
-        // Prevent scrolling on focus
-        searchInput.addEventListener('focus', function() {
-            // Store scroll position when focusing
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        // Prevent scrolling on focus and other events
+        const preventScroll = function(event) {
+            saveScrollPosition();
             
-            // Use setTimeout to ensure the focus scroll is prevented
+            // Use multiple restoration attempts for better reliability
+            requestAnimationFrame(() => {
+                restoreScrollPosition();
+                requestAnimationFrame(() => {
+                    restoreScrollPosition();
+                });
+            });
+        };
+        
+        searchInput.addEventListener('focus', preventScroll);
+        searchInput.addEventListener('click', preventScroll);
+        searchInput.addEventListener('mousedown', preventScroll);
+        
+        // Prevent scroll on keydown for certain keys that might cause scrolling
+        searchInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                // Allow form submission on Enter without Shift
+                return;
+            }
+            
+            // For other keys, prevent any potential scrolling
+            saveScrollPosition();
+            
             setTimeout(() => {
-                window.scrollTo(0, scrollTop);
+                restoreScrollPosition();
             }, 0);
+        });
+        
+        // Additional scroll prevention on paste events
+        searchInput.addEventListener('paste', function(event) {
+            saveScrollPosition();
+            
+            setTimeout(() => {
+                restoreScrollPosition();
+                // Trigger input event to resize after paste
+                this.dispatchEvent(new Event('input'));
+            }, 10);
         });
         
         // Optional: trigger resize on page load if there's pre-filled text
