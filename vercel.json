@@ -18,10 +18,5 @@
   ],
   "env": {
     "VERCEL_ENV": "production"
-  },
-  "functions": {
-    "app.py": {
-      "maxDuration": 30
-    }
   }
 } 
