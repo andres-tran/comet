@@ -171,6 +171,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Clear attached file
             clearAttachedFile();
             
+                    // Clear web search sources
+        clearWebSearchSources();
+            
             // Reset web search state (optional - you might want to keep it enabled)
             // webSearchEnabled = false;
             // if (webSearchButton) {
@@ -288,13 +291,19 @@ document.addEventListener('DOMContentLoaded', () => {
     let markdownBuffer = ""; // Buffer for accumulating markdown content
     let reasoningBuffer = ""; // Buffer for accumulating reasoning content
     let chartInstance = null; // To keep track of the chart
+    let webSearchResults = null; // Store web search results
 
-    function initializeNewSearch() {
+        function initializeNewSearch() {
         markdownBuffer = ""; // Clear buffer for new search
         reasoningBuffer = ""; // Clear reasoning buffer
+        webSearchResults = null; // Clear web search results
         if (currentResultsWrapper) {
             currentResultsWrapper.innerHTML = ''; // Clear previous results content
         }
+        
+                                        // Clear web search sources
+            clearWebSearchSources();
+        
         // Clear any existing chart
         const chartContainer = document.getElementById('chart-container');
         if (chartInstance) {
@@ -547,6 +556,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                     resultsContainer.style.display = 'none'; 
                                     return; // Stop processing this stream
                                 }
+
+                                if (data.web_search_results) {
+                                    webSearchResults = data.web_search_results;
+                                    console.log(`Received web search results with ${data.web_search_results.results ? data.web_search_results.results.length : 0} sources`);
+                                    // Create and display web search sources UI
+                                    displayWebSearchSources(data.web_search_results);
+                                }
+
+
 
                                 if (data.reasoning) {
                                     reasoningBuffer += data.reasoning;
@@ -1012,4 +1030,204 @@ document.addEventListener('DOMContentLoaded', () => {
         originalInitializeNewSearch();
         updateCopyButtonVisibility();
     };
+
+    function clearWebSearchSources() {
+        // Clear web search sources container
+        const sourcesContainer = document.getElementById('web-search-sources');
+        if (sourcesContainer) {
+            sourcesContainer.remove();
+        }
+        
+        // Reset web search results state
+        webSearchResults = null;
+    }
+
+    function displayWebSearchSources(searchResults) {
+        if (!searchResults || !searchResults.results || searchResults.results.length === 0) {
+            console.log("No web search results to display");
+            return;
+        }
+
+        console.log(`Frontend received ${searchResults.results.length} web search sources:`, searchResults.results.map(r => r.title));
+
+        // Check if sources container already exists
+        let sourcesContainer = document.getElementById('web-search-sources');
+        if (!sourcesContainer) {
+            // Create sources container
+            sourcesContainer = document.createElement('div');
+            sourcesContainer.id = 'web-search-sources';
+            sourcesContainer.className = 'web-search-sources';
+            
+            // Insert it before the results container
+            const resultsArea = document.querySelector('.results-area');
+            const resultsContainer = document.getElementById('results-container');
+            if (resultsArea && resultsContainer) {
+                resultsArea.insertBefore(sourcesContainer, resultsContainer);
+            }
+        }
+
+        // Clear existing content
+        sourcesContainer.innerHTML = '';
+
+        // Create header with improved styling
+        const header = document.createElement('div');
+        header.className = 'sources-header';
+        header.innerHTML = `
+            <h4>
+                <i class="fas fa-globe"></i> Web Sources
+                <span class="sources-count">(${searchResults.results.length})</span>
+            </h4>
+            <div class="sources-note">Sources are embedded as clickable links in the AI response • Hover for preview</div>
+        `;
+        sourcesContainer.appendChild(header);
+
+        // Add quick answer if available
+        if (searchResults.answer && searchResults.answer.trim()) {
+            const quickAnswer = document.createElement('div');
+            quickAnswer.className = 'quick-answer';
+            quickAnswer.innerHTML = `
+                <div class="quick-answer-label">
+                    <i class="fas fa-lightbulb"></i> Quick Answer
+                </div>
+                <div class="quick-answer-content">${searchResults.answer}</div>
+            `;
+            sourcesContainer.appendChild(quickAnswer);
+        }
+
+        // Create sources list
+        const sourcesList = document.createElement('div');
+        sourcesList.className = 'sources-list';
+
+        searchResults.results.forEach((result, index) => {
+            const sourceItem = document.createElement('div');
+            sourceItem.className = 'source-item';
+            
+            // Create source link with improved accessibility
+            const sourceLink = document.createElement('a');
+            sourceLink.href = result.url;
+            sourceLink.target = '_blank';
+            sourceLink.rel = 'noopener noreferrer';
+            sourceLink.className = 'source-link';
+            sourceLink.setAttribute('aria-label', `Source ${index + 1}: ${result.title}`);
+            
+            // Extract domain from URL with error handling
+            let domain = '';
+            try {
+                const url = new URL(result.url);
+                domain = url.hostname.replace('www.', '');
+            } catch (e) {
+                // Fallback for invalid URLs
+                domain = result.url.split('/')[0] || 'Unknown source';
+            }
+            
+            sourceLink.innerHTML = `
+                <span class="source-number" title="Source ${index + 1}">${index + 1}</span>
+                <span class="source-title" title="${result.title}">${result.title}</span>
+                <span class="source-domain" title="${domain}">${domain}</span>
+            `;
+            
+            // Create enhanced hover tooltip with error handling
+            const tooltip = document.createElement('div');
+            tooltip.className = 'source-tooltip';
+            tooltip.setAttribute('role', 'tooltip');
+            
+            // Sanitize content to prevent XSS
+            const sanitizedTitle = result.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const sanitizedUrl = result.url.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const sanitizedContent = result.content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            
+            tooltip.innerHTML = `
+                <div class="tooltip-title">${sanitizedTitle}</div>
+                <div class="tooltip-url">${sanitizedUrl}</div>
+                <div class="tooltip-content">${sanitizedContent}</div>
+            `;
+            
+            sourceItem.appendChild(sourceLink);
+            sourceItem.appendChild(tooltip);
+            
+            // Enhanced hover event listeners with better positioning
+            let hoverTimeout;
+            
+            sourceLink.addEventListener('mouseenter', (e) => {
+                clearTimeout(hoverTimeout);
+                hoverTimeout = setTimeout(() => {
+                    tooltip.classList.add('visible');
+                    
+                    // Improved tooltip positioning
+                    const rect = sourceLink.getBoundingClientRect();
+                    const tooltipRect = tooltip.getBoundingClientRect();
+                    const viewportHeight = window.innerHeight;
+                    const viewportWidth = window.innerWidth;
+                    
+                    // Reset positioning classes
+                    tooltip.classList.remove('below', 'above', 'left', 'right');
+                    
+                    // Vertical positioning
+                    if (rect.top - tooltipRect.height - 10 < 0) {
+                        // Show below if not enough space above
+                        tooltip.style.top = `${sourceLink.offsetHeight + 10}px`;
+                        tooltip.classList.add('below');
+                    } else {
+                        // Show above by default
+                        tooltip.style.top = `-${tooltipRect.height + 10}px`;
+                        tooltip.classList.add('above');
+                    }
+                    
+                    // Horizontal positioning to prevent overflow
+                    const leftOffset = rect.left;
+                    const rightOffset = viewportWidth - rect.right;
+                    
+                    if (leftOffset < tooltipRect.width / 2) {
+                        tooltip.style.left = '0';
+                        tooltip.classList.add('left');
+                    } else if (rightOffset < tooltipRect.width / 2) {
+                        tooltip.style.right = '0';
+                        tooltip.style.left = 'auto';
+                        tooltip.classList.add('right');
+                    }
+                }, 150); // Small delay to prevent accidental triggers
+            });
+            
+            sourceLink.addEventListener('mouseleave', () => {
+                clearTimeout(hoverTimeout);
+                hoverTimeout = setTimeout(() => {
+                    tooltip.classList.remove('visible');
+                }, 100); // Small delay to allow moving to tooltip
+            });
+            
+            // Allow hovering over tooltip itself
+            tooltip.addEventListener('mouseenter', () => {
+                clearTimeout(hoverTimeout);
+            });
+            
+            tooltip.addEventListener('mouseleave', () => {
+                tooltip.classList.remove('visible');
+            });
+            
+            // Add keyboard navigation support
+            sourceLink.addEventListener('focus', () => {
+                tooltip.classList.add('visible');
+            });
+            
+            sourceLink.addEventListener('blur', () => {
+                tooltip.classList.remove('visible');
+            });
+            
+            sourcesList.appendChild(sourceItem);
+        });
+
+        sourcesContainer.appendChild(sourcesList);
+        
+        // Add fade-in animation with error handling
+        try {
+            sourcesContainer.classList.add('fade-in');
+        } catch (e) {
+            console.warn('Animation not supported:', e);
+        }
+        
+        // Log successful source display for debugging
+        console.log(`Displayed ${searchResults.results.length} web search sources`);
+    }
+
+
 }); 

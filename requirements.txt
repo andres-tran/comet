@@ -1,9 +1,9 @@
 # Python dependencies for AI Search Clone
 
-flask
-openai
-python-dotenv
-requests
-google-generativeai
+flask==3.0.0
+openai==1.51.2
+python-dotenv==1.0.0
+requests==2.31.0
+gunicorn==21.2.0
 
 # Using uv for installation, but listing dependencies here 

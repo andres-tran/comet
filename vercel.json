@@ -8,8 +8,20 @@
   ],
   "routes": [
     {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "app.py"
     }
-  ]
+  ],
+  "env": {
+    "VERCEL_ENV": "production"
+  },
+  "functions": {
+    "app.py": {
+      "maxDuration": 30
+    }
+  }
 } 
