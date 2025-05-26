@@ -1,16 +1,82 @@
 {
-  "name": "Comet",
+  "name": "Comet - AI Search & Generation",
   "short_name": "Comet",
-  "description": "Comet is an AI-powered search and generation tool.",
+  "description": "Comet is an AI-powered search and generation tool that provides intelligent responses and creative solutions.",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☄️</text></svg>",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 192 192%22><rect width=%22192%22 height=%22192%22 fill=%22%23f97316%22 rx=%2242%22/><text x=%2296%22 y=%22140%22 font-size=%22128%22 text-anchor=%22middle%22>☄️</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22><rect width=%22512%22 height=%22512%22 fill=%22%23f97316%22 rx=%22114%22/><text x=%22256%22 y=%22380%22 font-size=%22340%22 text-anchor=%22middle%22>☄️</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 180 180%22><rect width=%22180%22 height=%22180%22 fill=%22%23f97316%22 rx=%2240%22/><text x=%2290%22 y=%22130%22 font-size=%22120%22 text-anchor=%22middle%22>☄️</text></svg>",
+      "sizes": "180x180",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 152 152%22><rect width=%22152%22 height=%22152%22 fill=%22%23f97316%22 rx=%2234%22/><text x=%2276%22 y=%22110%22 font-size=%22100%22 text-anchor=%22middle%22>☄️</text></svg>",
+      "sizes": "152x152",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 144 144%22><rect width=%22144%22 height=%22144%22 fill=%22%23f97316%22 rx=%2232%22/><text x=%2272%22 y=%22105%22 font-size=%2296%22 text-anchor=%22middle%22>☄️</text></svg>",
+      "sizes": "144x144",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 120 120%22><rect width=%22120%22 height=%22120%22 fill=%22%23f97316%22 rx=%2227%22/><text x=%2260%22 y=%2288%22 font-size=%2280%22 text-anchor=%22middle%22>☄️</text></svg>",
+      "sizes": "120x120",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><rect width=%2296%22 height=%2296%22 fill=%22%23f97316%22 rx=%2221%22/><text x=%2248%22 y=%2270%22 font-size=%2264%22 text-anchor=%22middle%22>☄️</text></svg>",
+      "sizes": "96x96",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 72 72%22><rect width=%2272%22 height=%2272%22 fill=%22%23f97316%22 rx=%2216%22/><text x=%2236%22 y=%2253%22 font-size=%2248%22 text-anchor=%22middle%22>☄️</text></svg>",
+      "sizes": "72x72",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 48 48%22><rect width=%2248%22 height=%2248%22 fill=%22%23f97316%22 rx=%2211%22/><text x=%2224%22 y=%2235%22 font-size=%2232%22 text-anchor=%22middle%22>☄️</text></svg>",
+      "sizes": "48x48",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 192 192%22><rect width=%22192%22 height=%22192%22 fill=%22%23f97316%22 rx=%2242%22/><text x=%2296%22 y=%22140%22 font-size=%22128%22 text-anchor=%22middle%22>☄️</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 512 512%22><rect width=%22512%22 height=%22512%22 fill=%22%23f97316%22 rx=%22114%22/><text x=%22256%22 y=%22380%22 font-size=%22340%22 text-anchor=%22middle%22>☄️</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ],
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
-  "theme_color": "#000000"
+  "theme_color": "#f97316",
+  "categories": ["productivity", "utilities", "education"],
+  "lang": "en",
+  "scope": "/",
+  "id": "comet-ai-search"
 } 
