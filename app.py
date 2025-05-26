@@ -3,8 +3,6 @@ import json
 import openai
 import base64
 import requests
-import logging
-import time
 from flask import Flask, render_template, request, jsonify, Response
 from dotenv import load_dotenv
 import traceback
@@ -16,66 +14,10 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 
-# Security headers middleware
-@app.after_request
-def add_security_headers(response):
-    """Add security headers to all responses"""
-    if os.getenv('VERCEL_ENV') == 'production':
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
-        response.headers['X-XSS-Protection'] = '1; mode=block'
-        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-        # Add CSP for production
-        response.headers['Content-Security-Policy'] = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com /_vercel/; "
-            "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
-            "font-src 'self' https://cdnjs.cloudflare.com; "
-            "img-src 'self' data: blob:; "
-            "connect-src 'self' https://api.openrouter.ai https://api.openai.com https://api.tavily.com; "
-            "worker-src 'self';"
-        )
-    return response
-
-# Error handlers
-@app.errorhandler(404)
-def not_found_error(error):
-    """Handle 404 errors"""
-    return render_template('index.html'), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    """Handle 500 errors"""
-    logger.error(f"Internal server error: {error}")
-    return jsonify({'error': 'Internal server error occurred'}), 500
-
-@app.errorhandler(Exception)
-def handle_exception(e):
-    """Handle all other exceptions"""
-    logger.error(f"Unhandled exception: {e}")
-    if os.getenv('VERCEL_ENV') != 'production':
-        # In development, show the actual error
-        return jsonify({'error': str(e)}), 500
-    else:
-        # In production, show a generic error
-        return jsonify({'error': 'An unexpected error occurred'}), 500
-
-# Configure logging for production
-if os.getenv('VERCEL_ENV') == 'production':
-    logging.basicConfig(level=logging.WARNING)
-else:
-    logging.basicConfig(level=logging.INFO)
-
-logger = logging.getLogger(__name__)
-
-# Configure API keys with validation
+# Configure API keys
 openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
 openai_api_key = os.getenv("OPENAI_API_KEY") # For direct OpenAI (e.g., gpt-image-1)
 tavily_api_key = os.getenv("TAVILY_API_KEY") # For web search
-
-# Validate critical environment variables
-if not any([openrouter_api_key, openai_api_key]):
-    logger.error("No API keys found. At least one of OPENROUTER_API_KEY or OPENAI_API_KEY must be set.")
 
 # Initialize OpenAI client (recommended way) for direct OpenAI calls
 openai_client = openai.OpenAI(api_key=openai_api_key) if openai_api_key else None
@@ -133,17 +75,16 @@ def search_web_tavily(query, max_results=10):
         
         data = response.json()
         
-        # Log the actual number of results returned
+        # Debug: Print the actual number of results returned
         if "results" in data:
-            logger.info(f"Tavily returned {len(data['results'])} sources for query: {query}")
-            # Also log the domains for debugging in development
-            if not os.getenv('VERCEL_ENV') == 'production':
-                domains = [result.get("url", "").split("/")[2] if result.get("url") else "unknown" for result in data["results"]]
-                logger.debug(f"Source domains: {domains}")
+            print(f"Tavily returned {len(data['results'])} sources for query: {query}")
+            # Also log the domains for debugging
+            domains = [result.get("url", "").split("/")[2] if result.get("url") else "unknown" for result in data["results"]]
+            print(f"Source domains: {domains}")
             
             # If we got very few results, try a broader search with longer time window
             if len(data["results"]) < 3 and payload["days"] < 90:
-                logger.info(f"Only got {len(data['results'])} sources, trying broader search with 90 days...")
+                print(f"Only got {len(data['results'])} sources, trying broader search with 90 days...")
                 broader_payload = payload.copy()
                 broader_payload["days"] = 90  # Expand to 90 days
                 broader_payload["search_depth"] = "basic"  # Use basic search for broader results
@@ -154,14 +95,14 @@ def search_web_tavily(query, max_results=10):
                     broader_data = broader_response.json()
                     
                     if "results" in broader_data and len(broader_data["results"]) > len(data["results"]):
-                        logger.info(f"Broader search returned {len(broader_data['results'])} sources, using broader results")
+                        print(f"Broader search returned {len(broader_data['results'])} sources, using broader results")
                         data = broader_data
                     else:
-                        logger.info(f"Broader search didn't improve results, keeping original {len(data['results'])} sources")
+                        print(f"Broader search didn't improve results, keeping original {len(data['results'])} sources")
                         
                         # If still too few results, try removing the days filter entirely
                         if len(data["results"]) < 2:
-                            logger.info("Trying search without date restriction...")
+                            print("Trying search without date restriction...")
                             unrestricted_payload = payload.copy()
                             del unrestricted_payload["days"]  # Remove date restriction
                             unrestricted_payload["search_depth"] = "basic"
@@ -172,23 +113,23 @@ def search_web_tavily(query, max_results=10):
                                 unrestricted_data = unrestricted_response.json()
                                 
                                 if "results" in unrestricted_data and len(unrestricted_data["results"]) > len(data["results"]):
-                                    logger.info(f"Unrestricted search returned {len(unrestricted_data['results'])} sources, using unrestricted results")
+                                    print(f"Unrestricted search returned {len(unrestricted_data['results'])} sources, using unrestricted results")
                                     data = unrestricted_data
                                 else:
-                                    logger.info(f"Unrestricted search didn't improve results")
+                                    print(f"Unrestricted search didn't improve results")
                             except Exception as e2:
-                                logger.warning(f"Unrestricted search failed: {e2}")
+                                print(f"Unrestricted search failed: {e2}")
                                 
                 except Exception as e:
-                    logger.warning(f"Broader search failed: {e}, keeping original results")
+                    print(f"Broader search failed: {e}, keeping original results")
         
         return data
         
     except requests.exceptions.RequestException as e:
-        logger.error(f"Tavily API request error: {e}")
+        print(f"Tavily API request error: {e}")
         return {"error": f"Web search failed: {str(e)}"}
     except Exception as e:
-        logger.error(f"Tavily API error: {e}")
+        print(f"Tavily API error: {e}")
         return {"error": f"Web search error: {str(e)}"}
 
 
@@ -272,9 +213,9 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
                     search_data["web_search_results"]["results"].append(source_data)
                     web_search_sources.append(f"Source {i}: {source_data['title']} - {source_data['url']}")
                 
-                        # Send web search results to frontend
-        logger.info(f"Sending {len(search_data['web_search_results']['results'])} sources to frontend")
-        yield f"data: {json.dumps(search_data)}\n\n"
+                # Send web search results to frontend
+                print(f"Sending {len(search_data['web_search_results']['results'])} sources to frontend")
+                yield f"data: {json.dumps(search_data)}\n\n"
     
 
     
@@ -293,7 +234,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         # Add numbered search results for easy reference
         search_context += "**Sources:**\n"
         ai_sources_count = len(web_search_results["results"][:10])
-        logger.info(f"Sending {ai_sources_count} sources to AI context")
+        print(f"Sending {ai_sources_count} sources to AI context")
         for i, result in enumerate(web_search_results["results"][:10], 1):  # Process up to 10 sources
             title = result.get("title", "No title")
             url = result.get("url", "")
@@ -397,7 +338,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
             }
         )
     except Exception as e:
-        logger.error(f"Failed to initialize OpenRouter client: {e}")
+        print(f"Failed to initialize OpenRouter client: {e}")
         yield f"data: {json.dumps({'error': 'Failed to initialize OpenRouter client.'})}\n\n"
         return
 
@@ -481,7 +422,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
 
     # Explicitly use pdf-text parser for o4-mini-high with PDFs
     if actual_model_name_for_sdk == "openai/o4-mini-high" and file_type == "pdf":
-        logger.info(f"Using explicit pdf-text parser for {actual_model_name_for_sdk} with PDF.")
+        print(f"Using explicit pdf-text parser for {actual_model_name_for_sdk} with PDF.")
         if "plugins" not in extra_body_params: # Ensure plugins is initialized
             extra_body_params["plugins"] = []
         
@@ -503,7 +444,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
             })
     # Also use pdf-text parser for gpt-4.1 with PDFs
     elif actual_model_name_for_sdk == "openai/gpt-4.1" and file_type == "pdf":
-        logger.info(f"Using explicit pdf-text parser for {actual_model_name_for_sdk} with PDF.")
+        print(f"Using explicit pdf-text parser for {actual_model_name_for_sdk} with PDF.")
         if "plugins" not in extra_body_params:
             extra_body_params["plugins"] = []
         
@@ -524,7 +465,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
             })
 
     try:
-        logger.info(f"Calling OpenRouter for {actual_model_name_for_sdk}. Reasoning: {reasoning_config_to_pass}. Extra Body: {extra_body_params}")
+        print(f"Calling OpenRouter for {actual_model_name_for_sdk}. Reasoning: {reasoning_config_to_pass}. Extra Body: {extra_body_params}")
         stream = openrouter_client_instance.chat.completions.create(**sdk_params, extra_body=extra_body_params)
         buffer = ""
         in_chart_config_block = False
@@ -570,7 +511,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
                             chart_json = json.loads(chart_config_str)
                             yield f"data: {json.dumps({'chart_config': chart_json})}\n\n"
                         except json.JSONDecodeError as e:
-                            logger.warning(f"Error decoding chart_js config from OpenRouter: {e} - data: {chart_config_str}")
+                            print(f"Error decoding chart_js config from OpenRouter: {e} - data: {chart_config_str}")
                             data_to_yield = {'chunk': start_marker + chart_config_str + end_marker}
                             yield f"data: {json.dumps(data_to_yield)}\n\n"
                         
@@ -594,11 +535,11 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
                  yield f"data: {json.dumps({'chunk': buffer})}\n\n"
 
         if not content_received_from_openrouter:
-            logger.warning(f"OpenRouter stream for {actual_model_name_for_sdk} finished without yielding any content chunks.")
+            print(f"Warning: OpenRouter stream for {actual_model_name_for_sdk} finished without yielding any content chunks.")
 
         yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
     except openai.APIError as e:
-        logger.error(f"OpenRouter API error (streaming for {model_name_with_suffix}): {e.status_code if hasattr(e, 'status_code') else 'N/A'} - {e}")
+        print(f"OpenRouter API error (streaming for {model_name_with_suffix}): {e.status_code if hasattr(e, 'status_code') else 'N/A'} - {e}")
         error_payload = {
             'message': str(e), # Default message
             'code': e.status_code if hasattr(e, 'status_code') else None
@@ -631,17 +572,16 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
                         if 'metadata' in error_detail:
                             error_payload['metadata'] = error_detail['metadata']
                 except json.JSONDecodeError:
-                    logger.warning("Could not parse e.response.text as JSON for detailed error.")
+                    print("Could not parse e.response.text as JSON for detailed error.")
 
         except Exception as parsing_exc:
-            logger.warning(f"Exception while parsing APIError details: {parsing_exc}")
+            print(f"Exception while parsing APIError details: {parsing_exc}")
             # Stick with the basic error_payload if parsing fails
 
         yield f"data: {json.dumps({'error': error_payload})}\n\n"
     except Exception as e:
-        logger.error(f"Error during OpenRouter stream for {model_name_with_suffix}: {e}")
-        if not os.getenv('VERCEL_ENV') == 'production':
-            traceback.print_exc()
+        print(f"Error during OpenRouter stream for {model_name_with_suffix}: {e}")
+        traceback.print_exc()
         yield f"data: {json.dumps({'error': 'An unexpected error occurred during the OpenRouter stream.'})}\n\n"
 
 # --- Routes --- 
@@ -650,61 +590,15 @@ def index():
     """Renders the main search page."""
     return render_template('index.html')
 
-@app.route('/health')
-def health_check():
-    """Health check endpoint for monitoring"""
-    try:
-        # Basic health check
-        status = {
-            'status': 'healthy',
-            'timestamp': int(time.time()),
-            'version': '1.0.0',
-            'environment': os.getenv('VERCEL_ENV', 'development')
-        }
-        
-        # Check API key availability (without exposing them)
-        api_status = {}
-        if openrouter_api_key:
-            api_status['openrouter'] = 'configured'
-        if openai_api_key:
-            api_status['openai'] = 'configured'
-        if tavily_api_key:
-            api_status['tavily'] = 'configured'
-        
-        status['apis'] = api_status
-        
-        return jsonify(status), 200
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return jsonify({
-            'status': 'unhealthy',
-            'error': 'Health check failed'
-        }), 500
-
 @app.route('/search', methods=['POST'])
 def search():
     """Handles the search query, routing to OpenRouter or direct OpenAI for images."""
-    logger.info("Request received at /search endpoint")
-    
-    # Input validation
-    if not request.is_json:
-        return jsonify({'error': 'Request must be JSON'}), 400
-    
-    try:
-        query = request.json.get('query', '').strip()
-        selected_model = request.json.get('model', '').strip()
-        uploaded_file_data = request.json.get('uploaded_file_data')
-        file_type = request.json.get('file_type', '').strip()
-        web_search_enabled = request.json.get('web_search_enabled', False)
-    except (AttributeError, TypeError):
-        return jsonify({'error': 'Invalid JSON format'}), 400
-    
-    # Basic input validation
-    if query and len(query) > 10000:  # Reasonable limit for query length
-        return jsonify({'error': 'Query too long (max 10,000 characters)'}), 400
-    
-    if uploaded_file_data and len(uploaded_file_data) > 50 * 1024 * 1024:  # 50MB limit
-        return jsonify({'error': 'File too large (max 50MB)'}), 400
+    print("--- Request received at /search endpoint ---")
+    query = request.json.get('query')
+    selected_model = request.json.get('model')
+    uploaded_file_data = request.json.get('uploaded_file_data')
+    file_type = request.json.get('file_type') # e.g., 'image', 'pdf'
+    web_search_enabled = request.json.get('web_search_enabled', False)
 
     # Default query to "edit image" if not provided but an image is for editing
     if not query and selected_model == "gpt-image-1" and uploaded_file_data and file_type == 'image':
@@ -718,23 +612,23 @@ def search():
         default_model_for_error = "gpt-image-1"
 
     if not selected_model or selected_model not in ALLOWED_MODELS:
-        logger.warning(f"Invalid or missing model '{selected_model}'. Defaulting to {default_model_for_error}.")
+        print(f"Warning: Invalid or missing model '{selected_model}'. Defaulting to {default_model_for_error}.")
         selected_model = default_model_for_error
     
     missing_keys = check_api_keys(selected_model)
     if missing_keys:
         key_str = " and ".join(missing_keys)
-        logger.error(f"Missing API Key(s) {key_str} for model {selected_model}")
-        return jsonify({'error': f'Missing API key(s) for model {selected_model}: {key_str}'}), 500
+        print(f"Error: Missing API Key(s) {key_str} for model {selected_model}")
+        return jsonify({'error': f'Missing API key(s) in .env file for model {selected_model}: {key_str}'}), 500
 
-    logger.info(f"Received query: {query}, Model: {selected_model}")
+    print(f"Received query: {query}, Model: {selected_model}")
 
     if selected_model == "gpt-image-1":
         if uploaded_file_data and file_type == 'image':
-            logger.info(f"Routing to OpenAI Image Edit. Query: '{query}'")
+            print(f"Routing to OpenAI Image Edit. Query: '{query}'")
             return edit_image(query, uploaded_file_data)
         else:
-            logger.info(f"Routing to OpenAI Image Generation. Query: '{query}'")
+            print(f"Routing to OpenAI Image Generation. Query: '{query}'")
             return generate_image(query)
     elif selected_model in OPENROUTER_MODELS:
         print_query = query[:100] + "..." if query and len(query) > 100 else query
@@ -742,7 +636,7 @@ def search():
         if uploaded_file_data:
             print_file_data = f", FileType: {file_type}, FileData (starts with): {uploaded_file_data[:50]}..."
         
-        logger.info(f"Routing to OpenRouter. Query: '{print_query}'{print_file_data}, Model: {selected_model}")
+        print(f"Routing to OpenRouter. Query: '{print_query}'{print_file_data}, Model: {selected_model}")
 
         generator = stream_openrouter(
             query, 
@@ -754,18 +648,18 @@ def search():
         )
         return Response(generator, mimetype='text/event-stream')
     else:
-        logger.error(f"Model '{selected_model}' is in ALLOWED_MODELS but not recognized for routing logic.")
+        print(f"Error: Model '{selected_model}' is in ALLOWED_MODELS but not recognized for routing logic.")
         return jsonify({'error': f"Model '{selected_model}' is not configured correctly for use."}), 500
 
 # --- Image Generation Function ---
 def generate_image(query):
     """Generates an image using OpenAI and returns base64 data or error."""
-    logger.info("Entering generate_image function")
+    print("--- Entering generate_image function ---")
     if not openai_client: 
-         logger.error("generate_image - Direct OpenAI client not initialized.")
+         print("ERROR: generate_image - Direct OpenAI client not initialized.")
          return jsonify({'error': 'OpenAI client not initialized. Check direct OpenAI API key.'}), 500
 
-    logger.info(f"Generating image with prompt: {query[:100]}...")
+    print(f"Generating image with prompt: {query[:100]}...")
     try:
         result = openai_client.images.generate(
             model="gpt-image-1",
@@ -776,14 +670,14 @@ def generate_image(query):
         
         if result.data and result.data[0].b64_json:
             image_base64 = result.data[0].b64_json
-            logger.info("generate_image - Image generated successfully")
+            print("SUCCESS: generate_image - Image generated, returning JSON (b64_json expected).")
             return jsonify({'image_base64': image_base64})
         else:
-            logger.error("generate_image - No b64_json data received from OpenAI.")
+            print("ERROR: generate_image - No b64_json data received from OpenAI.")
             return jsonify({'error': 'No b64_json data received from OpenAI API.'}), 500
 
     except openai.APIError as e:
-        logger.error(f"generate_image - OpenAI APIError caught: {e}")
+        print(f"ERROR: generate_image - OpenAI APIError caught: {e}")
         err_msg = "An API error occurred."
         status_code = 500
         if hasattr(e, 'status_code') and e.status_code:
@@ -800,7 +694,7 @@ def generate_image(query):
             elif hasattr(e, 'message') and e.message:
                 err_msg = e.message
         except Exception as parsing_exc:
-            logger.warning(f"Exception while parsing APIError details for generate_image: {parsing_exc}")
+            print(f"Exception while parsing APIError details for generate_image: {parsing_exc}")
         
         # Ensure err_msg is a string before checking substrings
         if not isinstance(err_msg, str):
@@ -813,18 +707,17 @@ def generate_image(query):
         
         return jsonify({'error': f'OpenAI API error during image generation: {err_msg}'}), status_code
     except Exception as e:
-        logger.error(f"generate_image - Unexpected Exception caught: {e}")
-        if not os.getenv('VERCEL_ENV') == 'production':
-            traceback.print_exc()
+        print(f"ERROR: generate_image - Unexpected Exception caught: {e}")
+        traceback.print_exc()
         # Ensure a JSON response even for unexpected errors
         return jsonify({'error': 'An internal server error occurred during image generation. Please check server logs.'}), 500
 
 # --- Image Editing Function ---
 def edit_image(prompt, image_data_url):
     """Edits an image using OpenAI and returns base64 data or error."""
-    logger.info(f"Entering edit_image function. Prompt: {prompt[:100]}...")
+    print(f"--- Entering edit_image function. Prompt: {prompt[:100]}... ---")
     if not openai_client:
-        logger.error("edit_image - Direct OpenAI client not initialized.")
+        print("ERROR: edit_image - Direct OpenAI client not initialized.")
         return jsonify({'error': 'OpenAI client not initialized. Check direct OpenAI API key.'}), 500
 
     try:
@@ -832,7 +725,7 @@ def edit_image(prompt, image_data_url):
         # Format: "data:image/png;base64,iVBORw0KGgo..."
         # For images.edit, OpenAI API requires a valid PNG file.
         if not image_data_url.startswith("data:image/png;base64,"):
-            logger.error("edit_image - Invalid image data URL format. Must be a PNG base64 data URL for editing.")
+            print("ERROR: edit_image - Invalid image data URL format. Must be a PNG base64 data URL for editing.")
             return jsonify({'error': 'Invalid image format for editing. Please upload a PNG image.'}), 400
         
         header, encoded_data = image_data_url.split(',', 1)
@@ -842,7 +735,7 @@ def edit_image(prompt, image_data_url):
         image_file_like = io.BytesIO(image_bytes)
         image_file_like.name = "uploaded_image.png" # API might need a filename
 
-        logger.info(f"Editing image with gpt-image-1. Prompt: {prompt[:100]}..., Image size: {len(image_bytes)} bytes")
+        print(f"Editing image with gpt-image-1. Prompt: {prompt[:100]}..., Image size: {len(image_bytes)} bytes")
         
         result = openai_client.images.edit(
             image=image_file_like,
@@ -855,21 +748,21 @@ def edit_image(prompt, image_data_url):
 
         if result.data and result.data[0].b64_json:
             edited_image_base64 = result.data[0].b64_json
-            logger.info("edit_image - Image edited successfully")
+            print("SUCCESS: edit_image - Image edited, returning JSON (b64_json expected).")
             # The response is b64_json, so it's already base64 encoded.
             return jsonify({'image_base64': edited_image_base64, 'is_edit': True}) 
         elif result.data and result.data[0].url:
             # Sometimes the API might return a URL instead, though b64_json is preferred for this flow
-            logger.warning(f"edit_image - Image edited, but received URL: {result.data[0].url}. This app expects b64_json for direct display.")
+            print(f"WARNING: edit_image - Image edited, but received URL: {result.data[0].url}. This app expects b64_json for direct display.")
             # For simplicity, we'll ask the user to try again or indicate we can't load from URL directly in this flow.
             # Ideally, we'd fetch the URL and convert to base64, but that adds complexity and another request.
             return jsonify({'error': 'Image edited, but received a URL. Please try again or contact support if this persists. This version expects base64 data.'}), 500
         else:
-            logger.error("edit_image - No b64_json or URL data received from OpenAI edit API.")
+            print("ERROR: edit_image - No b64_json or URL data received from OpenAI edit API.")
             return jsonify({'error': 'No image data received from OpenAI API after edit.'}), 500
 
     except openai.APIError as e:
-        logger.error(f"edit_image - OpenAI APIError caught: {e}")
+        print(f"ERROR: edit_image - OpenAI APIError caught: {e}")
         err_msg = "An API error occurred."
         status_code = 500
         if hasattr(e, 'status_code') and e.status_code:
@@ -886,7 +779,7 @@ def edit_image(prompt, image_data_url):
             elif hasattr(e, 'message') and e.message:
                 err_msg = e.message
         except Exception as parsing_exc:
-            logger.warning(f"Exception while parsing APIError details for edit_image: {parsing_exc}")
+            print(f"Exception while parsing APIError details for edit_image: {parsing_exc}")
         
         # Ensure err_msg is a string before checking substrings
         if not isinstance(err_msg, str):
@@ -899,33 +792,28 @@ def edit_image(prompt, image_data_url):
         
         return jsonify({'error': f'OpenAI API error during image edit: {err_msg}'}), status_code
     except Exception as e:
-        logger.error(f"edit_image - Unexpected Exception caught: {e}")
-        if not os.getenv('VERCEL_ENV') == 'production':
-            traceback.print_exc()
+        print(f"ERROR: edit_image - Unexpected Exception caught: {e}")
+        traceback.print_exc()
         # Ensure a JSON response even for unexpected errors
         return jsonify({'error': 'An internal server error occurred during image editing. Please check server logs.'}), 500
 
 # --- Main Execution --- 
 if __name__ == '__main__':
-    # Environment-specific configuration
-    is_production = os.getenv('VERCEL_ENV') == 'production'
-    
     if not openrouter_api_key:
-         logger.warning("OpenRouter API key not found. OpenRouter models will not work.")
+         print("\n*** WARNING: OpenRouter API key not found in .env. OpenRouter models will not work. ***\n")
     else:
-        logger.info("OpenRouter API key found.")
+        print("OpenRouter API key found.")
 
     if not openai_api_key:
-         logger.warning("Direct OpenAI API key (OPENAI_API_KEY) not found. gpt-image-1 model will not work.")
+         print("*** WARNING: Direct OpenAI API key (OPENAI_API_KEY) not found in .env. gpt-image-1 model will not work. ***")
     else:
-        logger.info("Direct OpenAI API key (OPENAI_API_KEY) found.")
+        print("Direct OpenAI API key (OPENAI_API_KEY) found.")
+    
+
 
     if openrouter_api_key or openai_api_key:
-        logger.info("Application starting...")
+        print("Application starting...\n")
     else:
-        logger.error("CRITICAL: NO API keys found. Application will not function properly.")
+        print("\n*** CRITICAL WARNING: NO API keys (OpenRouter or direct OpenAI) found in .env. Application will likely not function. ***\n")
         
-    # Only run the development server if not in production (Vercel)
-    if not is_production:
-        # Development settings
-        app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), threaded=True) 
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), threaded=True) 
