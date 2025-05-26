@@ -116,22 +116,22 @@ body {
     background-color: var(--select-bg-color);
     border: 1px solid var(--select-border-color);
     color: var(--text-muted-color);
-    padding: 0 10px; /* Consistent padding for icon buttons */
-    border-radius: 18px;
+    padding: 0 8px; /* Reduced padding for smaller buttons */
+    border-radius: 14px; /* Smaller border radius */
     cursor: pointer;
-    font-size: 0.85rem; /* Consistent font size */
+    font-size: 0.8rem; /* Smaller font size */
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-    height: 36px; /* Consistent height */
+    height: 32px; /* Smaller height */
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 36px; /* Ensure a minimum tap/click target size */
+    min-width: 32px; /* Smaller minimum width */
 }
 
 #theme-toggle-button:hover,
 #new-search-button:hover {
-    color: var(--primary-color);
-    border-color: var(--primary-color);
+    color: var(--text-color);
+    border-color: var(--border-color);
     background-color: var(--select-bg-color); /* Keep background on hover, or make it slightly different if desired */
 }
 
@@ -141,15 +141,15 @@ body {
 #theme-toggle-button:focus-visible,
 #new-search-button:focus-visible,
 #attach-file-button:focus-visible {
-    outline: 2px solid var(--primary-color);
+    outline: 2px solid var(--border-color);
     outline-offset: 2px;
 }
 
 #model-select:focus,
 #model-select:focus-visible {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+    border-color: var(--border-color);
+    box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.15);
 }
 
 #search-input:focus,
@@ -159,14 +159,14 @@ body {
 
 /* Enhanced search form focus and hover states */
 .search-form-perplexity:focus-within {
-    border-color: var(--primary-color);
-    box-shadow: 0 4px 24px rgba(249, 115, 22, 0.15);
+    border-color: var(--border-color);
+    box-shadow: 0 4px 24px rgba(128, 128, 128, 0.15);
     transition: box-shadow 0.3s ease-out, border-color 0.3s ease-out;
 }
 
 .search-form-perplexity:hover {
-    border-color: var(--primary-color);
-    box-shadow: 0 4px 24px rgba(249, 115, 22, 0.1);
+    border-color: var(--border-color);
+    box-shadow: 0 4px 24px rgba(128, 128, 128, 0.1);
     transition: box-shadow 0.3s ease-out, border-color 0.3s ease-out;
 }
 
@@ -244,7 +244,7 @@ body {
 }
 
 .input-icon-button:hover {
-    color: var(--primary-color);
+    color: var(--text-color);
     background-color: var(--select-bg-color);
 }
 
@@ -289,14 +289,14 @@ body {
 #model-select {
     flex: 1;
     min-width: 0;
-    font-size: 0.9rem;
-    padding: 12px 14px;
+    font-size: 0.85rem;
+    padding: 10px 12px;
     margin: 0;
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
     border: 1px solid var(--select-border-color);
-    border-radius: 12px;
+    border-radius: 10px;
     background-color: var(--select-bg-color);
     color: var(--text-color);
     -webkit-appearance: none;
@@ -305,23 +305,23 @@ body {
     cursor: pointer;
     transition: background-color 0.2s ease, border-color 0.2s ease;
     text-align: left;
-    height: 48px;
+    height: 42px;
     line-height: normal;
 }
 
 #model-select:hover {
-    border-color: var(--primary-color);
+    border-color: var(--border-color);
 }
 
 .circular-button {
-    width: 48px;
-    height: 48px;
-    min-width: 48px;
-    border-radius: 12px;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
+    font-size: 1rem;
     cursor: pointer;
     transition: all 0.2s ease;
     border: none;
@@ -336,13 +336,13 @@ body {
 }
 
 #attach-file-button:hover {
-    color: var(--primary-color);
-    border-color: var(--primary-color);
+    color: var(--text-color);
+    border-color: var(--border-color);
 }
 
 #attach-file-button.file-attached {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
+    border-color: var(--border-color);
+    color: var(--text-color);
 }
 
 #attach-file-button i {
@@ -488,7 +488,7 @@ body {
 
 /* Enhanced Blockquotes */
 .results-container-perplexity blockquote {
-    border-left: 4px solid var(--primary-color);
+    border-left: 4px solid var(--border-color);
     padding: 0.8em 1.2em;
     margin: 1.5em 0;
     background-color: var(--code-bg-color);
@@ -596,12 +596,12 @@ body {
 .thinking-indicator-content {
     display: inline-flex; /* To make it wrap content tightly */
     align-items: center;
-    gap: 8px; /* Space between spinner and text */
-    padding: 0 12px; /* Horizontal padding */
-    height: 36px; /* Match height of other controls */
+    gap: 6px; /* Smaller space between spinner and text */
+    padding: 0 10px; /* Smaller horizontal padding */
+    height: 32px; /* Match height of smaller controls */
     background-color: var(--select-bg-color);
     border: 1px solid var(--select-border-color);
-    border-radius: 18px; /* Consistent rounded corners */
+    border-radius: 16px; /* Smaller rounded corners */
     box-sizing: border-box;
 }
 
@@ -769,7 +769,7 @@ body {
 
 .toggle-btn:hover {
     background-color: var(--select-bg-color);
-    color: var(--primary-color);
+    color: var(--text-color);
 }
 
 .toggle-btn i {
@@ -865,7 +865,7 @@ body {
 }
 
 .reasoning-content blockquote {
-    border-left: 3px solid var(--primary-color);
+    border-left: 3px solid var(--border-color);
     padding-left: 1em;
     margin-left: 0;
     margin-bottom: 1em;
@@ -933,73 +933,22 @@ body.dark-mode .reasoning-content pre {
 #file-preview-area .remove-file-btn {
     background: none;
     border: none;
-    color: var(--primary-color);
+    color: var(--text-muted-color);
     font-size: 1.1em;
     cursor: pointer;
     margin-left: 8px;
     transition: color 0.2s;
 }
 #file-preview-area .remove-file-btn:hover {
-    color: var(--primary-hover-color);
+    color: var(--text-color);
 }
 
 /* === Enhanced Copy Buttons === */
 .copy-btn {
-    background: var(--select-bg-color);
-    border: 1px solid var(--select-border-color);
-    color: var(--text-muted-color);
-    border-radius: 8px;
-    padding: 8px 12px;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    backdrop-filter: blur(10px);
-    z-index: 10;
+    display: none; /* Hide copy buttons */
 }
 
-.copy-btn:hover {
-    color: var(--primary-color);
-    border-color: var(--primary-color);
-    background: var(--input-bg-color);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
 
-.copy-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.copy-btn.copied {
-    color: #10b981;
-    border-color: #10b981;
-    background: var(--input-bg-color);
-}
-
-.copy-btn.copied::after {
-    content: " ✓";
-    font-weight: bold;
-}
-
-/* Position copy button in results container */
-.results-container-perplexity > .copy-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    opacity: 0.8;
-    transition: opacity 0.2s ease;
-}
-
-.results-container-perplexity:hover > .copy-btn {
-    opacity: 1;
-}
-
-/* Mobile copy button styles moved to main responsive section */
 
 /* === Skeleton Loader === */
 .skeleton-loader {
@@ -1029,8 +978,8 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
 }
 
 /* === Accessibility: Focus States === */
-.copy-btn:focus-visible, .remove-file-btn:focus-visible {
-    outline: 2px solid var(--primary-color);
+.remove-file-btn:focus-visible {
+    outline: 2px solid var(--border-color);
     outline-offset: 2px;
 }
 
@@ -1067,17 +1016,7 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
         margin-bottom: 25px;
     }
     
-    /* Mobile copy button adjustments */
-    .copy-btn {
-        padding: 8px 12px;
-        font-size: 0.85rem;
-        border-radius: 10px;
-    }
-    
-    .results-container-perplexity > .copy-btn {
-        top: 12px;
-        right: 12px;
-    }
+
     
     /* Mobile results adjustments */
     .results-container-perplexity {
@@ -1109,9 +1048,9 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
     
     /* Mobile thinking indicator */
     .thinking-indicator-content {
-        padding: 0 16px;
-        height: 40px;
-        border-radius: 20px;
+        padding: 0 12px;
+        height: 36px;
+        border-radius: 18px;
     }
     
     /* Mobile generated images */
@@ -1164,18 +1103,18 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
     }
     
     #model-select {
-        height: 44px;
-        padding: 10px 12px;
-        font-size: 0.85rem;
-        border-radius: 10px;
+        height: 40px;
+        padding: 8px 10px;
+        font-size: 0.8rem;
+        border-radius: 8px;
     }
     
     .circular-button {
-        width: 44px;
-        height: 44px;
-        min-width: 44px;
-        border-radius: 10px;
-        font-size: 1rem;
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        border-radius: 8px;
+        font-size: 0.9rem;
     }
     
     .results-container-perplexity {
