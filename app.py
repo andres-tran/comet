@@ -35,6 +35,7 @@ OPENROUTER_MODELS = {
 }
 ALLOWED_MODELS = OPENROUTER_MODELS.copy()
 ALLOWED_MODELS.add("gpt-image-1")
+ALLOWED_MODELS.add("agentic-mode")  # Special mode for agentic workflows
 
 # --- Error Handling ---
 def check_api_keys(model_name):
@@ -769,6 +770,12 @@ def search():
         else:
             print(f"Routing to OpenAI Image Generation. Query: '{query}'")
             return generate_image(query)
+    elif selected_model == "agentic-mode":
+        print(f"Routing to Agentic Mode. Query: '{query}'")
+        # Use a capable model for agentic workflows
+        agentic_model = "google/gemini-2.5-pro-preview"  # Default agentic model
+        generator = run_agentic_loop(query, agentic_model)
+        return Response(generator, mimetype='text/event-stream')
     elif selected_model in OPENROUTER_MODELS:
         print_query = query[:100] + "..." if query and len(query) > 100 else query
         print_file_data = ""
@@ -935,6 +942,220 @@ def edit_image(prompt, image_data_url):
         traceback.print_exc()
         # Ensure a JSON response even for unexpected errors
         return jsonify({'error': 'An internal server error occurred during image editing. Please check server logs.'}), 500
+
+# --- Agentic Tools Definition ---
+def get_current_time():
+    """Get the current date and time."""
+    from datetime import datetime
+    return {"current_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+
+def calculate_math(expression):
+    """Safely evaluate a mathematical expression."""
+    import re
+    # Only allow safe mathematical operations
+    if re.match(r'^[0-9+\-*/().\s]+$', expression):
+        try:
+            result = eval(expression)
+            return {"result": result, "expression": expression}
+        except Exception as e:
+            return {"error": f"Math calculation failed: {str(e)}"}
+    else:
+        return {"error": "Invalid mathematical expression. Only numbers and basic operators allowed."}
+
+def search_web_tool(query):
+    """Search the web using Tavily API - tool wrapper."""
+    result = search_web_tavily(query, max_results=5)
+    if "error" in result:
+        return {"error": result["error"]}
+    
+    # Simplify the result for tool use
+    simplified_results = []
+    for item in result.get("results", [])[:3]:  # Limit to top 3 for tool use
+        simplified_results.append({
+            "title": item.get("title", ""),
+            "url": item.get("url", ""),
+            "content": item.get("content", "")[:200] + "..." if len(item.get("content", "")) > 200 else item.get("content", "")
+        })
+    
+    return {
+        "answer": result.get("answer", ""),
+        "sources": simplified_results,
+        "total_found": len(result.get("results", []))
+    }
+
+# Tool definitions for OpenRouter function calling
+AGENTIC_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_current_time",
+            "description": "Get the current date and time",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function", 
+        "function": {
+            "name": "calculate_math",
+            "description": "Perform mathematical calculations safely. Supports basic arithmetic operations (+, -, *, /, parentheses)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "expression": {
+                        "type": "string",
+                        "description": "Mathematical expression to evaluate (e.g., '2 + 3 * 4', '(10 + 5) / 3')"
+                    }
+                },
+                "required": ["expression"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_web_tool", 
+            "description": "Search the web for current information using Tavily API. Use this when you need recent or real-time information.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query to find information on the web"
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    }
+]
+
+# Tool mapping for execution
+TOOL_MAPPING = {
+    "get_current_time": get_current_time,
+    "calculate_math": calculate_math,
+    "search_web_tool": search_web_tool
+}
+
+# --- Agentic Loop Function ---
+def run_agentic_loop(query, model_name, max_iterations=5):
+    """
+    Run a simple agentic loop that can use tools to answer queries.
+    Returns a generator for streaming responses.
+    """
+    if not openrouter_api_key:
+        yield f"data: {json.dumps({'error': 'OpenRouter API key not configured for agentic mode.'})}\n\n"
+        return
+
+    # Enhanced system prompt for agentic behavior
+    agentic_system_prompt = (
+        "You are Comet, an advanced AI assistant with access to tools that help you provide accurate and up-to-date information. "
+        "You can use the following capabilities:\n"
+        "1. **get_current_time**: Get the current date and time\n"
+        "2. **calculate_math**: Perform mathematical calculations\n"
+        "3. **search_web_tool**: Search the web for current information\n\n"
+        "When a user asks a question:\n"
+        "- If you need current time/date information, use get_current_time\n"
+        "- If you need to perform calculations, use calculate_math\n"
+        "- If you need recent or real-time information, use search_web_tool\n"
+        "- You can use multiple tools in sequence if needed\n"
+        "- Always provide a comprehensive final answer based on the tool results\n"
+        "- Be conversational and helpful in your responses\n\n"
+        "Think step by step about what tools you need to use to best answer the user's question."
+    )
+
+    messages = [
+        {"role": "system", "content": agentic_system_prompt},
+        {"role": "user", "content": query}
+    ]
+
+    try:
+        openrouter_client_instance = openai.OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=openrouter_api_key,
+            default_headers={
+                "HTTP-Referer": os.getenv("APP_SITE_URL", "http://localhost:8080"),
+                "X-Title": os.getenv("APP_SITE_TITLE", "Comet AI Search")
+            }
+        )
+
+        iteration = 0
+        while iteration < max_iterations:
+            iteration += 1
+            print(f"Agentic loop iteration {iteration}")
+
+            # Make API call with tools
+            response = openrouter_client_instance.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                tools=AGENTIC_TOOLS,
+                stream=False  # Use non-streaming for tool calls
+            )
+
+            assistant_message = response.choices[0].message
+            messages.append(assistant_message.dict())
+
+            # Check if the model wants to use tools
+            if assistant_message.tool_calls:
+                print(f"Model requested {len(assistant_message.tool_calls)} tool calls")
+                
+                # Process each tool call
+                for tool_call in assistant_message.tool_calls:
+                    tool_name = tool_call.function.name
+                    tool_args = json.loads(tool_call.function.arguments)
+                    
+                    print(f"Executing tool: {tool_name} with args: {tool_args}")
+                    
+                    # Execute the tool
+                    if tool_name in TOOL_MAPPING:
+                        try:
+                            tool_result = TOOL_MAPPING[tool_name](**tool_args)
+                            print(f"Tool result: {tool_result}")
+                        except Exception as e:
+                            tool_result = {"error": f"Tool execution failed: {str(e)}"}
+                    else:
+                        tool_result = {"error": f"Unknown tool: {tool_name}"}
+                    
+                    # Add tool result to messages
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "name": tool_name,
+                        "content": json.dumps(tool_result)
+                    })
+                
+                # Yield intermediate progress
+                yield f"data: {json.dumps({'reasoning': f'Used tools: {[tc.function.name for tc in assistant_message.tool_calls]}'})}\n\n"
+                
+            else:
+                # No more tool calls, return final response
+                print("No tool calls requested, providing final response")
+                
+                # Stream the final response
+                final_response = openrouter_client_instance.chat.completions.create(
+                    model=model_name,
+                    messages=messages,
+                    stream=True
+                )
+                
+                for chunk in final_response:
+                    delta = chunk.choices[0].delta
+                    if delta.content is not None:
+                        yield f"data: {json.dumps({'chunk': delta.content})}\n\n"
+                
+                yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
+                return
+
+        # If we hit max iterations, provide a response anyway
+        yield f"data: {json.dumps({'chunk': 'I apologize, but I reached the maximum number of tool iterations. Here is what I found so far based on the tools I used.'})}\n\n"
+        yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
+
+    except Exception as e:
+        print(f"Error in agentic loop: {e}")
+        yield f"data: {json.dumps({'error': f'Agentic loop error: {str(e)}'})}\n\n"
 
 # --- Main Execution --- 
 if __name__ == '__main__':

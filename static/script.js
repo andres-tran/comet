@@ -401,6 +401,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 thinkingText.textContent = 'Generating image...';
             }
+        } else if (selectedModel === 'agentic-mode') {
+            thinkingText.textContent = 'Analyzing query and selecting tools...'; // Agentic mode text
         } else {
             if (webSearchEnabled) {
                 thinkingText.textContent = 'Searching the web...'; // Web search text
