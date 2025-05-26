@@ -29,11 +29,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const attachFileButton = document.getElementById('attach-file-button'); // Get attach file button
     const reasoningContainer = document.getElementById('reasoning-container'); // Get reasoning container
     const reasoningContent = document.getElementById('reasoning-content'); // Get reasoning content div
+    const toggleReasoningBtn = document.getElementById('toggle-reasoning-btn'); // Get toggle button
+    const reasoningHeader = document.querySelector('.reasoning-header'); // Get reasoning header
 
     // --- State for uploaded file ---
     let uploadedFileBase64 = null;
     let uploadedFileType = null;
     let uploadedFileName = null;
+
+    // --- Toggle reasoning container ---
+    let isReasoningCollapsed = false; // Start expanded when shown
+    
+    function toggleReasoning() {
+        isReasoningCollapsed = !isReasoningCollapsed;
+        
+        if (isReasoningCollapsed) {
+            reasoningContent.classList.add('collapsed');
+            toggleReasoningBtn.classList.add('collapsed');
+        } else {
+            reasoningContent.classList.remove('collapsed');
+            toggleReasoningBtn.classList.remove('collapsed');
+        }
+    }
+    
+    // Add click event to toggle button and header
+    if (toggleReasoningBtn) {
+        toggleReasoningBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleReasoning();
+        });
+    }
+    
+    if (reasoningHeader) {
+        reasoningHeader.addEventListener('click', () => {
+            toggleReasoning();
+        });
+    }
 
     // Configure marked.js (optional: customize options here if needed)
     // marked.setOptions({...});
@@ -192,7 +223,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if(placeholder) placeholder.style.display = 'none';
 
         if (reasoningContainer) reasoningContainer.style.display = 'none'; // Hide reasoning container
-        if (reasoningContent) reasoningContent.innerHTML = ''; // Clear old reasoning
+        if (reasoningContent) {
+            reasoningContent.innerHTML = ''; // Clear old reasoning
+            reasoningContent.classList.remove('collapsed'); // Reset to expanded state
+        }
+        if (toggleReasoningBtn) {
+            toggleReasoningBtn.classList.remove('collapsed'); // Reset toggle button
+        }
+        isReasoningCollapsed = false; // Reset collapsed state
 
         thinkingIndicator.style.display = 'flex';
         errorContainer.textContent = '';
@@ -236,8 +274,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Reset UI states
+        initializeNewSearch(); // Initialize the search properly
         resultsContainer.style.display = 'block'; // Make sure results container is visible
-        resultsContainer.innerHTML = ''; // Clear previous results immediately
         downloadArea.style.display = 'none'; // Hide download area
         downloadArea.innerHTML = ''; // Clear previous button
         thinkingIndicator.style.display = 'flex'; // Show thinking animation
@@ -365,6 +403,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let isFirstChunkProcessed = false;
+            let lastUpdateTime = Date.now();
+            let chunkCount = 0;
 
             async function processStream() {
                 while (true) {
@@ -376,6 +416,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         if (accumulatedResponse.trim() === '' && !currentError && resultsContainer.innerHTML.trim() === '') {
                              resultsContainer.innerHTML = '<p>Stream ended with no content.</p>';
+                        }
+                        // Add a subtle animation when content is complete
+                        if (currentResultsWrapper) {
+                            currentResultsWrapper.style.animation = 'fadeInComplete 0.3s ease-out';
                         }
                         break; // Exit loop when stream is done
                     }
@@ -413,16 +457,37 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (data.reasoning) {
                                     reasoningBuffer += data.reasoning;
                                     if (reasoningContent) {
-                                        reasoningContent.textContent = reasoningBuffer; // Display raw reasoning text
+                                        // Render markdown for reasoning content
+                                        const reasoningHtml = marked.parse(reasoningBuffer);
+                                        reasoningContent.innerHTML = reasoningHtml;
                                     }
                                     if (reasoningContainer && reasoningBuffer.trim() !== '') {
                                         reasoningContainer.style.display = 'block'; // Show if there's content
+                                        // Add smooth fade-in animation
+                                        if (!reasoningContainer.classList.contains('fade-in')) {
+                                            reasoningContainer.classList.add('fade-in');
+                                        }
                                     }
                                 }
 
                                 if (data.chunk) {
+                                    chunkCount++;
                                     accumulatedResponse += data.chunk;
+                                    
+                                    // Update thinking text with progress
+                                    const currentTime = Date.now();
+                                    if (currentTime - lastUpdateTime > 500) { // Update every 500ms
+                                        const dots = '.'.repeat((chunkCount % 4));
+                                        thinkingText.textContent = `Processing${dots}`;
+                                        lastUpdateTime = currentTime;
+                                    }
+                                    
                                     renderAndUpdateTables(resultsContainer, accumulatedResponse);
+                                    
+                                    // Smooth scroll to bottom if content is being added
+                                    if (resultsContainer.scrollHeight > window.innerHeight) {
+                                        resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                                    }
                                 }
 
                                 if (data.end_of_stream) {

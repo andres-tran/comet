@@ -59,13 +59,47 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
 
     # Improved system prompt for better responses
     enhanced_openrouter_system_prompt = (
-        "You are Comet, an expert, friendly, and detail-oriented AI assistant. "
-        "Always provide clear, accurate, and actionable answers. "
-        "When appropriate, show your reasoning step by step, and ask clarifying questions if the user's request is ambiguous. "
-        "Format your responses for readability, using lists, headings, and code blocks as needed."
+        "You are Comet, an advanced AI assistant that provides comprehensive, well-structured, and insightful responses. "
+        "Your responses should be:\n\n"
+        "1. **Clear and Organized**: Use proper headings, bullet points, and numbered lists to structure information logically.\n"
+        "2. **Comprehensive yet Concise**: Provide thorough answers without unnecessary verbosity.\n"
+        "3. **Actionable**: Include specific steps, examples, or recommendations when applicable.\n"
+        "4. **Accurate and Reliable**: Base responses on factual information and clearly indicate any uncertainties.\n"
+        "5. **Engaging**: Use a friendly, professional tone that makes complex topics accessible.\n\n"
+        "Formatting Guidelines:\n"
+        "- Use markdown formatting for better readability\n"
+        "- Include code blocks with syntax highlighting when showing code\n"
+        "- Use tables for comparing options or presenting structured data\n"
+        "- Add relevant emojis sparingly to enhance readability (e.g., ✅ for pros, ❌ for cons, 💡 for tips)\n"
+        "- Break down complex topics into digestible sections\n\n"
+        "When answering questions:\n"
+        "- Start with a brief summary or direct answer\n"
+        "- Provide detailed explanation with examples\n"
+        "- Include relevant tips, best practices, or warnings\n"
+        "- End with a summary or next steps when appropriate\n\n"
+        "Always strive to exceed user expectations with thoughtful, well-crafted responses."
     )
     
     user_content_parts = [{"type": "text", "text": query}]
+    
+    # Add context-aware prompting based on query type
+    query_lower = query.lower()
+    context_hint = ""
+    
+    if any(word in query_lower for word in ['code', 'program', 'function', 'script', 'debug', 'error']):
+        context_hint = "\n\nNote: This appears to be a coding-related question. Please provide code examples with syntax highlighting and clear explanations."
+    elif any(word in query_lower for word in ['explain', 'what is', 'how does', 'why', 'define']):
+        context_hint = "\n\nNote: This appears to be an explanatory question. Please provide a comprehensive yet accessible explanation with examples."
+    elif any(word in query_lower for word in ['compare', 'difference', 'versus', 'vs', 'better']):
+        context_hint = "\n\nNote: This appears to be a comparison question. Consider using a table or structured format to clearly show differences."
+    elif any(word in query_lower for word in ['list', 'steps', 'how to', 'guide', 'tutorial']):
+        context_hint = "\n\nNote: This appears to be a procedural question. Please provide clear, numbered steps or bullet points."
+    elif any(word in query_lower for word in ['analyze', 'review', 'evaluate', 'assess']):
+        context_hint = "\n\nNote: This appears to be an analytical question. Please provide a thorough analysis with pros, cons, and recommendations."
+    
+    # Append context hint to the query if applicable
+    if context_hint:
+        user_content_parts[0]["text"] += context_hint
 
     if uploaded_file_data and file_type:
         if file_type == "image":
@@ -176,8 +210,21 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         "messages": messages,
         "stream": True,
         "max_tokens": max_tokens_val,
-        "top_p": 0.95        # Encourage diversity
     }
+    
+    # Dynamic parameter adjustment based on query type
+    if any(word in query_lower for word in ['creative', 'story', 'imagine', 'brainstorm', 'ideas']):
+        sdk_params["top_p"] = 0.95
+        temperature_value = 0.9  # More creative
+    elif any(word in query_lower for word in ['code', 'technical', 'precise', 'exact', 'calculate']):
+        sdk_params["top_p"] = 0.9
+        temperature_value = 0.3  # More precise
+    elif any(word in query_lower for word in ['analyze', 'explain', 'summarize', 'review']):
+        sdk_params["top_p"] = 0.92
+        temperature_value = 0.5  # Balanced
+    else:
+        sdk_params["top_p"] = 0.95
+        temperature_value = 0.7  # Default balanced creativity
 
     # Only include temperature for models that support it
     MODELS_WITH_TEMPERATURE = {
@@ -192,7 +239,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         # Add more as needed
     }
     if actual_model_name_for_sdk in MODELS_WITH_TEMPERATURE:
-        sdk_params["temperature"] = 0.7  # More creative, but not too random
+        sdk_params["temperature"] = temperature_value
 
     extra_body_params = {}
     # If reasoning_config is passed (e.g. for :thinking models with exclude: True)
@@ -254,6 +301,24 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         for chunk in stream:
             print(f"Debug: Raw chunk for {actual_model_name_for_sdk}: {chunk}")
             delta = chunk.choices[0].delta
+            
+            # Check for reasoning/thinking content
+            if hasattr(delta, 'reasoning') and delta.reasoning is not None:
+                print(f"Debug: Reasoning content found: {delta.reasoning[:100]}...")
+                yield f"data: {json.dumps({'reasoning': delta.reasoning})}\n\n"
+            
+            # Check for thinking content (alternative field name)
+            if hasattr(delta, 'thinking') and delta.thinking is not None:
+                print(f"Debug: Thinking content found: {delta.thinking[:100]}...")
+                yield f"data: {json.dumps({'reasoning': delta.thinking})}\n\n"
+            
+            # Check if reasoning is in the message metadata
+            if hasattr(chunk.choices[0], 'message') and hasattr(chunk.choices[0].message, 'metadata'):
+                metadata = chunk.choices[0].message.metadata
+                if metadata and 'reasoning' in metadata:
+                    print(f"Debug: Reasoning in metadata: {metadata['reasoning'][:100]}...")
+                    yield f"data: {json.dumps({'reasoning': metadata['reasoning']})}\n\n"
+            
             if delta.content is not None:
                 content_received_from_openrouter = True # Mark that content was received
                 buffer += delta.content

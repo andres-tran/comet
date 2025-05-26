@@ -70,8 +70,16 @@
             </div>
             <div id="skeleton-loader" class="skeleton-loader" style="display:none;"></div>
             <div id="reasoning-container" class="reasoning-container-perplexity" style="display: none;">
-                <h4>Reasoning Steps <button id="copy-reasoning-btn" title="Copy Reasoning" class="copy-btn"><i class="fas fa-copy"></i></button></h4>
-                <div id="reasoning-content"></div>
+                <div class="reasoning-header">
+                    <h4>
+                        <button id="toggle-reasoning-btn" class="toggle-btn" title="Toggle Reasoning">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        AI Thinking Process
+                    </h4>
+                    <button id="copy-reasoning-btn" title="Copy Reasoning" class="copy-btn"><i class="fas fa-copy"></i></button>
+                </div>
+                <div id="reasoning-content" class="reasoning-content"></div>
             </div>
             <div id="results-container" class="results-container-perplexity" style="display: none;">
                 <p class="placeholder-text">Your AI search results will appear here.</p>

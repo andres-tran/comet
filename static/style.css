@@ -203,23 +203,23 @@ body {
 
 .search-form-perplexity {
     display: flex;
-    align-items: flex-end; /* Changed from stretch to align items to bottom */
+    flex-direction: column; /* Stack elements vertically */
     border: 1px solid var(--border-color);
-    border-radius: 24px; /* Rounded corners like Perplexity */
+    border-radius: 24px;
     background-color: var(--input-bg-color);
-    box-shadow: 0 2px 8px var(--results-shadow-color); /* Use shadow color var */
-    overflow: hidden; /* Clip children to rounded corners */
-    padding: 8px; /* Increased padding */
+    box-shadow: 0 2px 8px var(--results-shadow-color);
+    overflow: hidden;
+    padding: 0; /* Remove padding to maximize text area */
     transition: background-color 0.3s ease, border-color 0.3s ease;
+    gap: 0; /* Remove gap between textarea and controls */
 }
 
 .input-wrapper {
-    flex: 2; /* Make input take more space */
-    min-width: 0;
+    width: 100%; /* Full width */
     display: flex;
-    align-items: flex-end; /* Align textarea to bottom */
+    align-items: center;
     position: relative;
-    padding-left: 15px;
+    padding: 12px 12px 6px 12px; /* Add padding only to wrapper */
 }
 
 .input-icon-button {
@@ -250,20 +250,30 @@ body {
 
 #search-input {
     width: 100%;
-    min-width: 300px; /* Reduced from 400px */
-    max-width: 600px; /* Reduced from 700px */
-    padding: 20px;
+    min-width: 0;
+    max-width: none;
+    padding: 8px 12px; /* Minimal padding for text */
     font-size: 1.1rem;
     border: none;
     outline: none;
-    background: transparent;
+    background: transparent; /* Keep transparent to blend with parent */
     color: var(--text-color);
-    border-radius: 18px;
+    border-radius: 0; /* Remove border radius for seamless blend */
     resize: none;
-    height: 70px;
+    height: auto; /* Let height adjust to content */
+    min-height: 60px; /* Minimum height */
     box-sizing: border-box;
     font-family: inherit;
     overflow-y: auto;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    /* Remove the background-color to blend with parent */
+}
+
+#search-input:focus {
+    outline: none; /* Ensure no outline on focus */
+    background: transparent; /* Stay transparent on focus */
 }
 
 #search-input::placeholder {
@@ -272,9 +282,12 @@ body {
 
 .controls-wrapper {
     display: flex;
-    align-items: flex-end; /* Align controls to bottom */
-    padding-left: 5px; /* Space between input and controls */
-    padding-bottom: 0; /* Remove any bottom padding */
+    align-items: center;
+    justify-content: flex-end; /* Align controls to the right */
+    padding: 6px 12px 12px 12px; /* Padding for controls area */
+    gap: 8px; /* Space between controls */
+    width: 100%;
+    box-sizing: border-box;
 }
 
 #model-select {
@@ -360,22 +373,194 @@ body {
 .results-container-perplexity {
     width: 100%;
     background-color: var(--results-bg-color);
-    border: 1px solid var(--results-border-color); /* Subtle border */
-    border-radius: 12px; /* Slightly less rounded than input */
-    padding: 25px 30px; /* More padding */
+    border: 1px solid var(--results-border-color);
+    border-radius: 18px;
+    padding: 30px 35px;
     min-height: 100px;
-    box-shadow: 0 1px 4px var(--results-shadow-color);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1.5px 6px rgba(0,0,0,0.04);
     transition: background-color 0.3s ease, border-color 0.3s ease;
-    overflow-wrap: break-word; /* Add this for general text wrapping */
+    overflow-wrap: break-word;
+    position: relative;
+    font-size: 1.05em;
+    line-height: 1.7;
 }
 
-/* General rule for images within the results container to be responsive */
+/* Enhanced Typography for Results */
+.results-container-perplexity h1,
+.results-container-perplexity h2,
+.results-container-perplexity h3,
+.results-container-perplexity h4,
+.results-container-perplexity h5,
+.results-container-perplexity h6 {
+    margin-top: 1.8em;
+    margin-bottom: 0.8em;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text-color);
+}
+
+.results-container-perplexity h1 { 
+    font-size: 1.8em; 
+    border-bottom: 2px solid var(--border-color); 
+    padding-bottom: 0.4em; 
+    margin-top: 1em;
+}
+.results-container-perplexity h2 { 
+    font-size: 1.5em; 
+    border-bottom: 1px solid var(--border-color); 
+    padding-bottom: 0.3em; 
+}
+.results-container-perplexity h3 { font-size: 1.3em; }
+.results-container-perplexity h4 { font-size: 1.15em; }
+
+.results-container-perplexity p {
+    margin-bottom: 1.2em;
+    overflow-wrap: break-word;
+}
+
+/* Enhanced Lists */
+.results-container-perplexity ul,
+.results-container-perplexity ol {
+    margin-left: 1.5em;
+    margin-bottom: 1.2em;
+    padding-left: 1em;
+}
+
+.results-container-perplexity li {
+    margin-bottom: 0.6em;
+    overflow-wrap: break-word;
+    line-height: 1.6;
+}
+
+.results-container-perplexity li > ul,
+.results-container-perplexity li > ol {
+    margin-top: 0.6em;
+    margin-bottom: 0.6em;
+}
+
+/* Enhanced Code Styling */
+.results-container-perplexity code {
+    background-color: var(--code-bg-color);
+    padding: 0.2em 0.5em;
+    border-radius: 4px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 0.9em;
+    color: var(--code-text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Enhanced Code Blocks */
+.results-container-perplexity pre {
+    background-color: var(--code-block-outer-bg);
+    padding: 0;
+    border-radius: 10px;
+    border: 1px solid var(--code-block-border-color);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 1.8em;
+    overflow: hidden;
+}
+
+.results-container-perplexity pre code {
+    display: block;
+    background-color: var(--code-block-inner-bg);
+    color: var(--code-block-text-color);
+    padding: 16px 20px;
+    border-radius: 0;
+    overflow-x: auto;
+    font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.875em;
+    line-height: 1.6;
+    white-space: pre;
+    word-wrap: normal;
+}
+
+/* Enhanced Blockquotes */
+.results-container-perplexity blockquote {
+    border-left: 4px solid var(--primary-color);
+    padding: 0.8em 1.2em;
+    margin: 1.5em 0;
+    background-color: var(--code-bg-color);
+    border-radius: 0 8px 8px 0;
+    color: var(--text-color);
+    font-style: italic;
+    overflow-wrap: break-word;
+}
+
+.results-container-perplexity blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+/* Enhanced Tables */
+.results-container-perplexity table {
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    width: 100%;
+    border: 1px solid var(--table-border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.results-container-perplexity th,
+.results-container-perplexity td {
+    border: 1px solid var(--table-border-color);
+    padding: 0.8em 1.2em;
+    text-align: left;
+}
+
+.results-container-perplexity th {
+    background-color: var(--table-header-bg-color);
+    font-weight: 600;
+    font-size: 0.95em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.results-container-perplexity tr:nth-child(even) {
+    background-color: var(--code-bg-color);
+}
+
+/* Enhanced Links */
+.results-container-perplexity a {
+    color: var(--link-color);
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease;
+    overflow-wrap: break-word;
+    word-break: break-all;
+}
+
+.results-container-perplexity a:hover {
+    border-bottom-color: var(--link-color);
+}
+
+/* Emphasis Styles */
+.results-container-perplexity strong {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.results-container-perplexity em {
+    font-style: italic;
+    color: var(--text-color);
+}
+
+/* Horizontal Rules */
+.results-container-perplexity hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 2em 0;
+}
+
+/* Image Styling */
 .results-container-perplexity img {
     max-width: 100%;
     height: auto;
-    display: block; /* Prevents bottom margin/spacing issues */
-    margin: 1em auto; /* Center images with some vertical spacing */
-    border-radius: 6px; /* Optional: consistent rounding */
+    display: block;
+    margin: 1.5em auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 /* Initial Placeholder */
@@ -464,146 +649,6 @@ body {
     color: var(--text-muted-color);
     font-style: italic;
     padding: 20px;
-}
-
-/* --- Enhanced Markdown Styling (Using Variables) --- */
-
-.results-container-perplexity h1,
-.results-container-perplexity h2,
-.results-container-perplexity h3,
-.results-container-perplexity h4,
-.results-container-perplexity h5,
-.results-container-perplexity h6 {
-    margin-top: 1.5em;
-    margin-bottom: 0.8em;
-    font-weight: 600;
-    line-height: 1.3;
-    color: var(--text-color);
-}
-
-.results-container-perplexity h1 { font-size: 1.6em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
-.results-container-perplexity h2 { font-size: 1.4em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
-.results-container-perplexity h3 { font-size: 1.2em; }
-.results-container-perplexity h4 { font-size: 1.1em; }
-
-.results-container-perplexity p {
-    margin-bottom: 1em;
-    overflow-wrap: break-word; /* Ensure paragraphs wrap */
-}
-
-.results-container-perplexity ul,
-.results-container-perplexity ol {
-    margin-left: 1.5em;
-    margin-bottom: 1em;
-    padding-left: 1em;
-}
-
-.results-container-perplexity li {
-    margin-bottom: 0.5em;
-    overflow-wrap: break-word; /* Ensure list items wrap */
-}
-
-/* Inline code */
-.results-container-perplexity code {
-    background-color: var(--code-bg-color);
-    padding: 0.2em 0.5em;
-    border-radius: 4px;
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-    font-size: 0.875em; /* Harmonize font size */
-    color: var(--code-text-color);
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* Code blocks */
-.results-container-perplexity pre {
-    background-color: var(--code-block-outer-bg);
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid var(--code-block-border-color);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    margin-bottom: 1.5em;
-    overflow: hidden;
-}
-
-.results-container-perplexity pre code {
-    display: block;
-    background-color: var(--code-block-inner-bg);
-    color: var(--code-block-text-color);
-    padding: 12px 15px;
-    border-radius: 4px;
-    overflow-x: auto;
-    font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    font-size: 0.875em;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-}
-
-/* Dark mode specific shadow for the <pre> element */
-body.dark-mode .results-container-perplexity pre {
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 2px 5px rgba(0,0,0,0.3);
-}
-
-.results-container-perplexity blockquote {
-    border-left: 3px solid var(--primary-color);
-    padding-left: 1em;
-    margin-left: 0;
-    margin-bottom: 1em;
-    color: var(--blockquote-color);
-    /* font-style: italic; Removed italic for perplexity feel */
-    transition: color 0.3s ease, border-color 0.3s ease;
-    overflow-wrap: break-word; /* Ensure blockquotes wrap */
-}
-
-.results-container-perplexity table {
-    border-collapse: collapse;
-    margin-bottom: 1em;
-    width: auto;
-    border: 1px solid var(--table-border-color);
-}
-
-.results-container-perplexity th,
-.results-container-perplexity td {
-    border: 1px solid var(--table-border-color);
-    padding: 0.6em 1em;
-    text-align: left;
-}
-
-.results-container-perplexity th {
-    background-color: var(--table-header-bg-color);
-    font-weight: 600;
-}
-
-.results-container-perplexity a {
-    color: var(--link-color);
-    text-decoration: none;
-    overflow-wrap: break-word;
-    word-break: break-all;
-}
-
-.results-container-perplexity a:hover {
-    text-decoration: underline;
-}
-
-/* Responsive Table Wrapper */
-.table-wrapper {
-    overflow-x: auto;    /* Enable horizontal scrolling */
-    margin-bottom: 1.5em; /* Add space below the wrapped table */
-    -webkit-overflow-scrolling: touch; /* Optional: Improve scrolling feel on iOS */
-}
-
-/* Ensure tables inside wrapper don't collapse borders unnecessarily */
-.table-wrapper table {
-    /* Styles moved to main table selector */
-}
-
-.table-wrapper th,
-.table-wrapper td {
-     /* Styles moved to main table selector */
-}
-
-.table-wrapper th {
-     /* Styles moved to main table selector */
 }
 
 /* === Responsive Adjustments (Basic) === */
@@ -726,35 +771,180 @@ body.dark-mode .results-container-perplexity pre {
 /* Reasoning Container Styling */
 .reasoning-container-perplexity {
     width: 100%;
-    background-color: var(--code-block-outer-bg); /* Use a slightly different background */
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 15px 20px;
-    margin-bottom: 20px; /* Space before main results */
-    font-size: 0.9em;
-    color: var(--text-muted-color);
-    display: none; /* Hidden by default */
+    background-color: var(--results-bg-color);
+    border: 1px solid var(--results-border-color);
+    border-radius: 18px;
+    padding: 0;
+    margin-bottom: 20px;
+    display: none;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1.5px 6px rgba(0,0,0,0.04);
 }
 
-.reasoning-container-perplexity h4 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    font-size: 1em;
+.reasoning-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    background-color: var(--results-bg-color);
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+.reasoning-header h4 {
+    margin: 0;
+    font-size: 1.1em;
     font-weight: 600;
     color: var(--text-color);
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-#reasoning-content {
-    white-space: pre-wrap; /* Preserve whitespace and newlines */
-    word-wrap: break-word;
-    max-height: 300px; /* Optional: limit height and make scrollable */
+.toggle-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted-color);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toggle-btn:hover {
+    background-color: var(--select-bg-color);
+    color: var(--primary-color);
+}
+
+.toggle-btn i {
+    transition: transform 0.3s ease;
+}
+
+.toggle-btn.collapsed i {
+    transform: rotate(-90deg);
+}
+
+.reasoning-content {
+    padding: 25px 30px;
+    max-height: 500px;
     overflow-y: auto;
+    transition: all 0.3s ease;
+    font-size: 1em;
+    line-height: 1.6;
+    color: var(--text-color);
+}
+
+.reasoning-content.collapsed {
+    max-height: 0;
+    padding: 0 30px;
+    overflow: hidden;
+}
+
+/* Apply same markdown styles to reasoning content */
+.reasoning-content h1,
+.reasoning-content h2,
+.reasoning-content h3,
+.reasoning-content h4,
+.reasoning-content h5,
+.reasoning-content h6 {
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text-color);
+}
+
+.reasoning-content h1 { font-size: 1.6em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+.reasoning-content h2 { font-size: 1.4em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+.reasoning-content h3 { font-size: 1.2em; }
+.reasoning-content h4 { font-size: 1.1em; }
+
+.reasoning-content p {
+    margin-bottom: 1em;
+    overflow-wrap: break-word;
+}
+
+.reasoning-content ul,
+.reasoning-content ol {
+    margin-left: 1.5em;
+    margin-bottom: 1em;
+    padding-left: 1em;
+}
+
+.reasoning-content li {
+    margin-bottom: 0.5em;
+    overflow-wrap: break-word;
+}
+
+.reasoning-content code {
+    background-color: var(--code-bg-color);
+    padding: 0.2em 0.5em;
+    border-radius: 4px;
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-    font-size: 0.95em;
-    line-height: 1.5;
-    color: var(--code-text-color); /* Use code text color for reasoning */
+    font-size: 0.875em;
+    color: var(--code-text-color);
+}
+
+.reasoning-content pre {
+    background-color: var(--code-block-outer-bg);
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--code-block-border-color);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    margin-bottom: 1.5em;
+    overflow: hidden;
+}
+
+.reasoning-content pre code {
+    display: block;
+    background-color: var(--code-block-inner-bg);
+    color: var(--code-block-text-color);
+    padding: 12px 15px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.875em;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.reasoning-content blockquote {
+    border-left: 3px solid var(--primary-color);
+    padding-left: 1em;
+    margin-left: 0;
+    margin-bottom: 1em;
+    color: var(--blockquote-color);
+    overflow-wrap: break-word;
+}
+
+.reasoning-content strong {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.reasoning-content em {
+    font-style: italic;
+}
+
+.reasoning-content a {
+    color: var(--link-color);
+    text-decoration: none;
+    overflow-wrap: break-word;
+    word-break: break-all;
+}
+
+.reasoning-content a:hover {
+    text-decoration: underline;
+}
+
+/* Dark mode specific shadow for reasoning pre elements */
+body.dark-mode .reasoning-content pre {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 2px 5px rgba(0,0,0,0.3);
 }
 
 /* === Modern Card/Panel Effects === */
@@ -808,15 +998,28 @@ body.dark-mode .results-container-perplexity pre {
     border: 1px solid var(--select-border-color);
     color: var(--text-muted-color);
     border-radius: 8px;
-    padding: 4px 10px;
+    padding: 6px 12px;
     margin-left: 8px;
     cursor: pointer;
-    font-size: 0.95em;
+    font-size: 0.9em;
     transition: background 0.2s, color 0.2s, border 0.2s;
 }
+
 .copy-btn:hover {
     color: var(--primary-color);
     border-color: var(--primary-color);
+}
+
+.copy-btn.copied {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Position copy button in results container */
+.results-container-perplexity > .copy-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
 }
 
 /* === Skeleton Loader === */
@@ -938,5 +1141,100 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
     #model-select {
         font-size: 0.8rem;
         padding: 5px 6px;
+    }
+}
+
+/* === Animations === */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInComplete {
+    from {
+        opacity: 0.95;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* Response item animation */
+.response-item {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Smooth transitions for all interactive elements */
+button, a, input, select, textarea {
+    transition: all 0.2s ease;
+}
+
+/* Enhanced hover states */
+button:hover, a:hover {
+    transform: translateY(-1px);
+}
+
+button:active, a:active {
+    transform: translateY(0);
+}
+
+/* Responsive Table Wrapper */
+.table-wrapper {
+    overflow-x: auto;
+    margin-bottom: 1.5em;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Dark mode specific shadow for the <pre> element */
+body.dark-mode .results-container-perplexity pre {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Enhanced scroll behavior */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Loading state for results */
+.results-container-perplexity.loading {
+    position: relative;
+    min-height: 200px;
+}
+
+.results-container-perplexity.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        rgba(249, 115, 22, 0.05),
+        transparent
+    );
+    animation: shimmer 2s infinite;
+    pointer-events: none;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateY(-100%);
+    }
+    100% {
+        transform: translateY(100%);
     }
 } 
