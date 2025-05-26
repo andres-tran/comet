@@ -2,6 +2,7 @@ import os
 import json
 import openai
 import base64
+import requests
 from flask import Flask, render_template, request, jsonify, Response
 from dotenv import load_dotenv
 import traceback
@@ -16,6 +17,7 @@ app = Flask(__name__)
 # Configure API keys
 openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
 openai_api_key = os.getenv("OPENAI_API_KEY") # For direct OpenAI (e.g., gpt-image-1)
+tavily_api_key = os.getenv("TAVILY_API_KEY") # For web search
 
 # Initialize OpenAI client (recommended way) for direct OpenAI calls
 openai_client = openai.OpenAI(api_key=openai_api_key) if openai_api_key else None
@@ -46,8 +48,41 @@ def check_api_keys(model_name):
             missing.append("OpenRouter")
     return missing
 
+# --- Web Search Function ---
+def search_web_tavily(query, max_results=10):
+    """Performs web search using Tavily API and returns search results."""
+    if not tavily_api_key:
+        return {"error": "Tavily API key not configured"}
+    
+    try:
+        url = "https://api.tavily.com/search"
+        payload = {
+            "api_key": tavily_api_key,
+            "query": query,
+            "search_depth": "advanced",
+            "include_answer": True,
+            "include_images": False,
+            "include_raw_content": False,
+            "max_results": max_results,
+            "include_domains": [],
+            "exclude_domains": []
+        }
+        
+        response = requests.post(url, json=payload, timeout=30)
+        response.raise_for_status()
+        
+        data = response.json()
+        return data
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Tavily API request error: {e}")
+        return {"error": f"Web search failed: {str(e)}"}
+    except Exception as e:
+        print(f"Tavily API error: {e}")
+        return {"error": f"Web search error: {str(e)}"}
+
 # --- Streaming Generator for OpenRouter ---
-def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uploaded_file_data=None, file_type=None):
+def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uploaded_file_data=None, file_type=None, web_search_enabled=False):
     """Generator for responses from OpenRouter.
     Uses streaming for all OpenRouter models.
     Accepts an optional reasoning_config dictionary.
@@ -58,6 +93,15 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         return
 
     # Improved system prompt for better responses
+    web_search_note = ""
+    if web_search_enabled:
+        web_search_note = (
+            "\n\n**IMPORTANT**: The user has enabled web search. Current, real-time web search results "
+            "have been included in the user's query. Use this information to provide up-to-date, "
+            "accurate responses. When referencing web search results, cite the sources appropriately "
+            "and indicate when information comes from recent web searches."
+        )
+    
     enhanced_openrouter_system_prompt = (
         "You are Comet, an advanced AI assistant that provides comprehensive, well-structured, and insightful responses. "
         "Your responses should be:\n\n"
@@ -78,9 +122,40 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         "- Include relevant tips, best practices, or warnings\n"
         "- End with a summary or next steps when appropriate\n\n"
         "Always strive to exceed user expectations with thoughtful, well-crafted responses."
+        + web_search_note
     )
     
-    user_content_parts = [{"type": "text", "text": query}]
+    # Perform web search if enabled
+    web_search_results = None
+    if web_search_enabled:
+        print(f"Performing web search for query: {query}")
+        web_search_results = search_web_tavily(query, max_results=10)
+        if "error" in web_search_results:
+            error_msg = f"Web search failed: {web_search_results['error']}"
+            yield f"data: {json.dumps({'error': error_msg})}\n\n"
+            return
+    
+    # Prepare the query with web search results if available
+    enhanced_query = query
+    if web_search_results and "results" in web_search_results:
+        search_context = "\n\n**Current Web Search Results:**\n"
+        
+        # Add Tavily's answer if available
+        if "answer" in web_search_results and web_search_results["answer"]:
+            search_context += f"**Quick Answer:** {web_search_results['answer']}\n\n"
+        
+        # Add search results
+        search_context += "**Search Results:**\n"
+        for i, result in enumerate(web_search_results["results"][:10], 1):
+            title = result.get("title", "No title")
+            url = result.get("url", "")
+            content = result.get("content", "")[:300] + "..." if len(result.get("content", "")) > 300 else result.get("content", "")
+            search_context += f"{i}. **{title}**\n   URL: {url}\n   {content}\n\n"
+        
+        enhanced_query = f"{query}\n{search_context}"
+        print(f"Enhanced query with web search results (length: {len(enhanced_query)})")
+    
+    user_content_parts = [{"type": "text", "text": enhanced_query}]
     
     # Add context-aware prompting based on query type
     query_lower = query.lower()
@@ -427,6 +502,7 @@ def search():
     selected_model = request.json.get('model')
     uploaded_file_data = request.json.get('uploaded_file_data')
     file_type = request.json.get('file_type') # e.g., 'image', 'pdf'
+    web_search_enabled = request.json.get('web_search_enabled', False)
 
     # Default query to "edit image" if not provided but an image is for editing
     if not query and selected_model == "gpt-image-1" and uploaded_file_data and file_type == 'image':
@@ -471,7 +547,8 @@ def search():
             selected_model, 
             reasoning_config=None,
             uploaded_file_data=uploaded_file_data,
-            file_type=file_type
+            file_type=file_type,
+            web_search_enabled=web_search_enabled
         )
         return Response(generator, mimetype='text/event-stream')
     else:

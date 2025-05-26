@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const newSearchButton = document.getElementById('new-search-button'); // Get new search button
     const fileInput = document.getElementById('file-input'); // Get file input
     const attachFileButton = document.getElementById('attach-file-button'); // Get attach file button
+    const webSearchButton = document.getElementById('web-search-button'); // Get web search button
     const reasoningContainer = document.getElementById('reasoning-container'); // Get reasoning container
     const reasoningContent = document.getElementById('reasoning-content'); // Get reasoning content div
     const toggleReasoningBtn = document.getElementById('toggle-reasoning-btn'); // Get toggle button
@@ -36,6 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let uploadedFileBase64 = null;
     let uploadedFileType = null;
     let uploadedFileName = null;
+    
+    // --- State for web search ---
+    let webSearchEnabled = false;
 
     // --- Toggle reasoning container ---
     let isReasoningCollapsed = false; // Start expanded when shown
@@ -167,6 +171,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // Clear attached file
             clearAttachedFile();
             
+            // Reset web search state (optional - you might want to keep it enabled)
+            // webSearchEnabled = false;
+            // if (webSearchButton) {
+            //     webSearchButton.classList.remove('web-search-enabled');
+            //     webSearchButton.title = 'Enable Web Search';
+            // }
+            
             // Clear buffers
             markdownBuffer = "";
             
@@ -200,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     uploadedFileName = file.name;
                     attachFileButton.innerHTML = '<i class="fas fa-file-alt"></i>';
                     attachFileButton.title = `Attached: ${uploadedFileName}`;
+                    attachFileButton.classList.add('file-attached');
                 };
                 reader.onerror = (err) => {
                     displayError("Error reading file. Please try again.");
@@ -210,6 +222,23 @@ document.addEventListener('DOMContentLoaded', () => {
             fileInput.value = null;
         });
     }
+    
+    // --- Web Search Button Handling ---
+    if (webSearchButton) {
+        webSearchButton.addEventListener('click', () => {
+            webSearchEnabled = !webSearchEnabled;
+            
+            if (webSearchEnabled) {
+                webSearchButton.classList.add('web-search-enabled');
+                webSearchButton.innerHTML = '<i class="fas fa-globe"></i>';
+                webSearchButton.title = 'Web Search Enabled - Click to disable';
+            } else {
+                webSearchButton.classList.remove('web-search-enabled');
+                webSearchButton.innerHTML = '<i class="fas fa-globe"></i>';
+                webSearchButton.title = 'Enable Web Search';
+            }
+        });
+    }
     function clearAttachedFile() {
         uploadedFileBase64 = null;
         uploadedFileType = null;
@@ -218,6 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (attachFileButton) {
             attachFileButton.innerHTML = '<i class="fas fa-paperclip"></i>';
             attachFileButton.title = 'Attach File';
+            attachFileButton.classList.remove('file-attached');
         }
     }
 
@@ -317,7 +347,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Prepare payload
         const payload = {
             query: query, // Query can be empty if a file is attached
-            model: selectedModel
+            model: selectedModel,
+            web_search_enabled: webSearchEnabled
         };
 
         if (uploadedFileBase64 && uploadedFileType) {
@@ -353,7 +384,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 thinkingText.textContent = 'Generating image...';
             }
         } else {
-            thinkingText.textContent = 'Thinking...'; // Unified for OpenRouter text models
+            if (webSearchEnabled) {
+                thinkingText.textContent = 'Searching the web...'; // Web search text
+            } else {
+                thinkingText.textContent = 'Thinking...'; // Unified for OpenRouter text models
+            }
         }
 
         let accumulatedResponse = "";
@@ -658,9 +693,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     if (searchInput && searchInput.tagName === 'TEXTAREA') {
         searchInput.addEventListener('input', function() {
+            // Store current scroll position
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
+            
+            // Restore scroll position to prevent unwanted scrolling
+            window.scrollTo(0, scrollTop);
         });
+        
+        // Prevent scrolling on focus
+        searchInput.addEventListener('focus', function() {
+            // Store scroll position when focusing
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Use setTimeout to ensure the focus scroll is prevented
+            setTimeout(() => {
+                window.scrollTo(0, scrollTop);
+            }, 0);
+        });
+        
         // Optional: trigger resize on page load if there's pre-filled text
         searchInput.dispatchEvent(new Event('input'));
     }

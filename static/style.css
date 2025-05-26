@@ -140,7 +140,8 @@ body {
 #search-button:focus-visible,
 #theme-toggle-button:focus-visible,
 #new-search-button:focus-visible,
-#attach-file-button:focus-visible {
+#attach-file-button:focus-visible,
+#web-search-button:focus-visible {
     outline: 2px solid var(--border-color);
     outline-offset: 2px;
 }
@@ -212,6 +213,8 @@ body {
     gap: 12px;
     max-width: 100%;
     margin: 0 auto;
+    scroll-margin: 0;
+    contain: layout;
 }
 
 .input-wrapper {
@@ -270,6 +273,8 @@ body {
     white-space: pre-wrap;
     word-wrap: break-word;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    scroll-margin: 0;
+    scroll-behavior: auto;
 }
 
 #search-input::placeholder {
@@ -329,13 +334,15 @@ body {
     margin-bottom: 0;
 }
 
-#attach-file-button {
+#attach-file-button,
+#web-search-button {
     background-color: var(--select-bg-color);
     color: var(--text-muted-color);
     border: 1px solid var(--select-border-color);
 }
 
-#attach-file-button:hover {
+#attach-file-button:hover,
+#web-search-button:hover {
     color: var(--text-color);
     border-color: var(--border-color);
 }
@@ -343,6 +350,12 @@ body {
 #attach-file-button.file-attached {
     border-color: var(--border-color);
     color: var(--text-color);
+}
+
+#web-search-button.web-search-enabled {
+    border-color: #10b981;
+    color: #10b981;
+    background-color: rgba(16, 185, 129, 0.1);
 }
 
 #attach-file-button i {
