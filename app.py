@@ -1393,6 +1393,14 @@ def run_agentic_loop(query, model_name, max_iterations=5):
         "6. **ADAPT** - Modify approach based on intermediate results\n"
         "7. **SYNTHESIZE** - Combine findings into comprehensive, actionable insights\n\n"
         
+        "🎯 **THOROUGHNESS MANDATE:**\n"
+        "- **Use Multiple Iterations**: You have up to 5 iterations - use them to provide exceptional value\n"
+        "- **Diversify Tool Usage**: Combine different tools for comprehensive analysis\n"
+        "- **Layer Information**: Build upon previous findings with additional perspectives\n"
+        "- **Cross-Validate**: Use multiple sources and methods to verify insights\n"
+        "- **Add Value Each Step**: Each iteration should contribute unique insights\n"
+        "- **Think Comprehensively**: Consider multiple angles, implications, and follow-up questions\n\n"
+        
         "🎯 **INTELLIGENT TOOL SELECTION STRATEGY:**\n"
         "- **Simple factual queries**: Use search_web_tool with auto-detection\n"
         "- **Current events/breaking news**: Use search_web_tool with type='news'\n"
@@ -1437,7 +1445,14 @@ def run_agentic_loop(query, model_name, max_iterations=5):
         
         "Remember: You are an intelligent agent capable of autonomous reasoning, planning, and tool use. "
         "Think critically, plan strategically, execute systematically, and continuously improve your approach. "
-        "Your goal is not just to answer questions, but to provide comprehensive, actionable intelligence."
+        "Your goal is not just to answer questions, but to provide comprehensive, actionable intelligence.\n\n"
+        
+        "🚀 **EXECUTION EXCELLENCE:**\n"
+        "- **Maximize Your Iterations**: You have 5 iterations available - use them to deliver exceptional value\n"
+        "- **Don't Stop Early**: Unless the task is truly simple, explore multiple angles and perspectives\n"
+        "- **Build Incrementally**: Each iteration should add meaningful insights to your analysis\n"
+        "- **Think Like an Expert**: What would a domain expert do with access to these tools?\n"
+        "- **Exceed Expectations**: Go beyond the basic request to provide comprehensive intelligence"
     )
 
     messages = [
@@ -1595,6 +1610,9 @@ def run_agentic_loop(query, model_name, max_iterations=5):
                 if "search_web_tool" in tool_calls_used:
                     task_plan["current_step"] = "information_gathering"
                     yield f"data: {json.dumps({'reasoning': f'🔍 Gathering targeted information from the web... (Step {iteration}/{max_iterations})'})}\n\n"
+                elif "search_web_openrouter" in tool_calls_used:
+                    task_plan["current_step"] = "real_time_research"
+                    yield f"data: {json.dumps({'reasoning': f'🌐 Accessing real-time web information via Perplexity... (Step {iteration}/{max_iterations})'})}\n\n"
                 elif "research_topic" in tool_calls_used:
                     task_plan["current_step"] = "comprehensive_research"
                     yield f"data: {json.dumps({'reasoning': f'🔬 Conducting multi-dimensional research analysis... (Step {iteration}/{max_iterations})'})}\n\n"
@@ -1608,6 +1626,41 @@ def run_agentic_loop(query, model_name, max_iterations=5):
                     task_plan["current_step"] = "tool_execution"
                     yield f"data: {json.dumps({'reasoning': f'🛠️ Executing specialized tools: {", ".join(tool_calls_used)} (Step {iteration}/{max_iterations})'})}\n\n"
                 
+                # Enhanced continuation logic - encourage more thorough exploration
+                should_continue = False
+                continuation_reasons = []
+                
+                # Check if we should continue based on various criteria
+                if iteration < 3:
+                    should_continue = True
+                    continuation_reasons.append("Early exploration phase - gathering more information")
+                
+                # Check for opportunities to use different tools
+                unique_tools_used = set(total_tools_used)
+                available_tools = {"search_web_tool", "search_web_openrouter", "research_topic", "calculate_math", "create_note", "advanced_research_with_synthesis"}
+                unused_tools = available_tools - unique_tools_used
+                
+                if len(unused_tools) > 2 and iteration < max_iterations - 1:
+                    should_continue = True
+                    continuation_reasons.append(f"Multiple tools available for deeper analysis: {', '.join(list(unused_tools)[:3])}")
+                
+                # Check if we can enhance the analysis with additional perspectives
+                if "search_web_tool" in total_tools_used and "search_web_openrouter" not in total_tools_used and iteration < max_iterations - 1:
+                    should_continue = True
+                    continuation_reasons.append("Can enhance with real-time web search for current information")
+                
+                if any("search" in tool for tool in total_tools_used) and "calculate_math" not in total_tools_used and iteration < max_iterations - 1:
+                    # Check if the query might benefit from calculations
+                    query_lower = query.lower()
+                    if any(word in query_lower for word in ['calculate', 'cost', 'roi', 'percentage', 'compare', 'analyze', 'metrics', 'performance']):
+                        should_continue = True
+                        continuation_reasons.append("Query suggests quantitative analysis would be valuable")
+                
+                # Check for synthesis opportunities
+                if len(task_plan["steps_completed"]) >= 2 and "create_note" not in total_tools_used and iteration < max_iterations - 1:
+                    should_continue = True
+                    continuation_reasons.append("Multiple data sources gathered - synthesis and organization would be valuable")
+                
                 # Advanced monitoring: Adaptive strategy adjustments
                 if iteration > 2:
                     recent_tools = total_tools_used[-3:]
@@ -1615,16 +1668,36 @@ def run_agentic_loop(query, model_name, max_iterations=5):
                         # Same tool used repeatedly - inject strategy adaptation
                         adaptation_prompt = (
                             f"I notice I've been using the same tool ({recent_tools[0]}) repeatedly. "
-                            f"Let me consider if there's a more effective approach or if I should synthesize the information I've gathered."
+                            f"Let me diversify my approach with different tools for a more comprehensive analysis."
                         )
                         yield f"data: {json.dumps({'reasoning': f'🔄 {adaptation_prompt}'})}\n\n"
-                        task_plan["strategy_adaptations"].append(f"Iteration {iteration}: Detected tool repetition, adapting strategy")
+                        task_plan["strategy_adaptations"].append(f"Iteration {iteration}: Detected tool repetition, diversifying approach")
+                        should_continue = True
+                        continuation_reasons.append("Diversifying tool usage for comprehensive analysis")
                         
                         # Add adaptive guidance to conversation
                         messages.append({
                             "role": "system", 
-                            "content": f"ADAPTIVE GUIDANCE: {adaptation_prompt} Consider alternative tools or move to synthesis phase."
+                            "content": f"ADAPTIVE GUIDANCE: {adaptation_prompt} You have {max_iterations - iteration} iterations remaining. Consider using different tools like: {', '.join(list(unused_tools)[:3])} to provide a more comprehensive analysis."
                         })
+                
+                # If we have good reasons to continue and haven't hit max iterations, keep going
+                if should_continue and iteration < max_iterations:
+                    continuation_message = f"🔄 Continuing analysis - {'; '.join(continuation_reasons[:2])}"
+                    yield f"data: {json.dumps({'reasoning': continuation_message})}\n\n"
+                    
+                    # Add guidance for next iteration
+                    next_iteration_guidance = (
+                        f"ITERATION {iteration + 1} GUIDANCE: You have completed {len(task_plan['steps_completed'])} steps. "
+                        f"Consider using these tools for deeper analysis: {', '.join(list(unused_tools)[:3])}. "
+                        f"Focus on providing comprehensive, multi-faceted insights. "
+                        f"You have {max_iterations - iteration} iterations remaining to deliver exceptional value."
+                    )
+                    messages.append({
+                        "role": "system",
+                        "content": next_iteration_guidance
+                    })
+                    continue  # Continue the loop instead of ending
                     
             else:
                 # No more tool calls, provide enhanced final synthesis
