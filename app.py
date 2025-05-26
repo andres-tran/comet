@@ -962,25 +962,98 @@ def calculate_math(expression):
     else:
         return {"error": "Invalid mathematical expression. Only numbers and basic operators allowed."}
 
-def search_web_tool(query):
-    """Search the web using Tavily API - tool wrapper."""
-    result = search_web_tavily(query, max_results=5)
-    if "error" in result:
-        return {"error": result["error"]}
+def search_web_tool(query, max_results=8, search_type="auto"):
+    """
+    Enhanced web search using Tavily API - tool wrapper with intelligent search strategies.
     
-    # Simplify the result for tool use
+    Args:
+        query: Search query
+        max_results: Maximum number of results to return (default 8 for agentic mode)
+        search_type: Type of search - "auto", "news", "general", "deep"
+    """
+    # Intelligent search type detection if auto
+    if search_type == "auto":
+        query_lower = query.lower()
+        if any(word in query_lower for word in ['news', 'latest', 'recent', 'today', 'current', 'breaking', 'update']):
+            search_type = "news"
+        elif any(word in query_lower for word in ['tutorial', 'guide', 'how to', 'learn', 'course', 'documentation']):
+            search_type = "general"
+        elif any(word in query_lower for word in ['research', 'analysis', 'detailed', 'comprehensive', 'study']):
+            search_type = "deep"
+        else:
+            search_type = "general"
+    
+    print(f"Agentic web search: '{query}' (type: {search_type})")
+    
+    # Adjust search parameters based on type
+    if search_type == "news":
+        result = search_web_tavily(query, max_results=max_results)
+    elif search_type == "deep":
+        result = search_web_tavily(query, max_results=min(max_results * 2, 15))  # Get more results for deep search
+    else:
+        result = search_web_tavily(query, max_results=max_results)
+    
+    if "error" in result:
+        return {"error": result["error"], "search_type": search_type}
+    
+    # Enhanced result processing for agentic mode
     simplified_results = []
-    for item in result.get("results", [])[:3]:  # Limit to top 3 for tool use
+    total_content_length = 0
+    
+    # Process more results for agentic mode but with better filtering
+    results_to_process = result.get("results", [])[:max_results]
+    
+    for i, item in enumerate(results_to_process):
+        title = item.get("title", "").strip()
+        url = item.get("url", "")
+        content = item.get("content", "").strip()
+        domain = item.get("domain", "unknown")
+        quality_score = item.get("quality_score", 0)
+        
+        # For agentic mode, provide more content but still manageable
+        if search_type == "deep":
+            content_preview = content[:400] + "..." if len(content) > 400 else content
+        else:
+            content_preview = content[:250] + "..." if len(content) > 250 else content
+        
+        # Quality indicator for the AI
+        quality_level = "HIGH" if quality_score > 200 else "MEDIUM" if quality_score > 100 else "STANDARD"
+        
         simplified_results.append({
-            "title": item.get("title", ""),
-            "url": item.get("url", ""),
-            "content": item.get("content", "")[:200] + "..." if len(item.get("content", "")) > 200 else item.get("content", "")
+            "rank": i + 1,
+            "title": title,
+            "url": url,
+            "content": content_preview,
+            "domain": domain,
+            "quality": quality_level,
+            "relevance_score": quality_score
         })
+        
+        total_content_length += len(content_preview)
+    
+    # Enhanced metadata for agentic decision making
+    search_metadata = result.get("search_metadata", {})
     
     return {
-        "answer": result.get("answer", ""),
+        "success": True,
+        "query": query,
+        "search_type": search_type,
+        "quick_answer": result.get("answer", ""),
         "sources": simplified_results,
-        "total_found": len(result.get("results", []))
+        "total_found": len(result.get("results", [])),
+        "returned_count": len(simplified_results),
+        "content_length": total_content_length,
+        "search_strategy": {
+            "topic": search_metadata.get("topic", "general"),
+            "depth": search_metadata.get("search_depth", "advanced"),
+            "time_range": search_metadata.get("time_range", "all time"),
+            "unique_domains": search_metadata.get("unique_domains", 0)
+        },
+        "quality_distribution": {
+            "high": len([s for s in simplified_results if s["quality"] == "HIGH"]),
+            "medium": len([s for s in simplified_results if s["quality"] == "MEDIUM"]),
+            "standard": len([s for s in simplified_results if s["quality"] == "STANDARD"])
+        }
     }
 
 def create_note(content, filename=None):
@@ -1051,13 +1124,24 @@ AGENTIC_TOOLS = [
         "type": "function",
         "function": {
             "name": "search_web_tool", 
-            "description": "Search the web for current information using Tavily API. Use this when you need recent or real-time information.",
+            "description": "Search the web for current information using Tavily API. Automatically detects search type (news, general, deep) based on query. Returns comprehensive results with quality indicators.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
                         "description": "Search query to find information on the web"
+                    },
+                    "max_results": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return (default: 8, max: 15)",
+                        "minimum": 1,
+                        "maximum": 15
+                    },
+                    "search_type": {
+                        "type": "string",
+                        "description": "Type of search: 'auto' (default - automatically detects), 'news' (recent news), 'general' (broad search), 'deep' (comprehensive research)",
+                        "enum": ["auto", "news", "general", "deep"]
                     }
                 },
                 "required": ["query"]
@@ -1084,6 +1168,28 @@ AGENTIC_TOOLS = [
                 "required": ["content"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "research_topic",
+            "description": "Perform comprehensive multi-step research on a topic using various search strategies (overview, news, analysis). Best for complex topics requiring thorough investigation.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "topic": {
+                        "type": "string",
+                        "description": "The topic to research comprehensively"
+                    },
+                    "research_depth": {
+                        "type": "string",
+                        "description": "Depth of research: 'quick' (overview only), 'standard' (overview + news), 'comprehensive' (overview + news + analysis)",
+                        "enum": ["quick", "standard", "comprehensive"]
+                    }
+                },
+                "required": ["topic"]
+            }
+        }
     }
 ]
 
@@ -1092,7 +1198,8 @@ TOOL_MAPPING = {
     "get_current_time": get_current_time,
     "calculate_math": calculate_math,
     "search_web_tool": search_web_tool,
-    "create_note": create_note
+    "create_note": create_note,
+    "research_topic": research_topic
 }
 
 # --- Agentic Loop Function ---
@@ -1107,21 +1214,31 @@ def run_agentic_loop(query, model_name, max_iterations=5):
 
     # Enhanced system prompt for agentic behavior
     agentic_system_prompt = (
-        "You are Comet, an advanced AI assistant with access to tools that help you provide accurate and up-to-date information. "
-        "You can use the following capabilities:\n"
-        "1. **get_current_time**: Get the current date and time\n"
-        "2. **calculate_math**: Perform mathematical calculations\n"
-        "3. **search_web_tool**: Search the web for current information\n"
-        "4. **create_note**: Create and save text notes or summaries\n\n"
-        "When a user asks a question:\n"
-        "- If you need current time/date information, use get_current_time\n"
-        "- If you need to perform calculations, use calculate_math\n"
-        "- If you need recent or real-time information, use search_web_tool\n"
-        "- If you need to save information or create summaries, use create_note\n"
-        "- You can use multiple tools in sequence if needed\n"
-        "- Always provide a comprehensive final answer based on the tool results\n"
-        "- Be conversational and helpful in your responses\n\n"
-        "Think step by step about what tools you need to use to best answer the user's question."
+        "You are Comet, an advanced AI assistant with access to powerful tools that help you provide accurate and up-to-date information. "
+        "You can use the following capabilities:\n\n"
+        "🕒 **get_current_time**: Get the current date and time\n"
+        "🧮 **calculate_math**: Perform mathematical calculations\n"
+        "🔍 **search_web_tool**: Enhanced web search with intelligent type detection (news, general, deep)\n"
+        "📝 **create_note**: Create and save text notes or summaries\n"
+        "🔬 **research_topic**: Comprehensive multi-step research using multiple search strategies\n\n"
+        "**SEARCH STRATEGY GUIDELINES:**\n"
+        "- For simple questions: Use **search_web_tool** with auto-detection\n"
+        "- For current events/news: Use **search_web_tool** with search_type='news'\n"
+        "- For complex topics requiring thorough investigation: Use **research_topic**\n"
+        "- For tutorials/guides: Use **search_web_tool** with search_type='general'\n"
+        "- For academic/detailed analysis: Use **search_web_tool** with search_type='deep'\n\n"
+        "**RESEARCH WORKFLOW:**\n"
+        "1. **Analyze the query** - Determine if it needs simple search or comprehensive research\n"
+        "2. **Choose appropriate tools** - Single search vs multi-step research\n"
+        "3. **Process results intelligently** - Focus on high-quality sources\n"
+        "4. **Synthesize findings** - Combine information from multiple sources\n"
+        "5. **Provide comprehensive answers** - Include source citations and quality indicators\n\n"
+        "**QUALITY INDICATORS:**\n"
+        "- HIGH quality sources should be prioritized in your analysis\n"
+        "- MEDIUM quality sources provide good supporting information\n"
+        "- STANDARD quality sources can be used for additional context\n\n"
+        "Always think step by step about what tools you need to use to best answer the user's question. "
+        "You can use multiple tools in sequence if needed. Be conversational and helpful in your responses."
     )
 
     messages = [
@@ -1177,6 +1294,8 @@ def run_agentic_loop(query, model_name, max_iterations=5):
 
         # Main agentic loop - following OpenRouter documentation pattern
         iteration = 0
+        total_tools_used = []
+        
         while iteration < max_iterations:
             iteration += 1
             print(f"Agentic loop iteration {iteration}")
@@ -1189,24 +1308,40 @@ def run_agentic_loop(query, model_name, max_iterations=5):
                 for tool_call in resp.choices[0].message.tool_calls:
                     tool_response = get_tool_response_single(resp, tool_call)
                     messages.append(tool_response)
-                    tool_calls_used.append(tool_call.function.name)
+                    tool_name = tool_call.function.name
+                    tool_calls_used.append(tool_name)
+                    total_tools_used.append(tool_name)
                 
-                # Yield intermediate progress
-                yield f"data: {json.dumps({'reasoning': f'Used tools: {tool_calls_used}'})}\n\n"
+                # Provide detailed progress updates
+                if "search_web_tool" in tool_calls_used:
+                    yield f"data: {json.dumps({'reasoning': f'🔍 Searching the web... (iteration {iteration})'})}\n\n"
+                elif "research_topic" in tool_calls_used:
+                    yield f"data: {json.dumps({'reasoning': f'🔬 Conducting comprehensive research... (iteration {iteration})'})}\n\n"
+                elif "calculate_math" in tool_calls_used:
+                    yield f"data: {json.dumps({'reasoning': f'🧮 Performing calculations... (iteration {iteration})'})}\n\n"
+                elif "create_note" in tool_calls_used:
+                    yield f"data: {json.dumps({'reasoning': f'📝 Creating notes... (iteration {iteration})'})}\n\n"
+                else:
+                    yield f"data: {json.dumps({'reasoning': f'🛠️ Using tools: {", ".join(tool_calls_used)} (iteration {iteration})'})}\n\n"
             else:
                 # No more tool calls, provide final response
-                print("No tool calls requested, providing final response")
+                print(f"Agentic loop completed after {iteration} iterations using tools: {total_tools_used}")
                 final_content = resp.choices[0].message.content
                 
                 # Stream the final response
                 if final_content:
+                    # Add a summary of tools used if any
+                    if total_tools_used:
+                        tool_summary = f"\n\n---\n*Research completed using: {", ".join(set(total_tools_used))}*"
+                        final_content += tool_summary
+                    
                     # Split content into chunks for streaming effect
                     words = final_content.split()
                     current_chunk = ""
                     
                     for word in words:
                         current_chunk += word + " "
-                        if len(current_chunk) > 50:  # Stream in reasonable chunks
+                        if len(current_chunk) > 60:  # Slightly larger chunks for better readability
                             yield f"data: {json.dumps({'chunk': current_chunk})}\n\n"
                             current_chunk = ""
                     
@@ -1218,7 +1353,7 @@ def run_agentic_loop(query, model_name, max_iterations=5):
                 return
 
         # If we hit max iterations, provide a response anyway
-        yield f"data: {json.dumps({'chunk': 'I apologize, but I reached the maximum number of tool iterations. Here is what I found so far based on the tools I used.'})}\n\n"
+        yield f"data: {json.dumps({'chunk': f'I apologize, but I reached the maximum number of iterations ({max_iterations}). Here is what I found using the tools: {", ".join(set(total_tools_used))}'})}\n\n"
         yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
 
     except Exception as e:
@@ -1248,6 +1383,85 @@ def get_tool_response_single(response, tool_call):
         "name": tool_name,
         "content": json.dumps(tool_result),
     }
+
+def research_topic(topic, research_depth="comprehensive"):
+    """
+    Perform comprehensive research on a topic using multiple search strategies.
+    
+    Args:
+        topic: The topic to research
+        research_depth: "quick", "standard", or "comprehensive"
+    """
+    print(f"Starting comprehensive research on: {topic} (depth: {research_depth})")
+    
+    research_results = {
+        "topic": topic,
+        "research_depth": research_depth,
+        "searches_performed": [],
+        "all_sources": [],
+        "key_findings": [],
+        "summary": ""
+    }
+    
+    try:
+        # Step 1: General overview search
+        overview_query = f"{topic} overview explanation"
+        overview_result = search_web_tool(overview_query, max_results=5, search_type="general")
+        
+        if overview_result.get("success"):
+            research_results["searches_performed"].append({
+                "type": "overview",
+                "query": overview_query,
+                "results_count": overview_result.get("returned_count", 0)
+            })
+            research_results["all_sources"].extend(overview_result.get("sources", []))
+            if overview_result.get("quick_answer"):
+                research_results["key_findings"].append(f"Overview: {overview_result['quick_answer']}")
+        
+        # Step 2: Recent news/updates if comprehensive
+        if research_depth in ["standard", "comprehensive"]:
+            news_query = f"{topic} latest news updates 2024"
+            news_result = search_web_tool(news_query, max_results=4, search_type="news")
+            
+            if news_result.get("success"):
+                research_results["searches_performed"].append({
+                    "type": "news",
+                    "query": news_query,
+                    "results_count": news_result.get("returned_count", 0)
+                })
+                research_results["all_sources"].extend(news_result.get("sources", []))
+                if news_result.get("quick_answer"):
+                    research_results["key_findings"].append(f"Recent Updates: {news_result['quick_answer']}")
+        
+        # Step 3: Deep analysis if comprehensive
+        if research_depth == "comprehensive":
+            analysis_query = f"{topic} detailed analysis research study"
+            analysis_result = search_web_tool(analysis_query, max_results=6, search_type="deep")
+            
+            if analysis_result.get("success"):
+                research_results["searches_performed"].append({
+                    "type": "analysis",
+                    "query": analysis_query,
+                    "results_count": analysis_result.get("returned_count", 0)
+                })
+                research_results["all_sources"].extend(analysis_result.get("sources", []))
+                if analysis_result.get("quick_answer"):
+                    research_results["key_findings"].append(f"Detailed Analysis: {analysis_result['quick_answer']}")
+        
+        # Generate summary
+        total_sources = len(research_results["all_sources"])
+        high_quality_sources = len([s for s in research_results["all_sources"] if s.get("quality") == "HIGH"])
+        
+        research_results["summary"] = f"Completed {research_depth} research on '{topic}' using {len(research_results['searches_performed'])} search strategies. Found {total_sources} total sources ({high_quality_sources} high-quality). Key areas covered: {', '.join([s['type'] for s in research_results['searches_performed']])}"
+        
+        return research_results
+        
+    except Exception as e:
+        return {
+            "error": f"Research failed: {str(e)}",
+            "topic": topic,
+            "partial_results": research_results
+        }
 
 # --- Main Execution --- 
 if __name__ == '__main__':
