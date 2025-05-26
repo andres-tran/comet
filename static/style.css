@@ -992,27 +992,47 @@ body.dark-mode .reasoning-content pre {
     color: var(--primary-hover-color);
 }
 
-/* === Copy Buttons === */
+/* === Enhanced Copy Buttons === */
 .copy-btn {
     background: var(--select-bg-color);
     border: 1px solid var(--select-border-color);
     color: var(--text-muted-color);
     border-radius: 8px;
-    padding: 6px 12px;
-    margin-left: 8px;
+    padding: 8px 12px;
     cursor: pointer;
-    font-size: 0.9em;
-    transition: background 0.2s, color 0.2s, border 0.2s;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    z-index: 10;
 }
 
 .copy-btn:hover {
     color: var(--primary-color);
     border-color: var(--primary-color);
+    background: var(--input-bg-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.copy-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .copy-btn.copied {
-    color: var(--primary-color);
-    border-color: var(--primary-color);
+    color: #10b981;
+    border-color: #10b981;
+    background: var(--input-bg-color);
+}
+
+.copy-btn.copied::after {
+    content: " ✓";
+    font-weight: bold;
 }
 
 /* Position copy button in results container */
@@ -1020,6 +1040,25 @@ body.dark-mode .reasoning-content pre {
     position: absolute;
     top: 20px;
     right: 20px;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.results-container-perplexity:hover > .copy-btn {
+    opacity: 1;
+}
+
+/* Mobile responsive copy button */
+@media (max-width: 768px) {
+    .copy-btn {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .results-container-perplexity > .copy-btn {
+        top: 15px;
+        right: 15px;
+    }
 }
 
 /* === Skeleton Loader === */

@@ -193,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Update the actual container's content
         container.innerHTML = tempDiv.innerHTML;
+        updateCopyButtonVisibility();
     }
 
     let currentEventSource = null;
@@ -237,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
         errorContainer.style.display = 'none';
         downloadArea.style.display = 'none';
         if (downloadArea.firstChild) downloadArea.firstChild.remove(); // Remove old button
+        updateCopyButtonVisibility();
     }
 
     form.addEventListener('submit', async (event) => {
@@ -642,44 +644,138 @@ document.addEventListener('DOMContentLoaded', () => {
         if (skeletonLoader) skeletonLoader.style.display = 'none';
     }
 
-    // --- Copy to Clipboard Buttons ---
+    // --- Enhanced Copy to Clipboard Buttons ---
     function copyToClipboard(text) {
-        if (!navigator.clipboard) {
-            // fallback
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-        } else {
-            navigator.clipboard.writeText(text);
-        }
+        return new Promise((resolve, reject) => {
+            if (!navigator.clipboard) {
+                // fallback for older browsers
+                try {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    resolve();
+                } catch (err) {
+                    reject(err);
+                }
+            } else {
+                navigator.clipboard.writeText(text).then(resolve).catch(reject);
+            }
+        });
     }
+
+    function showCopyFeedback(button, success = true) {
+        const originalText = button.innerHTML;
+        const originalTitle = button.title;
+        
+        if (success) {
+            button.classList.add('copied');
+            button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+            button.title = 'Copied to clipboard!';
+        } else {
+            button.style.color = '#ef4444';
+            button.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Failed';
+            button.title = 'Copy failed - try again';
+        }
+        
+        setTimeout(() => {
+            button.classList.remove('copied');
+            button.innerHTML = originalText;
+            button.title = originalTitle;
+            button.style.color = '';
+        }, 2000);
+    }
+
     const copyResultsBtn = document.getElementById('copy-results-btn');
     const copyReasoningBtn = document.getElementById('copy-reasoning-btn');
+    
     if (copyResultsBtn) {
-        copyResultsBtn.addEventListener('click', () => {
-            const text = resultsContainer ? resultsContainer.innerText : '';
-            copyToClipboard(text);
-            copyResultsBtn.classList.add('copied');
-            copyResultsBtn.title = 'Copied!';
-            setTimeout(() => {
-                copyResultsBtn.classList.remove('copied');
-                copyResultsBtn.title = 'Copy Results';
-            }, 1200);
+        copyResultsBtn.addEventListener('click', async () => {
+            try {
+                // Get clean text content without copy button text
+                const resultsClone = resultsContainer.cloneNode(true);
+                const copyBtn = resultsClone.querySelector('.copy-btn');
+                if (copyBtn) copyBtn.remove();
+                
+                // Extract text and clean it up
+                let text = resultsClone.innerText || resultsClone.textContent || '';
+                text = text.trim();
+                
+                if (!text) {
+                    throw new Error('No content to copy');
+                }
+                
+                await copyToClipboard(text);
+                showCopyFeedback(copyResultsBtn, true);
+                console.log('Results copied to clipboard successfully');
+            } catch (error) {
+                console.error('Failed to copy results:', error);
+                showCopyFeedback(copyResultsBtn, false);
+            }
         });
     }
+    
     if (copyReasoningBtn) {
-        copyReasoningBtn.addEventListener('click', () => {
-            const text = reasoningContent ? reasoningContent.innerText : '';
-            copyToClipboard(text);
-            copyReasoningBtn.classList.add('copied');
-            copyReasoningBtn.title = 'Copied!';
-            setTimeout(() => {
-                copyReasoningBtn.classList.remove('copied');
-                copyReasoningBtn.title = 'Copy Reasoning';
-            }, 1200);
+        copyReasoningBtn.addEventListener('click', async () => {
+            try {
+                // Get clean text content
+                let text = reasoningContent ? (reasoningContent.innerText || reasoningContent.textContent || '') : '';
+                text = text.trim();
+                
+                if (!text) {
+                    throw new Error('No reasoning content to copy');
+                }
+                
+                await copyToClipboard(text);
+                showCopyFeedback(copyReasoningBtn, true);
+                console.log('Reasoning copied to clipboard successfully');
+            } catch (error) {
+                console.error('Failed to copy reasoning:', error);
+                showCopyFeedback(copyReasoningBtn, false);
+            }
         });
     }
+
+    // --- Keyboard Shortcuts ---
+    document.addEventListener('keydown', (event) => {
+        // Ctrl+C or Cmd+C to copy results (when not in input field)
+        if ((event.ctrlKey || event.metaKey) && event.key === 'c' && 
+            !['INPUT', 'TEXTAREA'].includes(event.target.tagName) &&
+            resultsContainer.style.display !== 'none' &&
+            resultsContainer.innerHTML.trim() !== '') {
+            
+            event.preventDefault();
+            if (copyResultsBtn) {
+                copyResultsBtn.click();
+            }
+        }
+    });
+
+    // Show copy button when content is available
+    function updateCopyButtonVisibility() {
+        if (copyResultsBtn) {
+            const hasContent = resultsContainer && 
+                              resultsContainer.style.display !== 'none' && 
+                              resultsContainer.innerHTML.trim() !== '' &&
+                              !resultsContainer.querySelector('.placeholder-text');
+            
+            if (hasContent) {
+                copyResultsBtn.style.display = 'flex';
+                copyResultsBtn.style.opacity = '0.8';
+            } else {
+                copyResultsBtn.style.display = 'none';
+            }
+        }
+    }
+
+    // Also update visibility on new search
+    const originalInitializeNewSearch = initializeNewSearch;
+    initializeNewSearch = function() {
+        originalInitializeNewSearch();
+        updateCopyButtonVisibility();
+    };
 }); 
