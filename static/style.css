@@ -1582,6 +1582,43 @@ body.dark-mode .web-search-progress {
     transform: translateY(-1px);
 }
 
+/* Enhanced Web Search Sources Styles */
+.quick-answer-content {
+    color: var(--text-color);
+    line-height: 1.6;
+}
 
+.search-metadata {
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--select-bg-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 0.85rem;
+}
 
-/* Enhanced Web Search Sources Styles */ 
+.metadata-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-muted-color);
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.metadata-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.metadata-item {
+    color: var(--text-color);
+    font-size: 0.8rem;
+}
+
+.metadata-item strong {
+    color: var(--text-muted-color);
+    font-weight: 500;
+} 

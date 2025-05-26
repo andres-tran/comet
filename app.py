@@ -61,35 +61,54 @@ def search_web_tavily(query, max_results=10):
         # Enhanced search strategy based on query type
         query_lower = query.lower()
         search_depth = "advanced"
-        days_filter = 30
+        topic = "general"
+        time_range = None
+        days = None
         
         # Adjust search parameters based on query characteristics
         if any(word in query_lower for word in ['news', 'latest', 'recent', 'today', 'current', 'breaking']):
-            days_filter = 7  # More recent for news queries
+            topic = "news"
+            time_range = "week"
             search_depth = "advanced"
         elif any(word in query_lower for word in ['tutorial', 'guide', 'how to', 'learn', 'course']):
-            days_filter = 90  # Broader timeframe for educational content
+            time_range = "year"  # Broader timeframe for educational content
             search_depth = "basic"
         elif any(word in query_lower for word in ['review', 'comparison', 'vs', 'versus', 'best']):
-            days_filter = 60  # Medium timeframe for reviews
+            time_range = "month"  # Medium timeframe for reviews
             search_depth = "advanced"
         
+        # Prepare payload according to Tavily API documentation
         payload = {
-            "api_key": tavily_api_key,
             "query": query,
+            "topic": topic,
             "search_depth": search_depth,
+            "chunks_per_source": 3 if search_depth == "advanced" else None,
+            "max_results": min(max_results, 20),  # API limit is 20
+            "time_range": time_range,
             "include_answer": True,
-            "include_images": False,
             "include_raw_content": False,
-            "max_results": max_results,
+            "include_images": False,
+            "include_image_descriptions": False,
             "include_domains": [],
-            "exclude_domains": ["pinterest.com", "instagram.com", "facebook.com", "twitter.com"],  # Exclude social media for better content quality
-            "days": days_filter
+            "exclude_domains": ["pinterest.com", "instagram.com", "facebook.com", "twitter.com"]
         }
         
-        print(f"Performing web search with strategy: depth={search_depth}, days={days_filter}")
+        # Add days parameter only for news topic
+        if topic == "news":
+            payload["days"] = 7
         
-        response = requests.post(url, json=payload, timeout=30)
+        # Remove None values from payload
+        payload = {k: v for k, v in payload.items() if v is not None}
+        
+        # Proper headers according to API documentation
+        headers = {
+            "Authorization": f"Bearer {tavily_api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        print(f"Performing web search with strategy: topic={topic}, depth={search_depth}, time_range={time_range}")
+        
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
         response.raise_for_status()
         
         data = response.json()
@@ -114,6 +133,7 @@ def search_web_tavily(query, max_results=10):
                 title = result.get("title", "").strip()
                 content = result.get("content", "").strip()
                 url = result.get("url", "")
+                score = result.get("score", 0)  # Tavily provides relevance score
                 
                 # Skip low-quality results
                 if (len(title) < 10 or len(content) < 50 or 
@@ -125,13 +145,15 @@ def search_web_tavily(query, max_results=10):
                 if domain_count >= 2:
                     continue
                 
-                # Add domain info and quality score
+                # Add domain info and enhanced quality score
                 result["domain"] = domain
-                result["quality_score"] = len(content) + (50 if any(word in title.lower() for word in ['official', 'guide', 'tutorial']) else 0)
+                # Combine Tavily's relevance score with content length and quality indicators
+                quality_bonus = 50 if any(word in title.lower() for word in ['official', 'guide', 'tutorial']) else 0
+                result["quality_score"] = int((score * 1000) + len(content) + quality_bonus)
                 
                 filtered_results.append(result)
             
-            # Sort by quality score and domain diversity
+            # Sort by quality score (Tavily score + our enhancements)
             filtered_results.sort(key=lambda x: x.get("quality_score", 0), reverse=True)
             
             # Update data with filtered results
@@ -144,14 +166,14 @@ def search_web_tavily(query, max_results=10):
                 print(f"Only got {len(data['results'])} sources, trying fallback strategies...")
                 
                 # Strategy 1: Broader time window
-                if payload["days"] < 90:
+                if time_range and time_range != "year":
                     broader_payload = payload.copy()
-                    broader_payload["days"] = 180
+                    broader_payload["time_range"] = "year"
                     broader_payload["search_depth"] = "basic"
                     broader_payload["exclude_domains"] = []  # Remove domain restrictions
                     
                     try:
-                        broader_response = requests.post(url, json=broader_payload, timeout=30)
+                        broader_response = requests.post(url, json=broader_payload, headers=headers, timeout=30)
                         broader_response.raise_for_status()
                         broader_data = broader_response.json()
                         
@@ -161,16 +183,16 @@ def search_web_tavily(query, max_results=10):
                     except Exception as e:
                         print(f"Broader search failed: {e}")
                 
-                # Strategy 2: Remove date restrictions entirely
+                # Strategy 2: Remove time restrictions entirely
                 if len(data["results"]) < 2:
                     unrestricted_payload = payload.copy()
-                    if "days" in unrestricted_payload:
-                        del unrestricted_payload["days"]
+                    unrestricted_payload.pop("time_range", None)
+                    unrestricted_payload.pop("days", None)
                     unrestricted_payload["search_depth"] = "basic"
                     unrestricted_payload["exclude_domains"] = []
                     
                     try:
-                        unrestricted_response = requests.post(url, json=unrestricted_payload, timeout=30)
+                        unrestricted_response = requests.post(url, json=unrestricted_payload, headers=headers, timeout=30)
                         unrestricted_response.raise_for_status()
                         unrestricted_data = unrestricted_response.json()
                         
@@ -183,10 +205,12 @@ def search_web_tavily(query, max_results=10):
         # Add search metadata
         data["search_metadata"] = {
             "query": query,
+            "topic": topic,
             "search_depth": search_depth,
-            "days_filter": days_filter,
+            "time_range": time_range,
             "total_sources": len(data.get("results", [])),
-            "unique_domains": len(set(r.get("domain", "unknown") for r in data.get("results", [])))
+            "unique_domains": len(set(r.get("domain", "unknown") for r in data.get("results", []))),
+            "response_time": data.get("response_time", "N/A")
         }
         
         return data
@@ -196,6 +220,19 @@ def search_web_tavily(query, max_results=10):
         return {"error": "Web search timed out. Please try again."}
     except requests.exceptions.RequestException as e:
         print(f"Tavily API request error: {e}")
+        # Handle specific HTTP status codes
+        if hasattr(e, 'response') and e.response is not None:
+            status_code = e.response.status_code
+            if status_code == 401:
+                return {"error": "Web search authentication failed. Please check API configuration."}
+            elif status_code == 429:
+                return {"error": "Web search rate limit exceeded. Please try again in a moment."}
+            elif status_code == 432:
+                return {"error": "Web search quota exceeded. Please try again later."}
+            elif status_code == 433:
+                return {"error": "Web search request too large. Please try a shorter query."}
+            else:
+                return {"error": f"Web search failed with status {status_code}. Please try again."}
         return {"error": f"Web search failed: {str(e)}"}
     except Exception as e:
         print(f"Tavily API error: {e}")
@@ -213,20 +250,20 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
     if web_search_enabled:
         web_search_note = (
             "\n\n**CRITICAL WEB SEARCH INSTRUCTIONS**: "
-            "The user has enabled web search for the most recent and relevant results. You will receive current, real-time web search results from diverse, high-quality sources. "
+            "The user has enabled web search for the most recent and relevant results. You will receive current, real-time web search results from Tavily's advanced search engine with topic-based filtering and relevance scoring. "
             "When using information from these sources:\n"
             "1. **EMBED clickable source links** directly in your response using markdown format: [descriptive text](URL)\n"
             "2. **Make link text natural and descriptive** - integrate seamlessly into sentence flow\n"
-            "3. **PRIORITIZE HIGH-QUALITY SOURCES** - sources are ranked by quality score and domain diversity\n"
+            "3. **PRIORITIZE HIGH-QUALITY SOURCES** - sources are ranked by Tavily's relevance score combined with quality indicators\n"
             "4. **Reference multiple sources** when possible to provide comprehensive coverage\n"
-            "5. **PRIORITIZE RECENT INFORMATION** - these are the latest results, often more current than your training data\n"
-            "6. **Include diverse perspectives** - use information from various source types and domains\n"
+            "5. **PRIORITIZE RECENT INFORMATION** - search is optimized for recency based on query type (news, general, etc.)\n"
+            "6. **Include diverse perspectives** - sources are filtered for domain diversity and quality\n"
             "7. **ONLY USE PROVIDED SOURCES** - do not reference sources that are not explicitly provided in the search results\n"
             "8. **Clearly distinguish** between information from search results vs. your knowledge\n"
             "9. **Use the Quick Answer** as a starting point but expand with detailed analysis from individual sources\n"
             "10. **Cite sources naturally** - Example: 'According to [recent TechCrunch analysis](https://techcrunch.com/...)' or '[industry experts report](https://example.com)'\n"
-            "11. **Leverage search metadata** - consider the search depth, time filter, and domain diversity when crafting your response\n"
-            "12. **Quality indicators** - higher quality sources (marked as high/medium/standard quality) should be given more weight in your analysis"
+            "11. **Leverage search metadata** - consider the search topic, time filter, and domain diversity when crafting your response\n"
+            "12. **Quality indicators** - higher quality sources (with better relevance scores) should be given more weight in your analysis"
         )
     
     enhanced_openrouter_system_prompt = (
@@ -322,7 +359,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         metadata = web_search_results.get("search_metadata", {})
         search_context += f"**SEARCH METADATA:**\n"
         search_context += f"- Search Strategy: {metadata.get('search_depth', 'advanced')} search\n"
-        search_context += f"- Time Filter: {metadata.get('days_filter', 'all time')} days\n"
+        search_context += f"- Time Filter: {metadata.get('time_range', 'all time')} time range\n"
         search_context += f"- Source Diversity: {metadata.get('unique_domains', 'N/A')} unique domains\n"
         search_context += f"- Total Quality Sources: {ai_sources_count}\n\n"
         
@@ -407,7 +444,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         
     messages = [
         {"role": "system", "content": enhanced_openrouter_system_prompt},
-        {"role": "user", "content": user_content_parts if uploaded_file_data else query}
+        {"role": "user", "content": user_content_parts}
     ]
 
     try:
@@ -551,6 +588,14 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
 
     try:
         print(f"Calling OpenRouter for {actual_model_name_for_sdk}. Reasoning: {reasoning_config_to_pass}. Extra Body: {extra_body_params}")
+        
+        # Debug: Log the enhanced query content being sent to AI
+        if web_search_enabled and web_search_results:
+            print(f"Enhanced query includes web search context with {len(web_search_results.get('results', []))} sources")
+            print(f"Enhanced query length: {len(user_content_parts[0]['text'])} characters")
+        else:
+            print(f"No web search context - query length: {len(user_content_parts[0]['text'])} characters")
+        
         stream = openrouter_client_instance.chat.completions.create(**sdk_params, extra_body=extra_body_params)
         buffer = ""
         in_chart_config_block = False

@@ -1127,6 +1127,36 @@ document.addEventListener('DOMContentLoaded', () => {
             sourcesContent.appendChild(quickAnswer);
         }
 
+        // Add search metadata if available
+        if (searchResults.search_metadata) {
+            const metadata = searchResults.search_metadata;
+            const metadataDiv = document.createElement('div');
+            metadataDiv.className = 'search-metadata';
+            
+            let metadataHTML = '<div class="metadata-label"><i class="fas fa-info-circle"></i> Search Details</div>';
+            metadataHTML += '<div class="metadata-content">';
+            
+            if (metadata.topic) {
+                metadataHTML += `<span class="metadata-item"><strong>Topic:</strong> ${metadata.topic}</span>`;
+            }
+            if (metadata.search_depth) {
+                metadataHTML += `<span class="metadata-item"><strong>Depth:</strong> ${metadata.search_depth}</span>`;
+            }
+            if (metadata.time_range) {
+                metadataHTML += `<span class="metadata-item"><strong>Time Range:</strong> ${metadata.time_range}</span>`;
+            }
+            if (metadata.unique_domains) {
+                metadataHTML += `<span class="metadata-item"><strong>Domains:</strong> ${metadata.unique_domains}</span>`;
+            }
+            if (metadata.response_time) {
+                metadataHTML += `<span class="metadata-item"><strong>Response Time:</strong> ${metadata.response_time}s</span>`;
+            }
+            
+            metadataHTML += '</div>';
+            metadataDiv.innerHTML = metadataHTML;
+            sourcesContent.appendChild(metadataDiv);
+        }
+
         // Create simple sources list
         const sourcesList = document.createElement('div');
         sourcesList.className = 'sources-list';
