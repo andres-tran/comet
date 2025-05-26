@@ -925,10 +925,7 @@ if __name__ == '__main__':
     else:
         logger.error("CRITICAL: NO API keys found. Application will not function properly.")
         
-    # Production vs Development configuration
-    if is_production:
-        # Production settings for Vercel
-        app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
-    else:
+    # Only run the development server if not in production (Vercel)
+    if not is_production:
         # Development settings
         app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), threaded=True) 
