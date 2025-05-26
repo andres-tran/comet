@@ -1281,6 +1281,40 @@ TOOL_MAPPING = {
     "research_topic": research_topic
 }
 
+def log_agent_performance(task_plan, total_tools_used, iteration_count, success=True):
+    """
+    Log agent performance metrics for monitoring and evaluation.
+    In a production system, this would integrate with OpenAI's tracing and evaluation tools.
+    """
+    try:
+        from datetime import datetime
+        import json
+        
+        performance_data = {
+            "timestamp": datetime.now().isoformat(),
+            "objective": task_plan.get("objective", "")[:200],  # Truncate for logging
+            "success": success,
+            "iterations_used": iteration_count,
+            "max_iterations": 5,  # Current limit
+            "efficiency": iteration_count / 5,  # Simple efficiency metric
+            "tools_used": list(set(total_tools_used)),
+            "tool_usage_count": len(total_tools_used),
+            "unique_tools_count": len(set(total_tools_used)),
+            "steps_completed": len(task_plan.get("steps_completed", [])),
+            "final_step": task_plan.get("current_step", "unknown"),
+            "research_operations": len([s for s in task_plan.get("steps_completed", []) 
+                                      if 'search' in s.get('tool', '') or 'research' in s.get('tool', '')]),
+        }
+        
+        # In production, this would send to OpenAI's tracing system
+        print(f"Agent Performance Log: {json.dumps(performance_data, indent=2)}")
+        
+        return performance_data
+        
+    except Exception as e:
+        print(f"Error logging agent performance: {e}")
+        return None
+
 # --- Agentic Loop Function ---
 def run_agentic_loop(query, model_name, max_iterations=5):
     """
@@ -1291,33 +1325,62 @@ def run_agentic_loop(query, model_name, max_iterations=5):
         yield f"data: {json.dumps({'error': 'OpenRouter API key not configured for agentic mode.'})}\n\n"
         return
 
-    # Enhanced system prompt for agentic behavior
+    # Enhanced system prompt for agentic behavior following OpenAI best practices
     agentic_system_prompt = (
-        "You are Comet, an advanced AI assistant with access to powerful tools that help you provide accurate and up-to-date information. "
-        "You can use the following capabilities:\n\n"
-        "🕒 **get_current_time**: Get the current date and time\n"
-        "🧮 **calculate_math**: Perform mathematical calculations\n"
-        "🔍 **search_web_tool**: Enhanced web search with intelligent type detection (news, general, deep)\n"
-        "📝 **create_note**: Create and save text notes or summaries\n"
-        "🔬 **research_topic**: Comprehensive multi-step research using multiple search strategies\n\n"
-        "**SEARCH STRATEGY GUIDELINES:**\n"
-        "- For simple questions: Use **search_web_tool** with auto-detection\n"
-        "- For current events/news: Use **search_web_tool** with search_type='news'\n"
-        "- For complex topics requiring thorough investigation: Use **research_topic**\n"
-        "- For tutorials/guides: Use **search_web_tool** with search_type='general'\n"
-        "- For academic/detailed analysis: Use **search_web_tool** with search_type='deep'\n\n"
-        "**RESEARCH WORKFLOW:**\n"
-        "1. **Analyze the query** - Determine if it needs simple search or comprehensive research\n"
-        "2. **Choose appropriate tools** - Single search vs multi-step research\n"
-        "3. **Process results intelligently** - Focus on high-quality sources\n"
-        "4. **Synthesize findings** - Combine information from multiple sources\n"
-        "5. **Provide comprehensive answers** - Include source citations and quality indicators\n\n"
-        "**QUALITY INDICATORS:**\n"
-        "- HIGH quality sources should be prioritized in your analysis\n"
-        "- MEDIUM quality sources provide good supporting information\n"
-        "- STANDARD quality sources can be used for additional context\n\n"
-        "Always think step by step about what tools you need to use to best answer the user's question. "
-        "You can use multiple tools in sequence if needed. Be conversational and helpful in your responses."
+        "You are Comet, an advanced AI agent built with OpenAI's agentic primitives. You intelligently accomplish tasks "
+        "by reasoning, planning, and using tools to interact with the world.\n\n"
+        
+        "🧠 **CORE INTELLIGENCE & REASONING:**\n"
+        "- Think step-by-step and plan your approach before taking action\n"
+        "- Break down complex tasks into manageable sub-tasks\n"
+        "- Reason about which tools are most appropriate for each task\n"
+        "- Learn from tool results and adapt your strategy accordingly\n\n"
+        
+        "🛠️ **AVAILABLE TOOLS & CAPABILITIES:**\n"
+        "🕒 **get_current_time**: Get current date and time for temporal context\n"
+        "🧮 **calculate_math**: Perform mathematical calculations and analysis\n"
+        "🔍 **search_web_tool**: Enhanced web search with intelligent type detection\n"
+        "   - Auto-detects search type (news, general, deep research)\n"
+        "   - Returns quality-ranked results with metadata\n"
+        "   - Configurable depth and result count\n"
+        "📝 **create_note**: Create and save structured notes or summaries\n"
+        "🔬 **research_topic**: Comprehensive multi-step research workflow\n"
+        "   - Combines overview, news, and analysis searches\n"
+        "   - Aggregates findings from multiple sources\n"
+        "   - Provides quality distribution and research summary\n\n"
+        
+        "📋 **AGENTIC WORKFLOW & ORCHESTRATION:**\n"
+        "1. **ANALYZE** the user's request and identify the core objective\n"
+        "2. **PLAN** your approach - determine which tools and sequence to use\n"
+        "3. **EXECUTE** tools systematically, building on previous results\n"
+        "4. **MONITOR** tool outputs and adapt strategy if needed\n"
+        "5. **SYNTHESIZE** findings into a comprehensive, actionable response\n\n"
+        
+        "🎯 **TOOL SELECTION STRATEGY:**\n"
+        "- **Simple factual queries**: Use search_web_tool with auto-detection\n"
+        "- **Current events/breaking news**: Use search_web_tool with type='news'\n"
+        "- **Complex research topics**: Use research_topic for multi-angle analysis\n"
+        "- **Technical tutorials/guides**: Use search_web_tool with type='general'\n"
+        "- **Academic/detailed analysis**: Use search_web_tool with type='deep'\n"
+        "- **Calculations/quantitative analysis**: Use calculate_math\n"
+        "- **Information organization**: Use create_note to structure findings\n\n"
+        
+        "🔍 **QUALITY & GUARDRAILS:**\n"
+        "- Prioritize HIGH quality sources in your analysis\n"
+        "- Cross-reference information from multiple sources when possible\n"
+        "- Clearly distinguish between verified facts and speculation\n"
+        "- Acknowledge limitations and uncertainties in your knowledge\n"
+        "- Provide source citations and quality indicators\n\n"
+        
+        "💬 **RESPONSE GUIDELINES:**\n"
+        "- Be conversational yet professional\n"
+        "- Provide comprehensive answers with clear structure\n"
+        "- Include actionable insights and recommendations\n"
+        "- Explain your reasoning process when helpful\n"
+        "- Adapt your communication style to the user's needs\n\n"
+        
+        "Remember: You are an intelligent agent capable of autonomous reasoning and tool use. "
+        "Think critically, plan strategically, and execute systematically to provide the best possible assistance."
     )
 
     messages = [
@@ -1371,13 +1434,17 @@ def run_agentic_loop(query, model_name, max_iterations=5):
                 "content": json.dumps(tool_result),
             }
 
-        # Main agentic loop - following OpenRouter documentation pattern
+        # Enhanced agentic loop with planning and monitoring
         iteration = 0
         total_tools_used = []
+        task_plan = {"objective": query, "steps_completed": [], "current_step": "analysis"}
+        
+        # Initial planning phase
+        yield f"data: {json.dumps({'reasoning': '🧠 Analyzing request and planning approach...'})}\n\n"
         
         while iteration < max_iterations:
             iteration += 1
-            print(f"Agentic loop iteration {iteration}")
+            print(f"Agentic loop iteration {iteration} - Current step: {task_plan['current_step']}")
             
             resp = call_llm(messages)
             
@@ -1390,37 +1457,71 @@ def run_agentic_loop(query, model_name, max_iterations=5):
                     tool_name = tool_call.function.name
                     tool_calls_used.append(tool_name)
                     total_tools_used.append(tool_name)
+                    
+                    # Update task plan
+                    task_plan["steps_completed"].append({
+                        "iteration": iteration,
+                        "tool": tool_name,
+                        "args": json.loads(tool_call.function.arguments)
+                    })
                 
-                # Provide detailed progress updates
+                # Provide enhanced progress updates with orchestration context
                 if "search_web_tool" in tool_calls_used:
-                    yield f"data: {json.dumps({'reasoning': f'🔍 Searching the web... (iteration {iteration})'})}\n\n"
+                    task_plan["current_step"] = "information_gathering"
+                    yield f"data: {json.dumps({'reasoning': f'🔍 Gathering information from the web... (Step {iteration})'})}\n\n"
                 elif "research_topic" in tool_calls_used:
-                    yield f"data: {json.dumps({'reasoning': f'🔬 Conducting comprehensive research... (iteration {iteration})'})}\n\n"
+                    task_plan["current_step"] = "comprehensive_research"
+                    yield f"data: {json.dumps({'reasoning': f'🔬 Conducting multi-step research analysis... (Step {iteration})'})}\n\n"
                 elif "calculate_math" in tool_calls_used:
-                    yield f"data: {json.dumps({'reasoning': f'🧮 Performing calculations... (iteration {iteration})'})}\n\n"
+                    task_plan["current_step"] = "quantitative_analysis"
+                    yield f"data: {json.dumps({'reasoning': f'🧮 Performing calculations and analysis... (Step {iteration})'})}\n\n"
                 elif "create_note" in tool_calls_used:
-                    yield f"data: {json.dumps({'reasoning': f'📝 Creating notes... (iteration {iteration})'})}\n\n"
+                    task_plan["current_step"] = "knowledge_organization"
+                    yield f"data: {json.dumps({'reasoning': f'📝 Organizing and structuring findings... (Step {iteration})'})}\n\n"
                 else:
-                    yield f"data: {json.dumps({'reasoning': f'🛠️ Using tools: {", ".join(tool_calls_used)} (iteration {iteration})'})}\n\n"
+                    task_plan["current_step"] = "tool_execution"
+                    yield f"data: {json.dumps({'reasoning': f'🛠️ Executing tools: {", ".join(tool_calls_used)} (Step {iteration})'})}\n\n"
+                
+                # Monitoring: Check if we're making progress
+                if iteration > 2 and len(set(total_tools_used[-3:])) == 1:
+                    # If using the same tool repeatedly, add guidance
+                    yield f"data: {json.dumps({'reasoning': '🔄 Adapting strategy based on previous results...'})}\n\n"
+                    
             else:
-                # No more tool calls, provide final response
-                print(f"Agentic loop completed after {iteration} iterations using tools: {total_tools_used}")
+                # No more tool calls, provide final synthesis
+                task_plan["current_step"] = "synthesis"
+                print(f"Agentic workflow completed after {iteration} iterations")
+                print(f"Task plan: {task_plan}")
+                print(f"Tools used: {total_tools_used}")
+                
+                # Log performance for monitoring and evaluation
+                log_agent_performance(task_plan, total_tools_used, iteration, success=True)
+                
                 final_content = resp.choices[0].message.content
                 
-                # Stream the final response
+                # Stream the final response with orchestration summary
                 if final_content:
-                    # Add a summary of tools used if any
+                    # Add enhanced summary with workflow insights
                     if total_tools_used:
-                        tool_summary = f"\n\n---\n*Research completed using: {", ".join(set(total_tools_used))}*"
-                        final_content += tool_summary
+                        unique_tools = list(set(total_tools_used))
+                        workflow_summary = (
+                            f"\n\n---\n"
+                            f"**🤖 Agent Workflow Summary:**\n"
+                            f"- **Objective**: {task_plan['objective'][:100]}{'...' if len(task_plan['objective']) > 100 else ''}\n"
+                            f"- **Steps Completed**: {len(task_plan['steps_completed'])}\n"
+                            f"- **Tools Utilized**: {', '.join(unique_tools)}\n"
+                            f"- **Research Quality**: {len([s for s in task_plan['steps_completed'] if 'search' in s['tool'] or 'research' in s['tool']])} information gathering operations\n"
+                            f"- **Status**: ✅ Task completed successfully"
+                        )
+                        final_content += workflow_summary
                     
-                    # Split content into chunks for streaming effect
-                    words = final_content.split()
+                    # Stream with better chunking for readability
+                    sentences = final_content.split('. ')
                     current_chunk = ""
                     
-                    for word in words:
-                        current_chunk += word + " "
-                        if len(current_chunk) > 60:  # Slightly larger chunks for better readability
+                    for sentence in sentences:
+                        current_chunk += sentence + ". "
+                        if len(current_chunk) > 80 or sentence.endswith('\n'):
                             yield f"data: {json.dumps({'chunk': current_chunk})}\n\n"
                             current_chunk = ""
                     
@@ -1431,8 +1532,17 @@ def run_agentic_loop(query, model_name, max_iterations=5):
                 yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
                 return
 
-        # If we hit max iterations, provide a response anyway
-        yield f"data: {json.dumps({'chunk': f'I apologize, but I reached the maximum number of iterations ({max_iterations}). Here is what I found using the tools: {", ".join(set(total_tools_used))}'})}\n\n"
+        # If we hit max iterations, provide intelligent fallback
+        # Log performance for incomplete workflow
+        log_agent_performance(task_plan, total_tools_used, max_iterations, success=False)
+        
+        fallback_message = (
+            f"I've reached the maximum number of iterations ({max_iterations}) while working on your request. "
+            f"However, I was able to complete {len(task_plan['steps_completed'])} steps using these tools: {', '.join(set(total_tools_used))}. "
+            f"Current progress: {task_plan['current_step']}. "
+            f"The information gathered so far should still be valuable for addressing your query."
+        )
+        yield f"data: {json.dumps({'chunk': fallback_message})}\n\n"
         yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
 
     except Exception as e:
@@ -1483,3 +1593,4 @@ if __name__ == '__main__':
         print("\n*** CRITICAL WARNING: NO API keys (OpenRouter or direct OpenAI) found in .env. Application will likely not function. ***\n")
         
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), threaded=True) 
+
