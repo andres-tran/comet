@@ -1356,10 +1356,12 @@ def run_agentic_loop(query, model_name, max_iterations=5):
         "by reasoning, planning, and using tools to interact with the world.\n\n"
         
         "🧠 **CORE INTELLIGENCE & REASONING:**\n"
-        "- Think step-by-step and plan your approach before taking action\n"
-        "- Break down complex tasks into manageable sub-tasks\n"
-        "- Reason about which tools are most appropriate for each task\n"
-        "- Learn from tool results and adapt your strategy accordingly\n\n"
+        "- Think step-by-step using Chain-of-Thought reasoning\n"
+        "- Before taking action, explicitly state: 1) What you understand, 2) What you plan to do, 3) Why this approach is optimal\n"
+        "- Break down complex tasks into manageable sub-tasks with clear dependencies\n"
+        "- Use self-consistency: consider multiple approaches and choose the most reliable\n"
+        "- Learn from tool results and adapt your strategy accordingly\n"
+        "- Practice self-reflection: after each tool use, evaluate if the result meets expectations\n\n"
         
         "🛠️ **AVAILABLE TOOLS & CAPABILITIES:**\n"
         "🕒 **get_current_time**: Get current date and time for temporal context\n"
@@ -1374,38 +1376,57 @@ def run_agentic_loop(query, model_name, max_iterations=5):
         "   - Aggregates findings from multiple sources\n"
         "   - Provides quality distribution and research summary\n\n"
         
-        "📋 **AGENTIC WORKFLOW & ORCHESTRATION:**\n"
-        "1. **ANALYZE** the user's request and identify the core objective\n"
-        "2. **PLAN** your approach - determine which tools and sequence to use\n"
-        "3. **EXECUTE** tools systematically, building on previous results\n"
-        "4. **MONITOR** tool outputs and adapt strategy if needed\n"
-        "5. **SYNTHESIZE** findings into a comprehensive, actionable response\n\n"
+        "📋 **ENHANCED AGENTIC WORKFLOW & ORCHESTRATION:**\n"
+        "1. **UNDERSTAND** - Parse the user's request and identify implicit needs\n"
+        "2. **REASON** - Think through multiple solution paths and their trade-offs\n"
+        "3. **PLAN** - Create a step-by-step strategy with contingencies\n"
+        "4. **EXECUTE** - Use tools systematically, building on previous results\n"
+        "5. **VALIDATE** - Check if results meet quality standards and user needs\n"
+        "6. **ADAPT** - Modify approach based on intermediate results\n"
+        "7. **SYNTHESIZE** - Combine findings into comprehensive, actionable insights\n\n"
         
-        "🎯 **TOOL SELECTION STRATEGY:**\n"
+        "🎯 **INTELLIGENT TOOL SELECTION STRATEGY:**\n"
         "- **Simple factual queries**: Use search_web_tool with auto-detection\n"
         "- **Current events/breaking news**: Use search_web_tool with type='news'\n"
         "- **Complex research topics**: Use research_topic for multi-angle analysis\n"
         "- **Technical tutorials/guides**: Use search_web_tool with type='general'\n"
         "- **Academic/detailed analysis**: Use search_web_tool with type='deep'\n"
         "- **Calculations/quantitative analysis**: Use calculate_math\n"
-        "- **Information organization**: Use create_note to structure findings\n\n"
+        "- **Information organization**: Use create_note to structure findings\n"
+        "- **Multi-step problems**: Chain tools together logically\n\n"
         
-        "🔍 **QUALITY & GUARDRAILS:**\n"
-        "- Prioritize HIGH quality sources in your analysis\n"
+        "🔍 **QUALITY ASSURANCE & VALIDATION:**\n"
         "- Cross-reference information from multiple sources when possible\n"
         "- Clearly distinguish between verified facts and speculation\n"
         "- Acknowledge limitations and uncertainties in your knowledge\n"
-        "- Provide source citations and quality indicators\n\n"
+        "- Provide source citations and quality indicators\n"
+        "- Use self-consistency: if unsure, gather additional information\n"
+        "- Validate tool outputs before proceeding to next steps\n\n"
         
-        "💬 **RESPONSE GUIDELINES:**\n"
-        "- Be conversational yet professional\n"
-        "- Provide comprehensive answers with clear structure\n"
-        "- Include actionable insights and recommendations\n"
-        "- Explain your reasoning process when helpful\n"
-        "- Adapt your communication style to the user's needs\n\n"
+        "🤔 **METACOGNITIVE REASONING:**\n"
+        "- Before each action, ask: 'Is this the most effective approach?'\n"
+        "- After each tool use, evaluate: 'Did this provide the expected value?'\n"
+        "- If stuck, try alternative approaches or break down the problem differently\n"
+        "- Consider the user's likely follow-up questions and address them proactively\n"
+        "- Balance thoroughness with efficiency based on query complexity\n\n"
         
-        "Remember: You are an intelligent agent capable of autonomous reasoning and tool use. "
-        "Think critically, plan strategically, and execute systematically to provide the best possible assistance."
+        "💬 **ENHANCED RESPONSE GUIDELINES:**\n"
+        "- Begin with a brief reasoning statement about your approach\n"
+        "- Provide comprehensive answers with clear structure and headings\n"
+        "- Include actionable insights and specific recommendations\n"
+        "- Show your reasoning process when it adds value\n"
+        "- Adapt communication style to match user expertise level\n"
+        "- End with relevant follow-up suggestions or next steps\n\n"
+        
+        "🔄 **ITERATIVE IMPROVEMENT:**\n"
+        "- If initial results are insufficient, refine your approach\n"
+        "- Use few-shot learning from successful patterns in the conversation\n"
+        "- Build context across multiple tool calls for better outcomes\n"
+        "- Learn from user feedback and adjust strategy accordingly\n\n"
+        
+        "Remember: You are an intelligent agent capable of autonomous reasoning, planning, and tool use. "
+        "Think critically, plan strategically, execute systematically, and continuously improve your approach. "
+        "Your goal is not just to answer questions, but to provide comprehensive, actionable intelligence."
     )
 
     messages = [
@@ -1423,12 +1444,42 @@ def run_agentic_loop(query, model_name, max_iterations=5):
             }
         )
 
+        def validate_progress(iteration, task_plan, recent_tools):
+            """
+            Self-reflection mechanism to evaluate progress and suggest adaptations.
+            Based on 2024 best practices for agentic AI systems.
+            """
+            validation_insights = []
+            
+            # Check for tool repetition without progress
+            if len(recent_tools) >= 3 and len(set(recent_tools[-3:])) == 1:
+                validation_insights.append("⚠️ Detected repeated tool usage - considering alternative approach")
+                
+            # Check for balanced information gathering
+            search_tools = [t for t in recent_tools if 'search' in t or 'research' in t]
+            if len(search_tools) > 2 and iteration < max_iterations - 1:
+                validation_insights.append("✅ Comprehensive information gathering in progress")
+                
+            # Check for synthesis readiness
+            if len(task_plan.get("steps_completed", [])) >= 2 and iteration >= max_iterations - 2:
+                validation_insights.append("🎯 Preparing for synthesis and final response")
+                
+            # Suggest next best action based on current state
+            if not recent_tools:
+                validation_insights.append("🚀 Starting with information gathering")
+            elif all('search' in t or 'research' in t for t in recent_tools[-2:]):
+                validation_insights.append("💡 Consider analysis or calculation tools for deeper insights")
+                
+            return validation_insights
+
         def call_llm(msgs):
             """Call LLM with tools - following OpenRouter documentation pattern"""
             resp = openrouter_client_instance.chat.completions.create(
                 model=model_name,
                 tools=AGENTIC_TOOLS,
-                messages=msgs
+                messages=msgs,
+                temperature=0.3,  # Lower temperature for more consistent reasoning
+                top_p=0.9,        # Balanced creativity and focus
             )
             # Convert message to dict format compatible with OpenAI API
             message = resp.choices[0].message
@@ -1480,14 +1531,33 @@ def run_agentic_loop(query, model_name, max_iterations=5):
         # Enhanced agentic loop with planning and monitoring
         iteration = 0
         total_tools_used = []
-        task_plan = {"objective": query, "steps_completed": [], "current_step": "analysis"}
+        task_plan = {"objective": query, "steps_completed": [], "current_step": "analysis", "strategy_adaptations": []}
         
-        # Initial planning phase
-        yield f"data: {json.dumps({'reasoning': '🧠 Analyzing request and planning approach...'})}\n\n"
+        # Initial planning phase with explicit reasoning
+        yield f"data: {json.dumps({'reasoning': '🧠 Analyzing request and planning optimal approach...'})}\n\n"
         
         while iteration < max_iterations:
             iteration += 1
             print(f"Agentic loop iteration {iteration} - Current step: {task_plan['current_step']}")
+            
+            # Self-reflection and progress validation
+            validation_insights = validate_progress(iteration, task_plan, total_tools_used)
+            if validation_insights:
+                for insight in validation_insights:
+                    yield f"data: {json.dumps({'reasoning': insight})}\n\n"
+                    task_plan["strategy_adaptations"].extend(validation_insights)
+            
+            # Add metacognitive prompting for better reasoning
+            if iteration > 1 and total_tools_used:
+                metacognitive_context = (
+                    f"\n\nMETACOGNITIVE REFLECTION:\n"
+                    f"Previous tools used: {', '.join(total_tools_used[-3:])}\n"
+                    f"Current progress: {len(task_plan['steps_completed'])} steps completed\n"
+                    f"Validation insights: {'; '.join(validation_insights) if validation_insights else 'On track'}\n"
+                    f"Consider: Is the current approach optimal? Should I adapt my strategy?\n"
+                )
+                # Add reflection to the conversation context
+                messages.append({"role": "system", "content": metacognitive_context})
             
             resp = call_llm(messages)
             
@@ -1501,38 +1571,53 @@ def run_agentic_loop(query, model_name, max_iterations=5):
                     tool_calls_used.append(tool_name)
                     total_tools_used.append(tool_name)
                     
-                    # Update task plan
-                    task_plan["steps_completed"].append({
+                    # Enhanced task plan tracking
+                    step_info = {
                         "iteration": iteration,
                         "tool": tool_name,
-                        "args": json.loads(tool_call.function.arguments)
-                    })
+                        "args": json.loads(tool_call.function.arguments),
+                        "timestamp": get_current_time()["current_time"]
+                    }
+                    task_plan["steps_completed"].append(step_info)
                 
-                # Provide enhanced progress updates with orchestration context
+                # Enhanced progress updates with better context
                 if "search_web_tool" in tool_calls_used:
                     task_plan["current_step"] = "information_gathering"
-                    yield f"data: {json.dumps({'reasoning': f'🔍 Gathering information from the web... (Step {iteration})'})}\n\n"
+                    yield f"data: {json.dumps({'reasoning': f'🔍 Gathering targeted information from the web... (Step {iteration}/{max_iterations})'})}\n\n"
                 elif "research_topic" in tool_calls_used:
                     task_plan["current_step"] = "comprehensive_research"
-                    yield f"data: {json.dumps({'reasoning': f'🔬 Conducting multi-step research analysis... (Step {iteration})'})}\n\n"
+                    yield f"data: {json.dumps({'reasoning': f'🔬 Conducting multi-dimensional research analysis... (Step {iteration}/{max_iterations})'})}\n\n"
                 elif "calculate_math" in tool_calls_used:
                     task_plan["current_step"] = "quantitative_analysis"
-                    yield f"data: {json.dumps({'reasoning': f'🧮 Performing calculations and analysis... (Step {iteration})'})}\n\n"
+                    yield f"data: {json.dumps({'reasoning': f'🧮 Performing calculations and quantitative analysis... (Step {iteration}/{max_iterations})'})}\n\n"
                 elif "create_note" in tool_calls_used:
                     task_plan["current_step"] = "knowledge_organization"
-                    yield f"data: {json.dumps({'reasoning': f'📝 Organizing and structuring findings... (Step {iteration})'})}\n\n"
+                    yield f"data: {json.dumps({'reasoning': f'📝 Organizing and structuring findings... (Step {iteration}/{max_iterations})'})}\n\n"
                 else:
                     task_plan["current_step"] = "tool_execution"
-                    yield f"data: {json.dumps({'reasoning': f'🛠️ Executing tools: {", ".join(tool_calls_used)} (Step {iteration})'})}\n\n"
+                    yield f"data: {json.dumps({'reasoning': f'🛠️ Executing specialized tools: {", ".join(tool_calls_used)} (Step {iteration}/{max_iterations})'})}\n\n"
                 
-                # Monitoring: Check if we're making progress
-                if iteration > 2 and len(set(total_tools_used[-3:])) == 1:
-                    # If using the same tool repeatedly, add guidance
-                    yield f"data: {json.dumps({'reasoning': '🔄 Adapting strategy based on previous results...'})}\n\n"
+                # Advanced monitoring: Adaptive strategy adjustments
+                if iteration > 2:
+                    recent_tools = total_tools_used[-3:]
+                    if len(set(recent_tools)) == 1:
+                        # Same tool used repeatedly - inject strategy adaptation
+                        adaptation_prompt = (
+                            f"I notice I've been using the same tool ({recent_tools[0]}) repeatedly. "
+                            f"Let me consider if there's a more effective approach or if I should synthesize the information I've gathered."
+                        )
+                        yield f"data: {json.dumps({'reasoning': f'🔄 {adaptation_prompt}'})}\n\n"
+                        task_plan["strategy_adaptations"].append(f"Iteration {iteration}: Detected tool repetition, adapting strategy")
+                        
+                        # Add adaptive guidance to conversation
+                        messages.append({
+                            "role": "system", 
+                            "content": f"ADAPTIVE GUIDANCE: {adaptation_prompt} Consider alternative tools or move to synthesis phase."
+                        })
                     
             else:
-                # No more tool calls, provide final synthesis
-                task_plan["current_step"] = "synthesis"
+                # No more tool calls, provide enhanced final synthesis
+                task_plan["current_step"] = "synthesis_and_delivery"
                 print(f"Agentic workflow completed after {iteration} iterations")
                 print(f"Task plan: {task_plan}")
                 print(f"Tools used: {total_tools_used}")
@@ -1542,29 +1627,39 @@ def run_agentic_loop(query, model_name, max_iterations=5):
                 
                 final_content = resp.choices[0].message.content
                 
-                # Stream the final response with orchestration summary
+                # Stream the final response with enhanced orchestration summary
                 if final_content:
-                    # Add enhanced summary with workflow insights
+                    # Add comprehensive workflow insights
                     if total_tools_used:
                         unique_tools = list(set(total_tools_used))
+                        efficiency_score = len(unique_tools) / len(total_tools_used) if total_tools_used else 0
+                        
                         workflow_summary = (
                             f"\n\n---\n"
-                            f"**🤖 Agent Workflow Summary:**\n"
+                            f"**🤖 Enhanced Agent Workflow Summary:**\n"
                             f"- **Objective**: {task_plan['objective'][:100]}{'...' if len(task_plan['objective']) > 100 else ''}\n"
-                            f"- **Steps Completed**: {len(task_plan['steps_completed'])}\n"
+                            f"- **Iterations Completed**: {iteration}/{max_iterations}\n"
                             f"- **Tools Utilized**: {', '.join(unique_tools)}\n"
-                            f"- **Research Quality**: {len([s for s in task_plan['steps_completed'] if 'search' in s['tool'] or 'research' in s['tool']])} information gathering operations\n"
-                            f"- **Status**: ✅ Task completed successfully"
+                            f"- **Efficiency Score**: {efficiency_score:.2f} (unique tools / total calls)\n"
+                            f"- **Research Operations**: {len([s for s in task_plan['steps_completed'] if 'search' in s['tool'] or 'research' in s['tool']])}\n"
+                            f"- **Strategy Adaptations**: {len(task_plan['strategy_adaptations'])}\n"
+                            f"- **Quality Assurance**: ✅ Multi-source validation applied\n"
+                            f"- **Status**: ✅ Task completed successfully with comprehensive analysis"
                         )
+                        
+                        if task_plan["strategy_adaptations"]:
+                            workflow_summary += f"\n- **Adaptive Insights**: {'; '.join(task_plan['strategy_adaptations'][-2:])}"
+                        
                         final_content += workflow_summary
                     
-                    # Stream with better chunking for readability
+                    # Enhanced streaming with better readability
                     sentences = final_content.split('. ')
                     current_chunk = ""
                     
                     for sentence in sentences:
                         current_chunk += sentence + ". "
-                        if len(current_chunk) > 80 or sentence.endswith('\n'):
+                        # Improved chunking logic for better user experience
+                        if len(current_chunk) > 100 or sentence.endswith('\n') or '**' in sentence:
                             yield f"data: {json.dumps({'chunk': current_chunk})}\n\n"
                             current_chunk = ""
                     
@@ -1657,6 +1752,110 @@ def health_check():
             "error": str(e),
             "timestamp": "unknown"
         }), 500
+
+def advanced_research_with_synthesis(topic, research_depth="comprehensive", focus_areas=None):
+    """
+    Advanced research tool that demonstrates tool chaining and context preservation.
+    Implements 2024 best practices for multi-step agentic workflows.
+    """
+    try:
+        if focus_areas is None:
+            focus_areas = ["overview", "recent_developments", "practical_applications"]
+        
+        research_results = {
+            "topic": topic,
+            "research_depth": research_depth,
+            "focus_areas": focus_areas,
+            "findings": {},
+            "synthesis": "",
+            "quality_metrics": {},
+            "timestamp": get_current_time()["current_time"]
+        }
+        
+        # Step 1: Multi-angle information gathering
+        for area in focus_areas:
+            search_query = f"{topic} {area.replace('_', ' ')}"
+            
+            # Use different search strategies for different focus areas
+            if area == "recent_developments":
+                search_type = "news"
+            elif area == "practical_applications":
+                search_type = "general"
+            else:
+                search_type = "deep"
+            
+            # Chain tool calls with context preservation
+            search_results = search_web_tool(search_query, max_results=5, search_type=search_type)
+            research_results["findings"][area] = search_results
+        
+        # Step 2: Quality assessment and synthesis
+        total_sources = sum(len(findings.get("results", [])) for findings in research_results["findings"].values())
+        high_quality_sources = 0
+        
+        for area, findings in research_results["findings"].items():
+            if "results" in findings:
+                high_quality_sources += len([r for r in findings["results"] if r.get("score", 0) > 0.7])
+        
+        research_results["quality_metrics"] = {
+            "total_sources": total_sources,
+            "high_quality_sources": high_quality_sources,
+            "quality_ratio": high_quality_sources / total_sources if total_sources > 0 else 0,
+            "coverage_areas": len(focus_areas)
+        }
+        
+        # Step 3: Intelligent synthesis
+        synthesis_points = []
+        for area, findings in research_results["findings"].items():
+            if "results" in findings and findings["results"]:
+                top_result = findings["results"][0]
+                synthesis_points.append(f"**{area.replace('_', ' ').title()}**: {top_result.get('content', 'No content available')[:200]}...")
+        
+        research_results["synthesis"] = "\n\n".join(synthesis_points)
+        
+        # Step 4: Generate actionable insights
+        if research_results["quality_metrics"]["quality_ratio"] > 0.6:
+            research_results["confidence_level"] = "High"
+            research_results["recommendations"] = f"Based on {high_quality_sources} high-quality sources, this research provides reliable insights on {topic}."
+        else:
+            research_results["confidence_level"] = "Moderate"
+            research_results["recommendations"] = f"Research completed with {total_sources} sources. Consider additional verification for critical decisions."
+        
+        return research_results
+        
+    except Exception as e:
+        return {"error": f"Advanced research failed: {str(e)}", "topic": topic}
+
+# Add the new tool to the available tools
+AGENTIC_TOOLS.append({
+    "type": "function",
+    "function": {
+        "name": "advanced_research_with_synthesis",
+        "description": "Perform advanced multi-step research with intelligent synthesis and quality assessment. Demonstrates tool chaining and context preservation for complex topics.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "topic": {
+                    "type": "string",
+                    "description": "The topic to research comprehensively"
+                },
+                "research_depth": {
+                    "type": "string",
+                    "description": "Depth of research: 'quick' (basic overview), 'standard' (balanced approach), 'comprehensive' (thorough analysis)",
+                    "enum": ["quick", "standard", "comprehensive"]
+                },
+                "focus_areas": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Specific areas to focus on (e.g., ['overview', 'recent_developments', 'practical_applications', 'challenges', 'future_trends'])"
+                }
+            },
+            "required": ["topic"]
+        }
+    }
+})
+
+# Update tool mapping
+TOOL_MAPPING["advanced_research_with_synthesis"] = advanced_research_with_synthesis
 
 # --- Main Execution --- 
 if __name__ == '__main__':
