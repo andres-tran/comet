@@ -49,90 +49,157 @@ def check_api_keys(model_name):
     
     return missing
 
-# --- Web Search Function ---
+# --- Enhanced Web Search Function ---
 def search_web_tavily(query, max_results=10):
-    """Performs web search using Tavily API and returns search results."""
+    """Performs enhanced web search using Tavily API with improved source diversity and quality filtering."""
     if not tavily_api_key:
         return {"error": "Tavily API key not configured"}
     
     try:
         url = "https://api.tavily.com/search"
+        
+        # Enhanced search strategy based on query type
+        query_lower = query.lower()
+        search_depth = "advanced"
+        days_filter = 30
+        
+        # Adjust search parameters based on query characteristics
+        if any(word in query_lower for word in ['news', 'latest', 'recent', 'today', 'current', 'breaking']):
+            days_filter = 7  # More recent for news queries
+            search_depth = "advanced"
+        elif any(word in query_lower for word in ['tutorial', 'guide', 'how to', 'learn', 'course']):
+            days_filter = 90  # Broader timeframe for educational content
+            search_depth = "basic"
+        elif any(word in query_lower for word in ['review', 'comparison', 'vs', 'versus', 'best']):
+            days_filter = 60  # Medium timeframe for reviews
+            search_depth = "advanced"
+        
         payload = {
             "api_key": tavily_api_key,
             "query": query,
-            "search_depth": "advanced",
+            "search_depth": search_depth,
             "include_answer": True,
             "include_images": False,
             "include_raw_content": False,
             "max_results": max_results,
             "include_domains": [],
-            "exclude_domains": [],  # Include all sources including Reddit, Quora, etc.
-            "days": 30  # Increased to 30 days to get more sources when recent content is limited
+            "exclude_domains": ["pinterest.com", "instagram.com", "facebook.com", "twitter.com"],  # Exclude social media for better content quality
+            "days": days_filter
         }
+        
+        print(f"Performing web search with strategy: depth={search_depth}, days={days_filter}")
         
         response = requests.post(url, json=payload, timeout=30)
         response.raise_for_status()
         
         data = response.json()
         
-        # Debug: Print the actual number of results returned
-        if "results" in data:
-            print(f"Tavily returned {len(data['results'])} sources for query: {query}")
-            # Also log the domains for debugging
-            domains = [result.get("url", "").split("/")[2] if result.get("url") else "unknown" for result in data["results"]]
-            print(f"Source domains: {domains}")
+        # Enhanced result processing and quality filtering
+        if "results" in data and data["results"]:
+            original_count = len(data["results"])
+            print(f"Tavily returned {original_count} sources for query: {query}")
             
-            # If we got very few results, try a broader search with longer time window
-            if len(data["results"]) < 3 and payload["days"] < 90:
-                print(f"Only got {len(data['results'])} sources, trying broader search with 90 days...")
-                broader_payload = payload.copy()
-                broader_payload["days"] = 90  # Expand to 90 days
-                broader_payload["search_depth"] = "basic"  # Use basic search for broader results
-                
+            # Filter and enhance results
+            filtered_results = []
+            seen_domains = set()
+            
+            for result in data["results"]:
+                # Extract domain for diversity checking
                 try:
-                    broader_response = requests.post(url, json=broader_payload, timeout=30)
-                    broader_response.raise_for_status()
-                    broader_data = broader_response.json()
+                    domain = result.get("url", "").split("/")[2].replace("www.", "").lower()
+                except:
+                    domain = "unknown"
+                
+                # Quality filters
+                title = result.get("title", "").strip()
+                content = result.get("content", "").strip()
+                url = result.get("url", "")
+                
+                # Skip low-quality results
+                if (len(title) < 10 or len(content) < 50 or 
+                    not url or "404" in title.lower() or "error" in title.lower()):
+                    continue
+                
+                # Promote domain diversity (max 2 results per domain)
+                domain_count = sum(1 for r in filtered_results if r.get("domain") == domain)
+                if domain_count >= 2:
+                    continue
+                
+                # Add domain info and quality score
+                result["domain"] = domain
+                result["quality_score"] = len(content) + (50 if any(word in title.lower() for word in ['official', 'guide', 'tutorial']) else 0)
+                
+                filtered_results.append(result)
+            
+            # Sort by quality score and domain diversity
+            filtered_results.sort(key=lambda x: x.get("quality_score", 0), reverse=True)
+            
+            # Update data with filtered results
+            data["results"] = filtered_results[:max_results]
+            
+            print(f"Filtered to {len(data['results'])} high-quality sources from {len(set(r['domain'] for r in data['results']))} different domains")
+            
+            # If we have very few results, try fallback strategies
+            if len(data["results"]) < 3:
+                print(f"Only got {len(data['results'])} sources, trying fallback strategies...")
+                
+                # Strategy 1: Broader time window
+                if payload["days"] < 90:
+                    broader_payload = payload.copy()
+                    broader_payload["days"] = 180
+                    broader_payload["search_depth"] = "basic"
+                    broader_payload["exclude_domains"] = []  # Remove domain restrictions
                     
-                    if "results" in broader_data and len(broader_data["results"]) > len(data["results"]):
-                        print(f"Broader search returned {len(broader_data['results'])} sources, using broader results")
-                        data = broader_data
-                    else:
-                        print(f"Broader search didn't improve results, keeping original {len(data['results'])} sources")
+                    try:
+                        broader_response = requests.post(url, json=broader_payload, timeout=30)
+                        broader_response.raise_for_status()
+                        broader_data = broader_response.json()
                         
-                        # If still too few results, try removing the days filter entirely
-                        if len(data["results"]) < 2:
-                            print("Trying search without date restriction...")
-                            unrestricted_payload = payload.copy()
-                            del unrestricted_payload["days"]  # Remove date restriction
-                            unrestricted_payload["search_depth"] = "basic"
-                            
-                            try:
-                                unrestricted_response = requests.post(url, json=unrestricted_payload, timeout=30)
-                                unrestricted_response.raise_for_status()
-                                unrestricted_data = unrestricted_response.json()
-                                
-                                if "results" in unrestricted_data and len(unrestricted_data["results"]) > len(data["results"]):
-                                    print(f"Unrestricted search returned {len(unrestricted_data['results'])} sources, using unrestricted results")
-                                    data = unrestricted_data
-                                else:
-                                    print(f"Unrestricted search didn't improve results")
-                            except Exception as e2:
-                                print(f"Unrestricted search failed: {e2}")
-                                
-                except Exception as e:
-                    print(f"Broader search failed: {e}, keeping original results")
+                        if "results" in broader_data and len(broader_data["results"]) > len(data["results"]):
+                            print(f"Broader search returned {len(broader_data['results'])} sources")
+                            data = broader_data
+                    except Exception as e:
+                        print(f"Broader search failed: {e}")
+                
+                # Strategy 2: Remove date restrictions entirely
+                if len(data["results"]) < 2:
+                    unrestricted_payload = payload.copy()
+                    if "days" in unrestricted_payload:
+                        del unrestricted_payload["days"]
+                    unrestricted_payload["search_depth"] = "basic"
+                    unrestricted_payload["exclude_domains"] = []
+                    
+                    try:
+                        unrestricted_response = requests.post(url, json=unrestricted_payload, timeout=30)
+                        unrestricted_response.raise_for_status()
+                        unrestricted_data = unrestricted_response.json()
+                        
+                        if "results" in unrestricted_data and len(unrestricted_data["results"]) > len(data["results"]):
+                            print(f"Unrestricted search returned {len(unrestricted_data['results'])} sources")
+                            data = unrestricted_data
+                    except Exception as e:
+                        print(f"Unrestricted search failed: {e}")
+        
+        # Add search metadata
+        data["search_metadata"] = {
+            "query": query,
+            "search_depth": search_depth,
+            "days_filter": days_filter,
+            "total_sources": len(data.get("results", [])),
+            "unique_domains": len(set(r.get("domain", "unknown") for r in data.get("results", [])))
+        }
         
         return data
         
+    except requests.exceptions.Timeout:
+        print(f"Tavily API timeout for query: {query}")
+        return {"error": "Web search timed out. Please try again."}
     except requests.exceptions.RequestException as e:
         print(f"Tavily API request error: {e}")
         return {"error": f"Web search failed: {str(e)}"}
     except Exception as e:
         print(f"Tavily API error: {e}")
         return {"error": f"Web search error: {str(e)}"}
-
-
 
 # --- Streaming Generator for OpenRouter ---
 def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uploaded_file_data=None, file_type=None, web_search_enabled=False):
@@ -146,17 +213,20 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
     if web_search_enabled:
         web_search_note = (
             "\n\n**CRITICAL WEB SEARCH INSTRUCTIONS**: "
-            "The user has enabled web search for the most recent and relevant results. You will receive current, real-time web search results from diverse sources. "
+            "The user has enabled web search for the most recent and relevant results. You will receive current, real-time web search results from diverse, high-quality sources. "
             "When using information from these sources:\n"
             "1. **EMBED clickable source links** directly in your response using markdown format: [descriptive text](URL)\n"
             "2. **Make link text natural and descriptive** - integrate seamlessly into sentence flow\n"
-            "3. **Reference multiple sources** when possible to provide comprehensive coverage\n"
-            "4. **PRIORITIZE RECENT INFORMATION** - these are the latest results, often more current than your training data\n"
-            "5. **Include diverse perspectives** - use information from various source types (news sites, forums like Reddit, blogs, official sources)\n"
-            "6. **ONLY USE PROVIDED SOURCES** - do not reference sources that are not explicitly provided in the search results. Do not use your training data to add additional sources or URLs.\n"
-            "7. **Clearly distinguish** between information from search results vs. your knowledge\n"
-            "8. **Use the Quick Answer** as a starting point but expand with detailed analysis\n"
-            "9. **Example**: Instead of '[Source 1]', write '[recent developments in AI](https://example.com)' or 'according to [TechCrunch](https://techcrunch.com)' or '[Reddit users report](https://reddit.com/...)'"
+            "3. **PRIORITIZE HIGH-QUALITY SOURCES** - sources are ranked by quality score and domain diversity\n"
+            "4. **Reference multiple sources** when possible to provide comprehensive coverage\n"
+            "5. **PRIORITIZE RECENT INFORMATION** - these are the latest results, often more current than your training data\n"
+            "6. **Include diverse perspectives** - use information from various source types and domains\n"
+            "7. **ONLY USE PROVIDED SOURCES** - do not reference sources that are not explicitly provided in the search results\n"
+            "8. **Clearly distinguish** between information from search results vs. your knowledge\n"
+            "9. **Use the Quick Answer** as a starting point but expand with detailed analysis from individual sources\n"
+            "10. **Cite sources naturally** - Example: 'According to [recent TechCrunch analysis](https://techcrunch.com/...)' or '[industry experts report](https://example.com)'\n"
+            "11. **Leverage search metadata** - consider the search depth, time filter, and domain diversity when crafting your response\n"
+            "12. **Quality indicators** - higher quality sources (marked as high/medium/standard quality) should be given more weight in your analysis"
         )
     
     enhanced_openrouter_system_prompt = (
@@ -239,11 +309,26 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
             title = result.get("title", "No title")
             url = result.get("url", "")
             content = result.get("content", "")[:200] + "..." if len(result.get("content", "")) > 200 else result.get("content", "")
-            search_context += f"{i}. **{title}**\n   URL: {url}\n   Content: {content}\n\n"
+            domain = result.get("domain", "unknown")
+            quality_score = result.get("quality_score", 0)
+            quality_level = "HIGH" if quality_score > 200 else "MEDIUM" if quality_score > 100 else "STANDARD"
+            
+            search_context += f"{i}. **{title}** [{quality_level} QUALITY]\n"
+            search_context += f"   Domain: {domain}\n"
+            search_context += f"   URL: {url}\n"
+            search_context += f"   Content: {content}\n\n"
+        
+        # Add search metadata for AI context
+        metadata = web_search_results.get("search_metadata", {})
+        search_context += f"**SEARCH METADATA:**\n"
+        search_context += f"- Search Strategy: {metadata.get('search_depth', 'advanced')} search\n"
+        search_context += f"- Time Filter: {metadata.get('days_filter', 'all time')} days\n"
+        search_context += f"- Source Diversity: {metadata.get('unique_domains', 'N/A')} unique domains\n"
+        search_context += f"- Total Quality Sources: {ai_sources_count}\n\n"
         
         # Create a list of valid URLs for the AI to reference
         valid_urls = [result.get("url", "") for result in web_search_results["results"][:10]]
-        search_context += f"**CRITICAL CONSTRAINT**: You have access to EXACTLY {len(web_search_results['results'][:10])} sources listed above. DO NOT reference any sources beyond these {len(web_search_results['results'][:10])} sources. ONLY use URLs from this exact list: {valid_urls}. Instead of using [Source X] citations, embed clickable source links directly in your response using markdown format: [descriptive text](URL). Make the link text descriptive and natural within the sentence flow. These are the most recent results available, prioritize this information over older knowledge. DO NOT use any URLs not in the provided list.\n"
+        search_context += f"**CRITICAL CONSTRAINT**: You have access to EXACTLY {len(web_search_results['results'][:10])} sources listed above. DO NOT reference any sources beyond these {len(web_search_results['results'][:10])} sources. ONLY use URLs from this exact list: {valid_urls}. Instead of using [Source X] citations, embed clickable source links directly in your response using markdown format: [descriptive text](URL). Make the link text descriptive and natural within the sentence flow. These are the most recent results available, prioritize this information over older knowledge. DO NOT use any URLs not in the provided list. Pay attention to quality levels - prioritize HIGH and MEDIUM quality sources over STANDARD quality sources when possible.\n"
         context_additions.append(search_context)
     
 
