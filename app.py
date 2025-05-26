@@ -510,17 +510,27 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
     
     # Dynamic parameter adjustment based on query type
     if any(word in query_lower for word in ['creative', 'story', 'imagine', 'brainstorm', 'ideas']):
-        sdk_params["top_p"] = 0.95
+        top_p_value = 0.95
         temperature_value = 0.9  # More creative
     elif any(word in query_lower for word in ['code', 'technical', 'precise', 'exact', 'calculate']):
-        sdk_params["top_p"] = 0.9
+        top_p_value = 0.9
         temperature_value = 0.3  # More precise
     elif any(word in query_lower for word in ['analyze', 'explain', 'summarize', 'review']):
-        sdk_params["top_p"] = 0.92
+        top_p_value = 0.92
         temperature_value = 0.5  # Balanced
     else:
-        sdk_params["top_p"] = 0.95
+        top_p_value = 0.95
         temperature_value = 0.7  # Default balanced creativity
+
+    # Models that don't support top_p parameter
+    MODELS_WITHOUT_TOP_P = {
+        "openai/codex-mini",
+        # Add more models here if they don't support top_p
+    }
+
+    # Only include top_p for models that support it
+    if actual_model_name_for_sdk not in MODELS_WITHOUT_TOP_P:
+        sdk_params["top_p"] = top_p_value
 
     # Only include temperature for models that support it
     MODELS_WITH_TEMPERATURE = {
