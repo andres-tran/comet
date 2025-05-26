@@ -203,7 +203,7 @@ body {
 
 .search-form-perplexity {
     display: flex;
-    align-items: stretch; /* Make items same height */
+    align-items: flex-end; /* Changed from stretch to align items to bottom */
     border: 1px solid var(--border-color);
     border-radius: 24px; /* Rounded corners like Perplexity */
     background-color: var(--input-bg-color);
@@ -217,7 +217,7 @@ body {
     flex: 2; /* Make input take more space */
     min-width: 0;
     display: flex;
-    align-items: center;
+    align-items: flex-end; /* Align textarea to bottom */
     position: relative;
     padding-left: 15px;
 }
@@ -272,8 +272,9 @@ body {
 
 .controls-wrapper {
     display: flex;
-    align-items: center;
+    align-items: flex-end; /* Align controls to bottom */
     padding-left: 5px; /* Space between input and controls */
+    padding-bottom: 0; /* Remove any bottom padding */
 }
 
 #model-select {
@@ -282,6 +283,7 @@ body {
     font-size: 0.85rem;
     padding: 7px 8px;
     margin: 0 5px;
+    margin-bottom: 0; /* Ensure no bottom margin */
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
@@ -863,6 +865,7 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
     transition: all 0.2s ease;
     border: none;
     padding: 0;
+    margin-bottom: 0; /* Ensure no bottom margin */
 }
 
 /* === Responsive Adjustments === */
