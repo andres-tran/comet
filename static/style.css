@@ -271,7 +271,7 @@ body {
     max-height: 120px;
     box-sizing: border-box;
     font-family: inherit;
-    overflow-y: auto;
+    overflow: hidden;
     line-height: 1.4;
     white-space: pre-wrap;
     word-wrap: break-word;
@@ -280,6 +280,12 @@ body {
     scroll-behavior: auto;
     overflow-anchor: none;
     scroll-snap-type: none;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#search-input::-webkit-scrollbar {
+    display: none;
 }
 
 #search-input::placeholder {

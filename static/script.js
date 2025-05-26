@@ -577,11 +577,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                     }
                                     
                                     renderAndUpdateTables(resultsContainer, accumulatedResponse);
-                                    
-                                    // Smooth scroll to bottom if content is being added
-                                    if (resultsContainer.scrollHeight > window.innerHeight) {
-                                        resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                                    }
                                 }
 
                                 if (data.end_of_stream) {
@@ -694,6 +689,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (searchInput && searchInput.tagName === 'TEXTAREA') {
         let isResizing = false;
         let savedScrollPosition = { top: 0, left: 0 };
+        let scrollLocked = false;
         
         // Function to save current scroll position
         const saveScrollPosition = () => {
@@ -705,20 +701,66 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Function to restore scroll position
         const restoreScrollPosition = () => {
-            window.scrollTo(savedScrollPosition.left, savedScrollPosition.top);
+            if (scrollLocked) {
+                window.scrollTo(savedScrollPosition.left, savedScrollPosition.top);
+            }
         };
+        
+        // Global scroll prevention
+        const preventGlobalScroll = (event) => {
+            if (scrollLocked) {
+                event.preventDefault();
+                event.stopPropagation();
+                restoreScrollPosition();
+                return false;
+            }
+        };
+        
+        // Add global scroll listeners
+        window.addEventListener('scroll', preventGlobalScroll, { passive: false });
+        document.addEventListener('scroll', preventGlobalScroll, { passive: false });
+        
+        // Additional prevention for wheel events on the textarea
+        searchInput.addEventListener('wheel', function(event) {
+            // Allow scrolling within the textarea if it has overflow
+            if (this.scrollHeight > this.clientHeight) {
+                // Let the textarea handle its own scrolling
+                return;
+            }
+            // Prevent page scrolling when textarea doesn't need to scroll
+            event.preventDefault();
+            event.stopPropagation();
+        }, { passive: false });
+        
+        // Prevent touch scrolling on mobile
+        searchInput.addEventListener('touchstart', function(event) {
+            scrollLocked = true;
+            saveScrollPosition();
+        });
+        
+        searchInput.addEventListener('touchmove', function(event) {
+            if (scrollLocked) {
+                event.preventDefault();
+                restoreScrollPosition();
+            }
+        }, { passive: false });
+        
+        searchInput.addEventListener('touchend', function(event) {
+            setTimeout(() => {
+                scrollLocked = false;
+            }, 100);
+        });
         
         searchInput.addEventListener('input', function() {
             if (isResizing) return;
             isResizing = true;
             
-            // Save current scroll position
+            // Lock scrolling and save position
+            scrollLocked = true;
             saveScrollPosition();
             
             // Temporarily disable scroll restoration and smooth scrolling
             const originalScrollBehavior = document.documentElement.style.scrollBehavior;
-            const originalOverflow = document.body.style.overflow;
-            
             document.documentElement.style.scrollBehavior = 'auto';
             
             // Resize the textarea
@@ -731,20 +773,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 restoreScrollPosition();
                 requestAnimationFrame(() => {
                     restoreScrollPosition();
+                    // Unlock scrolling after a delay
+                    setTimeout(() => {
+                        scrollLocked = false;
+                        isResizing = false;
+                    }, 100);
                 });
             });
             
             // Restore original styles
             document.documentElement.style.scrollBehavior = originalScrollBehavior;
-            
-            // Reset flag after a brief delay
-            setTimeout(() => {
-                isResizing = false;
-            }, 50);
         });
         
         // Prevent scrolling on focus and other events
         const preventScroll = function(event) {
+            scrollLocked = true;
             saveScrollPosition();
             
             // Use multiple restoration attempts for better reliability
@@ -752,6 +795,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 restoreScrollPosition();
                 requestAnimationFrame(() => {
                     restoreScrollPosition();
+                    setTimeout(() => {
+                        scrollLocked = false;
+                    }, 50);
                 });
             });
         };
@@ -768,21 +814,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // For other keys, prevent any potential scrolling
+            scrollLocked = true;
             saveScrollPosition();
             
             setTimeout(() => {
                 restoreScrollPosition();
-            }, 0);
+                scrollLocked = false;
+            }, 50);
         });
         
         // Additional scroll prevention on paste events
         searchInput.addEventListener('paste', function(event) {
+            scrollLocked = true;
             saveScrollPosition();
             
             setTimeout(() => {
                 restoreScrollPosition();
                 // Trigger input event to resize after paste
                 this.dispatchEvent(new Event('input'));
+                setTimeout(() => {
+                    scrollLocked = false;
+                }, 50);
             }, 10);
         });
         
