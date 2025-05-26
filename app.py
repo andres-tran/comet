@@ -983,6 +983,39 @@ def search_web_tool(query):
         "total_found": len(result.get("results", []))
     }
 
+def create_note(content, filename=None):
+    """Create a simple text note file."""
+    import os
+    import tempfile
+    from datetime import datetime
+    
+    # Create a safe filename
+    if not filename:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"note_{timestamp}.txt"
+    
+    # Sanitize filename
+    filename = "".join(c for c in filename if c.isalnum() or c in "._-")
+    if not filename.endswith('.txt'):
+        filename += '.txt'
+    
+    try:
+        # Create in a temporary directory for safety
+        temp_dir = tempfile.gettempdir()
+        filepath = os.path.join(temp_dir, filename)
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        return {
+            "success": True,
+            "filename": filename,
+            "filepath": filepath,
+            "message": f"Note created successfully as {filename}"
+        }
+    except Exception as e:
+        return {"error": f"Failed to create note: {str(e)}"}
+
 # Tool definitions for OpenRouter function calling
 AGENTIC_TOOLS = [
     {
@@ -1030,6 +1063,27 @@ AGENTIC_TOOLS = [
                 "required": ["query"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_note",
+            "description": "Create a simple text note file. Useful for saving information, creating summaries, or organizing thoughts.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "type": "string",
+                        "description": "The content to write to the note file"
+                    },
+                    "filename": {
+                        "type": "string",
+                        "description": "Optional filename for the note (will be sanitized). If not provided, a timestamp-based name will be used."
+                    }
+                },
+                "required": ["content"]
+            }
+        }
     }
 ]
 
@@ -1037,13 +1091,14 @@ AGENTIC_TOOLS = [
 TOOL_MAPPING = {
     "get_current_time": get_current_time,
     "calculate_math": calculate_math,
-    "search_web_tool": search_web_tool
+    "search_web_tool": search_web_tool,
+    "create_note": create_note
 }
 
 # --- Agentic Loop Function ---
 def run_agentic_loop(query, model_name, max_iterations=5):
     """
-    Run a simple agentic loop that can use tools to answer queries.
+    Run a simple agentic loop following OpenRouter's best practices.
     Returns a generator for streaming responses.
     """
     if not openrouter_api_key:
@@ -1056,11 +1111,13 @@ def run_agentic_loop(query, model_name, max_iterations=5):
         "You can use the following capabilities:\n"
         "1. **get_current_time**: Get the current date and time\n"
         "2. **calculate_math**: Perform mathematical calculations\n"
-        "3. **search_web_tool**: Search the web for current information\n\n"
+        "3. **search_web_tool**: Search the web for current information\n"
+        "4. **create_note**: Create and save text notes or summaries\n\n"
         "When a user asks a question:\n"
         "- If you need current time/date information, use get_current_time\n"
         "- If you need to perform calculations, use calculate_math\n"
         "- If you need recent or real-time information, use search_web_tool\n"
+        "- If you need to save information or create summaries, use create_note\n"
         "- You can use multiple tools in sequence if needed\n"
         "- Always provide a comprehensive final answer based on the tool results\n"
         "- Be conversational and helpful in your responses\n\n"
@@ -1082,69 +1139,80 @@ def run_agentic_loop(query, model_name, max_iterations=5):
             }
         )
 
+        def call_llm(msgs):
+            """Call LLM with tools - following OpenRouter documentation pattern"""
+            resp = openrouter_client_instance.chat.completions.create(
+                model=model_name,
+                tools=AGENTIC_TOOLS,
+                messages=msgs
+            )
+            msgs.append(resp.choices[0].message.dict())
+            return resp
+
+        def get_tool_response(response):
+            """Process tool calls - following OpenRouter documentation pattern"""
+            tool_call = response.choices[0].message.tool_calls[0]
+            tool_name = tool_call.function.name
+            tool_args = json.loads(tool_call.function.arguments)
+            
+            print(f"Executing tool: {tool_name} with args: {tool_args}")
+            
+            # Look up the correct tool locally, and call it with the provided arguments
+            # Other tools can be added without changing the agentic loop
+            if tool_name in TOOL_MAPPING:
+                try:
+                    tool_result = TOOL_MAPPING[tool_name](**tool_args)
+                    print(f"Tool result: {tool_result}")
+                except Exception as e:
+                    tool_result = {"error": f"Tool execution failed: {str(e)}"}
+            else:
+                tool_result = {"error": f"Unknown tool: {tool_name}"}
+            
+            return {
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "name": tool_name,
+                "content": json.dumps(tool_result),
+            }
+
+        # Main agentic loop - following OpenRouter documentation pattern
         iteration = 0
         while iteration < max_iterations:
             iteration += 1
             print(f"Agentic loop iteration {iteration}")
-
-            # Make API call with tools
-            response = openrouter_client_instance.chat.completions.create(
-                model=model_name,
-                messages=messages,
-                tools=AGENTIC_TOOLS,
-                stream=False  # Use non-streaming for tool calls
-            )
-
-            assistant_message = response.choices[0].message
-            messages.append(assistant_message.dict())
-
-            # Check if the model wants to use tools
-            if assistant_message.tool_calls:
-                print(f"Model requested {len(assistant_message.tool_calls)} tool calls")
-                
-                # Process each tool call
-                for tool_call in assistant_message.tool_calls:
-                    tool_name = tool_call.function.name
-                    tool_args = json.loads(tool_call.function.arguments)
-                    
-                    print(f"Executing tool: {tool_name} with args: {tool_args}")
-                    
-                    # Execute the tool
-                    if tool_name in TOOL_MAPPING:
-                        try:
-                            tool_result = TOOL_MAPPING[tool_name](**tool_args)
-                            print(f"Tool result: {tool_result}")
-                        except Exception as e:
-                            tool_result = {"error": f"Tool execution failed: {str(e)}"}
-                    else:
-                        tool_result = {"error": f"Unknown tool: {tool_name}"}
-                    
-                    # Add tool result to messages
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "name": tool_name,
-                        "content": json.dumps(tool_result)
-                    })
+            
+            resp = call_llm(messages)
+            
+            if resp.choices[0].message.tool_calls is not None:
+                # Process all tool calls in this response
+                tool_calls_used = []
+                for tool_call in resp.choices[0].message.tool_calls:
+                    tool_response = get_tool_response_single(resp, tool_call)
+                    messages.append(tool_response)
+                    tool_calls_used.append(tool_call.function.name)
                 
                 # Yield intermediate progress
-                yield f"data: {json.dumps({'reasoning': f'Used tools: {[tc.function.name for tc in assistant_message.tool_calls]}'})}\n\n"
-                
+                yield f"data: {json.dumps({'reasoning': f'Used tools: {tool_calls_used}'})}\n\n"
             else:
-                # No more tool calls, return final response
+                # No more tool calls, provide final response
                 print("No tool calls requested, providing final response")
+                final_content = resp.choices[0].message.content
                 
                 # Stream the final response
-                final_response = openrouter_client_instance.chat.completions.create(
-                    model=model_name,
-                    messages=messages,
-                    stream=True
-                )
-                
-                for chunk in final_response:
-                    delta = chunk.choices[0].delta
-                    if delta.content is not None:
-                        yield f"data: {json.dumps({'chunk': delta.content})}\n\n"
+                if final_content:
+                    # Split content into chunks for streaming effect
+                    words = final_content.split()
+                    current_chunk = ""
+                    
+                    for word in words:
+                        current_chunk += word + " "
+                        if len(current_chunk) > 50:  # Stream in reasonable chunks
+                            yield f"data: {json.dumps({'chunk': current_chunk})}\n\n"
+                            current_chunk = ""
+                    
+                    # Send remaining content
+                    if current_chunk:
+                        yield f"data: {json.dumps({'chunk': current_chunk})}\n\n"
                 
                 yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
                 return
@@ -1156,6 +1224,30 @@ def run_agentic_loop(query, model_name, max_iterations=5):
     except Exception as e:
         print(f"Error in agentic loop: {e}")
         yield f"data: {json.dumps({'error': f'Agentic loop error: {str(e)}'})}\n\n"
+
+def get_tool_response_single(response, tool_call):
+    """Process a single tool call - helper function"""
+    tool_name = tool_call.function.name
+    tool_args = json.loads(tool_call.function.arguments)
+    
+    print(f"Executing tool: {tool_name} with args: {tool_args}")
+    
+    # Look up the correct tool locally, and call it with the provided arguments
+    if tool_name in TOOL_MAPPING:
+        try:
+            tool_result = TOOL_MAPPING[tool_name](**tool_args)
+            print(f"Tool result: {tool_result}")
+        except Exception as e:
+            tool_result = {"error": f"Tool execution failed: {str(e)}"}
+    else:
+        tool_result = {"error": f"Unknown tool: {tool_name}"}
+    
+    return {
+        "role": "tool",
+        "tool_call_id": tool_call.id,
+        "name": tool_name,
+        "content": json.dumps(tool_result),
+    }
 
 # --- Main Execution --- 
 if __name__ == '__main__':
