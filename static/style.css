@@ -741,12 +741,31 @@ body {
     gap: 5px; /* Added space between buttons in this container */
 }
 
-#new-search-button {
-    /* Styles are now combined with #theme-toggle-button */
+#new-search-button:active {
+    transform: scale(0.95);
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
 }
 
-#new-search-button:hover {
-    /* Styles are now combined with #theme-toggle-button */
+#new-search-button.clearing {
+    animation: clearingPulse 0.6s ease-out;
+}
+
+@keyframes clearingPulse {
+    0% {
+        transform: scale(1);
+        background-color: var(--select-bg-color);
+    }
+    50% {
+        transform: scale(1.05);
+        background-color: var(--primary-color);
+        color: white;
+    }
+    100% {
+        transform: scale(1);
+        background-color: var(--select-bg-color);
+    }
 }
 
 .search-icon {

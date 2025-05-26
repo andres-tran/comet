@@ -111,20 +111,77 @@ document.addEventListener('DOMContentLoaded', () => {
     if (newSearchButton) {
         newSearchButton.addEventListener('click', (e) => {
             e.preventDefault();
+            
+            // Add visual feedback
+            newSearchButton.classList.add('clearing');
+            setTimeout(() => {
+                newSearchButton.classList.remove('clearing');
+            }, 600);
+            
+            // Clear input and reset its height
             input.value = '';
             if (input.tagName === 'TEXTAREA') {
                 input.style.height = '';
                 input.dispatchEvent(new Event('input'));
             }
-            // Keep results container hidden on new search, it will be shown on next query
-            resultsContainer.innerHTML = ''; // Clear content but keep it hidden
-            resultsContainer.style.display = 'none'; 
+            
+            // Clear results container
+            resultsContainer.innerHTML = '';
+            resultsContainer.style.display = 'none';
+            
+            // Clear and hide reasoning container (AI thinking process)
+            if (reasoningContainer) {
+                reasoningContainer.style.display = 'none';
+                reasoningContainer.classList.remove('fade-in');
+            }
+            if (reasoningContent) {
+                reasoningContent.innerHTML = '';
+                reasoningContent.classList.remove('collapsed');
+            }
+            if (toggleReasoningBtn) {
+                toggleReasoningBtn.classList.remove('collapsed');
+            }
+            
+            // Reset reasoning state
+            reasoningBuffer = "";
+            isReasoningCollapsed = false;
+            
+            // Clear error container
             errorContainer.style.display = 'none';
             errorContainer.textContent = '';
+            
+            // Clear download area
             downloadArea.style.display = 'none';
             downloadArea.innerHTML = '';
-            clearAttachedFile(); // Clear any attached file
+            
+            // Clear any existing chart
+            const chartContainer = document.getElementById('chart-container');
+            if (chartInstance) {
+                chartInstance.destroy();
+                chartInstance = null;
+            }
+            if (chartContainer) {
+                chartContainer.style.display = 'none';
+            }
+            
+            // Clear attached file
+            clearAttachedFile();
+            
+            // Clear buffers
+            markdownBuffer = "";
+            
+            // Hide thinking indicator
+            if (thinkingIndicator) {
+                thinkingIndicator.style.display = 'none';
+            }
+            
+            // Update copy button visibility
+            updateCopyButtonVisibility();
+            
+            // Focus on input
             input.focus();
+            
+            console.log('New search initiated - all previous content cleared');
         });
     }
 
