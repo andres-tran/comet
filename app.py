@@ -1691,3 +1691,57 @@ if __name__ == '__main__':
         
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), threaded=True) 
 
+@app.route('/debug')
+def debug_info():
+    """Debug endpoint to check function availability and environment."""
+    import sys
+    import os
+    
+    debug_data = {
+        "python_version": sys.version,
+        "python_path": sys.path[:3],  # First 3 entries
+        "current_working_directory": os.getcwd(),
+        "environment_variables": {
+            "OPENROUTER_API_KEY": "✅ Set" if openrouter_api_key else "❌ Missing",
+            "OPENAI_API_KEY": "✅ Set" if openai_api_key else "❌ Missing", 
+            "TAVILY_API_KEY": "✅ Set" if tavily_api_key else "❌ Missing"
+        },
+        "function_availability": {
+            "get_current_time": "✅ Available" if 'get_current_time' in globals() else "❌ Missing",
+            "calculate_math": "✅ Available" if 'calculate_math' in globals() else "❌ Missing",
+            "search_web_tool": "✅ Available" if 'search_web_tool' in globals() else "❌ Missing",
+            "create_note": "✅ Available" if 'create_note' in globals() else "❌ Missing",
+            "research_topic": "✅ Available" if 'research_topic' in globals() else "❌ Missing"
+        },
+        "tool_mapping_status": {
+            "TOOL_MAPPING_exists": "✅ Available" if 'TOOL_MAPPING' in globals() else "❌ Missing",
+            "TOOL_MAPPING_keys": list(TOOL_MAPPING.keys()) if 'TOOL_MAPPING' in globals() else []
+        },
+        "agentic_tools_status": {
+            "AGENTIC_TOOLS_exists": "✅ Available" if 'AGENTIC_TOOLS' in globals() else "❌ Missing",
+            "AGENTIC_TOOLS_count": len(AGENTIC_TOOLS) if 'AGENTIC_TOOLS' in globals() else 0
+        }
+    }
+    
+    return jsonify(debug_data)
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint for monitoring."""
+    try:
+        # Test that all critical functions are available
+        test_results = {
+            "status": "healthy",
+            "timestamp": get_current_time()["current_time"],
+            "api_keys_configured": bool(openrouter_api_key and openai_api_key and tavily_api_key),
+            "tools_available": len(TOOL_MAPPING),
+            "agentic_tools_configured": len(AGENTIC_TOOLS)
+        }
+        return jsonify(test_results)
+    except Exception as e:
+        return jsonify({
+            "status": "unhealthy", 
+            "error": str(e),
+            "timestamp": "unknown"
+        }), 500
+
