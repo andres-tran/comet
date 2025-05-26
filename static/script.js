@@ -1095,562 +1095,115 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clear existing content
         sourcesContainer.innerHTML = '';
 
-        // Create enhanced header with metadata
+        // Create simple header like reasoning container
         const header = document.createElement('div');
         header.className = 'sources-header';
-        
-        // Get search metadata if available
-        const metadata = searchResults.search_metadata || {};
-        const uniqueDomains = metadata.unique_domains || 'N/A';
-        const searchDepth = metadata.search_depth || 'advanced';
-        const daysFilter = metadata.days_filter || 'all time';
-        const totalSources = metadata.total_sources || searchResults.results.length;
-        
         header.innerHTML = `
-            <div class="sources-title-row">
-                <h4>
-                    <i class="fas fa-globe"></i> Web Sources
-                    <span class="sources-count">(${searchResults.results.length})</span>
-                    ${totalSources > searchResults.results.length ? 
-                        `<span class="sources-filtered" title="Filtered from ${totalSources} total results">filtered</span>` : 
-                        ''}
-                </h4>
-                <div class="sources-controls">
-                    <button class="sources-filter-btn" title="Filter sources">
-                        <i class="fas fa-filter"></i>
-                    </button>
-                    <button class="sources-sort-btn" title="Sort sources">
-                        <i class="fas fa-sort"></i>
-                    </button>
-                    <button class="sources-expand-btn" title="Expand all previews">
-                        <i class="fas fa-expand-alt"></i>
-                    </button>
-                    <button class="sources-stats-btn" title="Show search statistics">
-                        <i class="fas fa-chart-bar"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="sources-metadata">
-                <span class="metadata-item">
-                    <i class="fas fa-search"></i> ${searchDepth} search
-                </span>
-                <span class="metadata-item">
-                    <i class="fas fa-clock"></i> ${daysFilter === 'all time' ? 'all time' : `${daysFilter} days`}
-                </span>
-                <span class="metadata-item">
-                    <i class="fas fa-sitemap"></i> ${uniqueDomains} domains
-                </span>
-                ${totalSources > searchResults.results.length ? 
-                    `<span class="metadata-item quality-filtered">
-                        <i class="fas fa-filter"></i> ${searchResults.results.length}/${totalSources} quality filtered
-                    </span>` : 
-                    ''}
-            </div>
-            <div class="sources-note">Sources are embedded as clickable links in the AI response • Hover for preview</div>
+            <h4>
+                <i class="fas fa-globe"></i> Web Sources
+                <span class="sources-count">(${searchResults.results.length})</span>
+            </h4>
+            <button class="toggle-btn" id="toggle-sources-btn" title="Toggle sources">
+                <i class="fas fa-chevron-up"></i>
+            </button>
         `;
         sourcesContainer.appendChild(header);
+
+        // Create sources content container
+        const sourcesContent = document.createElement('div');
+        sourcesContent.className = 'sources-content';
+        sourcesContent.id = 'sources-content';
 
         // Add quick answer if available
         if (searchResults.answer && searchResults.answer.trim()) {
             const quickAnswer = document.createElement('div');
             quickAnswer.className = 'quick-answer';
             quickAnswer.innerHTML = `
-                <div class="quick-answer-header">
-                    <div class="quick-answer-label">
-                        <i class="fas fa-lightbulb"></i> Quick Answer
-                    </div>
-                    <button class="quick-answer-toggle" title="Toggle quick answer">
-                        <i class="fas fa-chevron-up"></i>
-                    </button>
+                <div class="quick-answer-label">
+                    <i class="fas fa-lightbulb"></i> Quick Answer
                 </div>
                 <div class="quick-answer-content">${searchResults.answer}</div>
             `;
-            sourcesContainer.appendChild(quickAnswer);
-            
-            // Add toggle functionality for quick answer
-            const toggleBtn = quickAnswer.querySelector('.quick-answer-toggle');
-            const content = quickAnswer.querySelector('.quick-answer-content');
-            
-            toggleBtn.addEventListener('click', () => {
-                const isCollapsed = content.classList.contains('collapsed');
-                if (isCollapsed) {
-                    content.classList.remove('collapsed');
-                    toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i>';
-                    toggleBtn.title = 'Collapse quick answer';
-                } else {
-                    content.classList.add('collapsed');
-                    toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
-                    toggleBtn.title = 'Expand quick answer';
-                }
-            });
+            sourcesContent.appendChild(quickAnswer);
         }
 
-        // Create sources list with enhanced features
+        // Create simple sources list
         const sourcesList = document.createElement('div');
         sourcesList.className = 'sources-list';
-        sourcesList.setAttribute('data-sort', 'default');
 
-        // Store original results for filtering/sorting
-        let currentResults = [...searchResults.results];
-        let isExpanded = false;
-
-        function renderSources(results) {
-            sourcesList.innerHTML = '';
+        searchResults.results.forEach((result, index) => {
+            const sourceItem = document.createElement('div');
+            sourceItem.className = 'source-item';
             
-            results.forEach((result, index) => {
-                const sourceItem = document.createElement('div');
-                sourceItem.className = 'source-item';
-                sourceItem.setAttribute('data-domain', result.domain || 'unknown');
-                
-                // Create source link with improved accessibility
-                const sourceLink = document.createElement('a');
-                sourceLink.href = result.url;
-                sourceLink.target = '_blank';
-                sourceLink.rel = 'noopener noreferrer';
-                sourceLink.className = 'source-link';
-                sourceLink.setAttribute('aria-label', `Source ${index + 1}: ${result.title}`);
-                
-                // Extract domain from URL with error handling
-                let domain = '';
-                try {
-                    const url = new URL(result.url);
-                    domain = url.hostname.replace('www.', '');
-                } catch (e) {
-                    domain = result.url.split('/')[0] || 'Unknown source';
-                }
-                
-                // Add quality indicator
-                const qualityScore = result.quality_score || 0;
-                const qualityClass = qualityScore > 200 ? 'high-quality' : qualityScore > 100 ? 'medium-quality' : 'standard-quality';
-                
-                sourceLink.innerHTML = `
-                    <span class="source-number ${qualityClass}" title="Source ${index + 1} - Quality: ${qualityClass.replace('-', ' ')}">${index + 1}</span>
-                    <span class="source-title" title="${result.title}">${result.title}</span>
-                    <span class="source-domain" title="${domain}">${domain}</span>
-                    <span class="source-actions">
-                        <button class="source-preview-btn" title="Toggle preview" aria-label="Toggle preview for ${result.title}">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </span>
-                `;
-                
-                // Create enhanced hover tooltip with error handling
-                const tooltip = document.createElement('div');
-                tooltip.className = 'source-tooltip';
-                tooltip.setAttribute('role', 'tooltip');
-                
-                // Sanitize content to prevent XSS
-                const sanitizedTitle = result.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                const sanitizedUrl = result.url.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                const sanitizedContent = result.content.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                
-                tooltip.innerHTML = `
-                    <div class="tooltip-header">
-                        <div class="tooltip-title">${sanitizedTitle}</div>
-                        <div class="tooltip-quality">Quality: ${qualityClass.replace('-', ' ')}</div>
-                    </div>
-                    <div class="tooltip-url">${sanitizedUrl}</div>
-                    <div class="tooltip-content">${sanitizedContent}</div>
-                    <div class="tooltip-actions">
-                        <button class="tooltip-copy-btn" title="Copy URL">
-                            <i class="fas fa-copy"></i> Copy URL
-                        </button>
-                        <button class="tooltip-share-btn" title="Share">
-                            <i class="fas fa-share"></i> Share
-                        </button>
-                    </div>
-                `;
-                
-                sourceItem.appendChild(sourceLink);
-                sourceItem.appendChild(tooltip);
-                
-                // Enhanced hover event listeners with better positioning
-                let hoverTimeout;
-                
-                sourceLink.addEventListener('mouseenter', (e) => {
-                    clearTimeout(hoverTimeout);
-                    hoverTimeout = setTimeout(() => {
-                        tooltip.classList.add('visible');
-                        
-                        // Improved tooltip positioning
-                        const rect = sourceLink.getBoundingClientRect();
-                        const tooltipRect = tooltip.getBoundingClientRect();
-                        const viewportHeight = window.innerHeight;
-                        const viewportWidth = window.innerWidth;
-                        
-                        // Reset positioning classes
-                        tooltip.classList.remove('below', 'above', 'left', 'right');
-                        
-                        // Vertical positioning
-                        if (rect.top - tooltipRect.height - 10 < 0) {
-                            tooltip.style.top = `${sourceLink.offsetHeight + 10}px`;
-                            tooltip.classList.add('below');
-                        } else {
-                            tooltip.style.top = `-${tooltipRect.height + 10}px`;
-                            tooltip.classList.add('above');
-                        }
-                        
-                        // Horizontal positioning to prevent overflow
-                        const leftOffset = rect.left;
-                        const rightOffset = viewportWidth - rect.right;
-                        
-                        if (leftOffset < tooltipRect.width / 2) {
-                            tooltip.style.left = '0';
-                            tooltip.classList.add('left');
-                        } else if (rightOffset < tooltipRect.width / 2) {
-                            tooltip.style.right = '0';
-                            tooltip.style.left = 'auto';
-                            tooltip.classList.add('right');
-                        }
-                    }, 150);
-                });
-                
-                sourceLink.addEventListener('mouseleave', () => {
-                    clearTimeout(hoverTimeout);
-                    hoverTimeout = setTimeout(() => {
-                        tooltip.classList.remove('visible');
-                    }, 100);
-                });
-                
-                // Allow hovering over tooltip itself
-                tooltip.addEventListener('mouseenter', () => {
-                    clearTimeout(hoverTimeout);
-                });
-                
-                tooltip.addEventListener('mouseleave', () => {
-                    tooltip.classList.remove('visible');
-                });
-                
-                // Add keyboard navigation support
-                sourceLink.addEventListener('focus', () => {
-                    tooltip.classList.add('visible');
-                });
-                
-                sourceLink.addEventListener('blur', () => {
-                    tooltip.classList.remove('visible');
-                });
-                
-                // Add tooltip action handlers
-                const copyBtn = tooltip.querySelector('.tooltip-copy-btn');
-                const shareBtn = tooltip.querySelector('.tooltip-share-btn');
-                
-                copyBtn.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    try {
-                        await navigator.clipboard.writeText(result.url);
-                        copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                        setTimeout(() => {
-                            copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy URL';
-                        }, 2000);
-                    } catch (err) {
-                        console.error('Failed to copy URL:', err);
-                    }
-                });
-                
-                shareBtn.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (navigator.share) {
-                        try {
-                            await navigator.share({
-                                title: result.title,
-                                url: result.url
-                            });
-                        } catch (err) {
-                            console.log('Share cancelled or failed:', err);
-                        }
-                    } else {
-                        // Fallback: copy to clipboard
-                        try {
-                            await navigator.clipboard.writeText(`${result.title}\n${result.url}`);
-                            shareBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                            setTimeout(() => {
-                                shareBtn.innerHTML = '<i class="fas fa-share"></i> Share';
-                            }, 2000);
-                        } catch (err) {
-                            console.error('Failed to share:', err);
-                        }
-                    }
-                });
-                
-                // Add preview toggle functionality
-                const previewBtn = sourceLink.querySelector('.source-preview-btn');
-                previewBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const isVisible = tooltip.classList.contains('visible');
-                    if (isVisible) {
-                        tooltip.classList.remove('visible');
-                        previewBtn.innerHTML = '<i class="fas fa-eye"></i>';
-                        previewBtn.title = 'Show preview';
-                    } else {
-                        tooltip.classList.add('visible');
-                        previewBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
-                        previewBtn.title = 'Hide preview';
-                    }
-                });
-                
-                sourcesList.appendChild(sourceItem);
-            });
-        }
-
-        // Initial render
-        renderSources(currentResults);
-        sourcesContainer.appendChild(sourcesList);
-
-        // Add control event listeners
-        const filterBtn = header.querySelector('.sources-filter-btn');
-        const sortBtn = header.querySelector('.sources-sort-btn');
-        const expandBtn = header.querySelector('.sources-expand-btn');
-        const statsBtn = header.querySelector('.sources-stats-btn');
-
-        // Filter functionality
-        filterBtn.addEventListener('click', () => {
-            const domains = [...new Set(searchResults.results.map(r => r.domain || 'unknown'))];
+            // Create source link
+            const sourceLink = document.createElement('a');
+            sourceLink.href = result.url;
+            sourceLink.target = '_blank';
+            sourceLink.rel = 'noopener noreferrer';
+            sourceLink.className = 'source-link';
+            sourceLink.setAttribute('aria-label', `Source ${index + 1}: ${result.title}`);
             
-            // Create filter dropdown
-            const existingDropdown = document.querySelector('.sources-filter-dropdown');
-            if (existingDropdown) {
-                existingDropdown.remove();
-                return;
+            // Extract domain from URL
+            let domain = '';
+            try {
+                const url = new URL(result.url);
+                domain = url.hostname.replace('www.', '');
+            } catch (e) {
+                domain = result.url.split('/')[0] || 'Unknown source';
             }
             
-            const dropdown = document.createElement('div');
-            dropdown.className = 'sources-filter-dropdown';
-            dropdown.innerHTML = `
-                <div class="filter-header">Filter by Domain</div>
-                <div class="filter-option" data-domain="all">
-                    <input type="checkbox" id="filter-all" checked>
-                    <label for="filter-all">All Domains (${searchResults.results.length})</label>
-                </div>
-                ${domains.map(domain => {
-                    const count = searchResults.results.filter(r => (r.domain || 'unknown') === domain).length;
-                    return `
-                        <div class="filter-option" data-domain="${domain}">
-                            <input type="checkbox" id="filter-${domain}" checked>
-                            <label for="filter-${domain}">${domain} (${count})</label>
-                        </div>
-                    `;
-                }).join('')}
+            sourceLink.innerHTML = `
+                <span class="source-number">${index + 1}</span>
+                <span class="source-title">${result.title}</span>
+                <span class="source-domain">${domain}</span>
             `;
             
-            filterBtn.appendChild(dropdown);
-            
-            // Handle filter changes
-            dropdown.addEventListener('change', (e) => {
-                if (e.target.id === 'filter-all') {
-                    const isChecked = e.target.checked;
-                    dropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                        cb.checked = isChecked;
-                    });
-                    currentResults = isChecked ? [...searchResults.results] : [];
-                } else {
-                    const checkedDomains = Array.from(dropdown.querySelectorAll('input[type="checkbox"]:checked'))
-                        .map(cb => cb.id.replace('filter-', ''))
-                        .filter(id => id !== 'all');
-                    
-                    if (checkedDomains.length === 0) {
-                        currentResults = [];
-                    } else {
-                        currentResults = searchResults.results.filter(r => 
-                            checkedDomains.includes(r.domain || 'unknown')
-                        );
-                    }
-                    
-                    // Update "All" checkbox
-                    const allCheckbox = dropdown.querySelector('#filter-all');
-                    allCheckbox.checked = checkedDomains.length === domains.length;
-                }
-                
-                renderSources(currentResults);
-            });
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function closeDropdown(e) {
-                if (!filterBtn.contains(e.target)) {
-                    dropdown.remove();
-                    document.removeEventListener('click', closeDropdown);
-                }
-            });
+            sourceItem.appendChild(sourceLink);
+            sourcesList.appendChild(sourceItem);
         });
 
-        // Sort functionality
-        sortBtn.addEventListener('click', () => {
-            const currentSort = sourcesList.getAttribute('data-sort');
-            let newSort, sortedResults;
-            
-            switch (currentSort) {
-                case 'default':
-                    newSort = 'quality';
-                    sortedResults = [...currentResults].sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0));
-                    sortBtn.innerHTML = '<i class="fas fa-sort-amount-down"></i>';
-                    sortBtn.title = 'Sorted by quality (high to low)';
-                    break;
-                case 'quality':
-                    newSort = 'domain';
-                    sortedResults = [...currentResults].sort((a, b) => (a.domain || 'unknown').localeCompare(b.domain || 'unknown'));
-                    sortBtn.innerHTML = '<i class="fas fa-sort-alpha-down"></i>';
-                    sortBtn.title = 'Sorted by domain (A-Z)';
-                    break;
-                case 'domain':
-                    newSort = 'title';
-                    sortedResults = [...currentResults].sort((a, b) => a.title.localeCompare(b.title));
-                    sortBtn.innerHTML = '<i class="fas fa-sort-alpha-down"></i>';
-                    sortBtn.title = 'Sorted by title (A-Z)';
-                    break;
-                default:
-                    newSort = 'default';
-                    sortedResults = [...searchResults.results].filter(r => 
-                        currentResults.some(cr => cr.url === r.url)
-                    );
-                    sortBtn.innerHTML = '<i class="fas fa-sort"></i>';
-                    sortBtn.title = 'Default order';
-            }
-            
-            sourcesList.setAttribute('data-sort', newSort);
-            currentResults = sortedResults;
-            renderSources(currentResults);
-        });
+        sourcesContent.appendChild(sourcesList);
+        sourcesContainer.appendChild(sourcesContent);
 
-        // Expand all functionality
-        expandBtn.addEventListener('click', () => {
-            isExpanded = !isExpanded;
-            const tooltips = sourcesList.querySelectorAll('.source-tooltip');
+        // Add toggle functionality like reasoning container
+        const toggleBtn = header.querySelector('#toggle-sources-btn');
+        let isSourcesCollapsed = false;
+        
+        function toggleSources() {
+            isSourcesCollapsed = !isSourcesCollapsed;
             
-            if (isExpanded) {
-                tooltips.forEach(tooltip => tooltip.classList.add('visible'));
-                expandBtn.innerHTML = '<i class="fas fa-compress-alt"></i>';
-                expandBtn.title = 'Collapse all previews';
+            if (isSourcesCollapsed) {
+                sourcesContent.classList.add('collapsed');
+                toggleBtn.classList.add('collapsed');
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                toggleBtn.title = 'Expand sources';
             } else {
-                tooltips.forEach(tooltip => tooltip.classList.remove('visible'));
-                expandBtn.innerHTML = '<i class="fas fa-expand-alt"></i>';
-                expandBtn.title = 'Expand all previews';
+                sourcesContent.classList.remove('collapsed');
+                toggleBtn.classList.remove('collapsed');
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i>';
+                toggleBtn.title = 'Collapse sources';
             }
+        }
+        
+        // Add click event to toggle button and header
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleSources();
         });
         
-        // Add fade-in animation with error handling
+        header.addEventListener('click', () => {
+            toggleSources();
+        });
+        
+        // Add fade-in animation
         try {
             sourcesContainer.classList.add('fade-in');
         } catch (e) {
             console.warn('Animation not supported:', e);
         }
         
-        // Log successful source display for debugging
-        console.log(`Displayed ${searchResults.results.length} web search sources with enhanced features`);
-
-        // Statistics functionality
-        if (statsBtn) {
-            statsBtn.addEventListener('click', () => {
-                // Create statistics modal/dropdown
-                const existingStats = document.querySelector('.sources-stats-modal');
-                if (existingStats) {
-                    existingStats.remove();
-                    return;
-                }
-                
-                // Calculate statistics
-                const qualityDistribution = {
-                    high: searchResults.results.filter(r => (r.quality_score || 0) > 200).length,
-                    medium: searchResults.results.filter(r => (r.quality_score || 0) > 100 && (r.quality_score || 0) <= 200).length,
-                    standard: searchResults.results.filter(r => (r.quality_score || 0) <= 100).length
-                };
-                
-                const domainList = [...new Set(searchResults.results.map(r => r.domain || 'unknown'))];
-                const avgQuality = searchResults.results.reduce((sum, r) => sum + (r.quality_score || 0), 0) / searchResults.results.length;
-                
-                const statsModal = document.createElement('div');
-                statsModal.className = 'sources-stats-modal';
-                statsModal.innerHTML = `
-                    <div class="stats-header">
-                        <h5><i class="fas fa-chart-bar"></i> Search Statistics</h5>
-                        <button class="stats-close-btn" title="Close statistics">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="stats-content">
-                        <div class="stats-section">
-                            <h6>Quality Distribution</h6>
-                            <div class="quality-bars">
-                                <div class="quality-bar">
-                                    <span class="quality-label high">High Quality</span>
-                                    <div class="quality-progress">
-                                        <div class="quality-fill high" style="width: ${(qualityDistribution.high / searchResults.results.length) * 100}%"></div>
-                                    </div>
-                                    <span class="quality-count">${qualityDistribution.high}</span>
-                                </div>
-                                <div class="quality-bar">
-                                    <span class="quality-label medium">Medium Quality</span>
-                                    <div class="quality-progress">
-                                        <div class="quality-fill medium" style="width: ${(qualityDistribution.medium / searchResults.results.length) * 100}%"></div>
-                                    </div>
-                                    <span class="quality-count">${qualityDistribution.medium}</span>
-                                </div>
-                                <div class="quality-bar">
-                                    <span class="quality-label standard">Standard Quality</span>
-                                    <div class="quality-progress">
-                                        <div class="quality-fill standard" style="width: ${(qualityDistribution.standard / searchResults.results.length) * 100}%"></div>
-                                    </div>
-                                    <span class="quality-count">${qualityDistribution.standard}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="stats-section">
-                            <h6>Search Metrics</h6>
-                            <div class="stats-grid">
-                                <div class="stat-item">
-                                    <span class="stat-label">Average Quality Score</span>
-                                    <span class="stat-value">${Math.round(avgQuality)}</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-label">Unique Domains</span>
-                                    <span class="stat-value">${domainList.length}</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-label">Search Strategy</span>
-                                    <span class="stat-value">${searchDepth}</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-label">Time Filter</span>
-                                    <span class="stat-value">${daysFilter === 'all time' ? 'All time' : `${daysFilter} days`}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="stats-section">
-                            <h6>Top Domains</h6>
-                            <div class="domain-list">
-                                ${domainList.slice(0, 5).map(domain => {
-                                    const count = searchResults.results.filter(r => (r.domain || 'unknown') === domain).length;
-                                    return `
-                                        <div class="domain-item">
-                                            <span class="domain-name">${domain}</span>
-                                            <span class="domain-count">${count} source${count > 1 ? 's' : ''}</span>
-                                        </div>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                sourcesContainer.appendChild(statsModal);
-                
-                // Add close functionality
-                const closeBtn = statsModal.querySelector('.stats-close-btn');
-                closeBtn.addEventListener('click', () => {
-                    statsModal.remove();
-                });
-                
-                // Close when clicking outside
-                document.addEventListener('click', function closeStats(e) {
-                    if (!statsBtn.contains(e.target) && !statsModal.contains(e.target)) {
-                        statsModal.remove();
-                        document.removeEventListener('click', closeStats);
-                    }
-                });
-            });
-        }
+        // Log successful source display
+        console.log(`Displayed ${searchResults.results.length} web search sources with simple collapsible interface`);
     }
 
     // Function to show web search progress
