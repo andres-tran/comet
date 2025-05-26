@@ -1089,6 +1089,85 @@ def create_note(content, filename=None):
     except Exception as e:
         return {"error": f"Failed to create note: {str(e)}"}
 
+def research_topic(topic, research_depth="comprehensive"):
+    """
+    Perform comprehensive research on a topic using multiple search strategies.
+    
+    Args:
+        topic: The topic to research
+        research_depth: "quick", "standard", or "comprehensive"
+    """
+    print(f"Starting comprehensive research on: {topic} (depth: {research_depth})")
+    
+    research_results = {
+        "topic": topic,
+        "research_depth": research_depth,
+        "searches_performed": [],
+        "all_sources": [],
+        "key_findings": [],
+        "summary": ""
+    }
+    
+    try:
+        # Step 1: General overview search
+        overview_query = f"{topic} overview explanation"
+        overview_result = search_web_tool(overview_query, max_results=5, search_type="general")
+        
+        if overview_result.get("success"):
+            research_results["searches_performed"].append({
+                "type": "overview",
+                "query": overview_query,
+                "results_count": overview_result.get("returned_count", 0)
+            })
+            research_results["all_sources"].extend(overview_result.get("sources", []))
+            if overview_result.get("quick_answer"):
+                research_results["key_findings"].append(f"Overview: {overview_result['quick_answer']}")
+        
+        # Step 2: Recent news/updates if comprehensive
+        if research_depth in ["standard", "comprehensive"]:
+            news_query = f"{topic} latest news updates 2024"
+            news_result = search_web_tool(news_query, max_results=4, search_type="news")
+            
+            if news_result.get("success"):
+                research_results["searches_performed"].append({
+                    "type": "news",
+                    "query": news_query,
+                    "results_count": news_result.get("returned_count", 0)
+                })
+                research_results["all_sources"].extend(news_result.get("sources", []))
+                if news_result.get("quick_answer"):
+                    research_results["key_findings"].append(f"Recent Updates: {news_result['quick_answer']}")
+        
+        # Step 3: Deep analysis if comprehensive
+        if research_depth == "comprehensive":
+            analysis_query = f"{topic} detailed analysis research study"
+            analysis_result = search_web_tool(analysis_query, max_results=6, search_type="deep")
+            
+            if analysis_result.get("success"):
+                research_results["searches_performed"].append({
+                    "type": "analysis",
+                    "query": analysis_query,
+                    "results_count": analysis_result.get("returned_count", 0)
+                })
+                research_results["all_sources"].extend(analysis_result.get("sources", []))
+                if analysis_result.get("quick_answer"):
+                    research_results["key_findings"].append(f"Detailed Analysis: {analysis_result['quick_answer']}")
+        
+        # Generate summary
+        total_sources = len(research_results["all_sources"])
+        high_quality_sources = len([s for s in research_results["all_sources"] if s.get("quality") == "HIGH"])
+        
+        research_results["summary"] = f"Completed {research_depth} research on '{topic}' using {len(research_results['searches_performed'])} search strategies. Found {total_sources} total sources ({high_quality_sources} high-quality). Key areas covered: {', '.join([s['type'] for s in research_results['searches_performed']])}"
+        
+        return research_results
+        
+    except Exception as e:
+        return {
+            "error": f"Research failed: {str(e)}",
+            "topic": topic,
+            "partial_results": research_results
+        }
+
 # Tool definitions for OpenRouter function calling
 AGENTIC_TOOLS = [
     {
@@ -1383,85 +1462,6 @@ def get_tool_response_single(response, tool_call):
         "name": tool_name,
         "content": json.dumps(tool_result),
     }
-
-def research_topic(topic, research_depth="comprehensive"):
-    """
-    Perform comprehensive research on a topic using multiple search strategies.
-    
-    Args:
-        topic: The topic to research
-        research_depth: "quick", "standard", or "comprehensive"
-    """
-    print(f"Starting comprehensive research on: {topic} (depth: {research_depth})")
-    
-    research_results = {
-        "topic": topic,
-        "research_depth": research_depth,
-        "searches_performed": [],
-        "all_sources": [],
-        "key_findings": [],
-        "summary": ""
-    }
-    
-    try:
-        # Step 1: General overview search
-        overview_query = f"{topic} overview explanation"
-        overview_result = search_web_tool(overview_query, max_results=5, search_type="general")
-        
-        if overview_result.get("success"):
-            research_results["searches_performed"].append({
-                "type": "overview",
-                "query": overview_query,
-                "results_count": overview_result.get("returned_count", 0)
-            })
-            research_results["all_sources"].extend(overview_result.get("sources", []))
-            if overview_result.get("quick_answer"):
-                research_results["key_findings"].append(f"Overview: {overview_result['quick_answer']}")
-        
-        # Step 2: Recent news/updates if comprehensive
-        if research_depth in ["standard", "comprehensive"]:
-            news_query = f"{topic} latest news updates 2024"
-            news_result = search_web_tool(news_query, max_results=4, search_type="news")
-            
-            if news_result.get("success"):
-                research_results["searches_performed"].append({
-                    "type": "news",
-                    "query": news_query,
-                    "results_count": news_result.get("returned_count", 0)
-                })
-                research_results["all_sources"].extend(news_result.get("sources", []))
-                if news_result.get("quick_answer"):
-                    research_results["key_findings"].append(f"Recent Updates: {news_result['quick_answer']}")
-        
-        # Step 3: Deep analysis if comprehensive
-        if research_depth == "comprehensive":
-            analysis_query = f"{topic} detailed analysis research study"
-            analysis_result = search_web_tool(analysis_query, max_results=6, search_type="deep")
-            
-            if analysis_result.get("success"):
-                research_results["searches_performed"].append({
-                    "type": "analysis",
-                    "query": analysis_query,
-                    "results_count": analysis_result.get("returned_count", 0)
-                })
-                research_results["all_sources"].extend(analysis_result.get("sources", []))
-                if analysis_result.get("quick_answer"):
-                    research_results["key_findings"].append(f"Detailed Analysis: {analysis_result['quick_answer']}")
-        
-        # Generate summary
-        total_sources = len(research_results["all_sources"])
-        high_quality_sources = len([s for s in research_results["all_sources"] if s.get("quality") == "HIGH"])
-        
-        research_results["summary"] = f"Completed {research_depth} research on '{topic}' using {len(research_results['searches_performed'])} search strategies. Found {total_sources} total sources ({high_quality_sources} high-quality). Key areas covered: {', '.join([s['type'] for s in research_results['searches_performed']])}"
-        
-        return research_results
-        
-    except Exception as e:
-        return {
-            "error": f"Research failed: {str(e)}",
-            "topic": topic,
-            "partial_results": research_results
-        }
 
 # --- Main Execution --- 
 if __name__ == '__main__':
