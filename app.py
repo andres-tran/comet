@@ -7,6 +7,10 @@ from flask import Flask, render_template, request, jsonify, Response
 from dotenv import load_dotenv
 import traceback
 import io # Added for image editing
+import asyncio
+from typing import Dict, List, Any, AsyncGenerator, Optional
+from dataclasses import dataclass
+from enum import Enum
 
 # Load environment variables
 load_dotenv()
@@ -771,11 +775,104 @@ def search():
             print(f"Routing to OpenAI Image Generation. Query: '{query}'")
             return generate_image(query)
     elif selected_model == "agentic-mode":
-        print(f"Routing to Agentic Mode. Query: '{query}'")
-        # Use a capable model for agentic workflows
-        agentic_model = "google/gemini-2.5-pro-preview"  # Default agentic model
-        generator = run_agentic_loop(query, agentic_model)
-        return Response(generator, mimetype='text/event-stream')
+        print(f"Routing to Enhanced Agentic Mode with SDK-style streaming. Query: '{query}'")
+        
+        # Create agent with enhanced instructions
+        agent = CometAgent(
+            name="Comet Research Agent",
+            instructions=(
+                "You are Comet, an advanced AI agent built with OpenAI's agentic primitives. You intelligently accomplish tasks "
+                "by reasoning, planning, and using tools to interact with the world.\n\n"
+                
+                "🧠 **CORE INTELLIGENCE & REASONING:**\n"
+                "- Think step-by-step and plan your approach before taking action\n"
+                "- Break down complex tasks into manageable sub-tasks\n"
+                "- Reason about which tools are most appropriate for each task\n"
+                "- Learn from tool results and adapt your strategy accordingly\n\n"
+                
+                "🛠️ **AVAILABLE TOOLS & CAPABILITIES:**\n"
+                "🕒 **get_current_time**: Get current date and time for temporal context\n"
+                "🧮 **calculate_math**: Perform mathematical calculations and analysis\n"
+                "🔍 **search_web_tool**: Enhanced web search with intelligent type detection\n"
+                "📝 **create_note**: Create and save structured notes or summaries\n"
+                "🔬 **research_topic**: Comprehensive multi-step research workflow\n\n"
+                
+                "📋 **AGENTIC WORKFLOW & ORCHESTRATION:**\n"
+                "1. **ANALYZE** the user's request and identify the core objective\n"
+                "2. **PLAN** your approach - determine which tools and sequence to use\n"
+                "3. **EXECUTE** tools systematically, building on previous results\n"
+                "4. **MONITOR** tool outputs and adapt strategy if needed\n"
+                "5. **SYNTHESIZE** findings into a comprehensive, actionable response\n\n"
+                
+                "Remember: You are an intelligent agent capable of autonomous reasoning and tool use. "
+                "Think critically, plan strategically, and execute systematically to provide the best possible assistance."
+            ),
+            model="google/gemini-2.5-pro-preview"
+        )
+        
+        # Use async generator to convert to sync streaming
+        async def async_generator():
+            async for event in CometRunner.run_streamed(agent, query):
+                yield event
+        
+        def sync_generator():
+            """Convert async generator to sync for Flask streaming"""
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                async_gen = async_generator()
+                while True:
+                    try:
+                        event = loop.run_until_complete(async_gen.__anext__())
+                        
+                        # Convert StreamEvent to Flask streaming format
+                        if event.type == StreamEventType.RAW_RESPONSE_EVENT:
+                            if "error" in event.data:
+                                yield f"data: {json.dumps({'error': event.data['error']})}\n\n"
+                            else:
+                                yield f"data: {json.dumps({'chunk': str(event.data)})}\n\n"
+                        
+                        elif event.type == StreamEventType.RUN_ITEM_STREAM_EVENT:
+                            if event.data.get("item_type") in ["planning", "progress", "adaptation"]:
+                                yield f"data: {json.dumps({'reasoning': event.data['content']})}\n\n"
+                        
+                        elif event.type == StreamEventType.TOOL_CALL_EVENT:
+                            tool_name = event.data["tool_name"]
+                            yield f"data: {json.dumps({'reasoning': f'🛠️ Calling {tool_name}...'})}\n\n"
+                        
+                        elif event.type == StreamEventType.TOOL_OUTPUT_EVENT:
+                            tool_name = event.data["tool_name"]
+                            yield f"data: {json.dumps({'reasoning': f'✅ {tool_name} completed'})}\n\n"
+                        
+                        elif event.type == StreamEventType.MESSAGE_OUTPUT_EVENT:
+                            # Stream the final message content
+                            content = event.data["content"]
+                            sentences = content.split('. ')
+                            current_chunk = ""
+                            
+                            for sentence in sentences:
+                                current_chunk += sentence + ". "
+                                if len(current_chunk) > 80 or sentence.endswith('\n'):
+                                    yield f"data: {json.dumps({'chunk': current_chunk})}\n\n"
+                                    current_chunk = ""
+                            
+                            # Send remaining content
+                            if current_chunk:
+                                yield f"data: {json.dumps({'chunk': current_chunk})}\n\n"
+                            
+                            yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
+                            break
+                        
+                        elif event.type == StreamEventType.AGENT_UPDATED_STREAM_EVENT:
+                            agent_name = event.data["agent_name"]
+                            yield f"data: {json.dumps({'reasoning': f'🤖 Agent {agent_name} initialized'})}\n\n"
+                    
+                    except StopAsyncIteration:
+                        break
+            finally:
+                loop.close()
+        
+        return Response(sync_generator(), mimetype='text/event-stream')
     elif selected_model in OPENROUTER_MODELS:
         print_query = query[:100] + "..." if query and len(query) > 100 else query
         print_file_data = ""
