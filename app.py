@@ -639,9 +639,9 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
 
     # Adjust max_tokens based on model specifics
     if actual_model_name_for_sdk == "perplexity/sonar-reasoning-pro": # 128,000 total context
-        max_tokens_val = 128000 - 4096 # Reserve 4096 for prompt (Perplexity specific)
-    elif actual_model_name_for_sdk == "perplexity/sonar-deep-research": # 128,000 total context, can generate 128,000 tokens
-        max_tokens_val = 128000 - 1024 # Reserve 1024 tokens for prompt and overhead
+        max_tokens_val = 50000 # Conservative to avoid credit/token limit errors
+    elif actual_model_name_for_sdk == "perplexity/sonar-deep-research": # 128,000 total context
+        max_tokens_val = 50000 # Conservative allocation to ensure we don't exceed credit limits
     elif actual_model_name_for_sdk == "openai/gpt-4.1": # 1,047,576 token context window
         max_tokens_val = 1047576 - 4096  # Reserve 4096 tokens for prompt
     elif actual_model_name_for_sdk == "openai/gpt-4o-search-preview": # Stated 16,384 generation capacity
@@ -768,14 +768,46 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
             })
 
     try:
+        # Dynamic token adjustment based on input size
+        input_text_length = len(user_content_parts[0]['text'])
+        estimated_input_tokens = input_text_length // 4  # Rough estimate: 1 token ≈ 4 characters
+        
+        # For models with limited context, adjust max_tokens dynamically
+        context_limited_models = {
+            "perplexity/sonar-reasoning-pro": 128000,
+            "perplexity/sonar-deep-research": 128000,
+            "openai/gpt-4.5-preview": 128000,
+            "openai/gpt-4o-search-preview": 32000,  # Smaller context window
+        }
+        
+        if actual_model_name_for_sdk in context_limited_models:
+            model_context_limit = context_limited_models[actual_model_name_for_sdk]
+            # Conservative approach: ensure we don't exceed context window
+            available_tokens = model_context_limit - estimated_input_tokens - 2000  # 2000 token safety buffer
+            if available_tokens < max_tokens_val:
+                max_tokens_val = max(available_tokens, 1000)  # Ensure at least 1000 tokens for output
+                print(f"Adjusted max_tokens for {actual_model_name_for_sdk}: {max_tokens_val} (input ~{estimated_input_tokens} tokens, context limit: {model_context_limit})")
+                
+                # Update the SDK params with adjusted value
+                sdk_params["max_tokens"] = max_tokens_val
+        
+        # Additional credit-aware adjustment for expensive models
+        if actual_model_name_for_sdk in ["perplexity/sonar-deep-research", "perplexity/sonar-reasoning-pro"]:
+            # Cap at a reasonable limit to avoid credit issues
+            credit_safe_limit = min(max_tokens_val, 30000)  # Cap at 30k tokens for credit safety
+            if credit_safe_limit < max_tokens_val:
+                max_tokens_val = credit_safe_limit
+                sdk_params["max_tokens"] = max_tokens_val
+                print(f"Applied credit-safe limit for {actual_model_name_for_sdk}: {max_tokens_val} tokens")
+        
         print(f"Calling OpenRouter for {actual_model_name_for_sdk}. Reasoning: {reasoning_config_to_pass}. Extra Body: {extra_body_params}")
         
         # Debug: Log the enhanced query content being sent to AI
         if web_search_enabled and web_search_results:
             print(f"Enhanced query includes web search context with {len(web_search_results.get('results', []))} sources")
-            print(f"Enhanced query length: {len(user_content_parts[0]['text'])} characters")
+            print(f"Enhanced query length: {input_text_length} characters (~{estimated_input_tokens} tokens)")
         else:
-            print(f"No web search context - query length: {len(user_content_parts[0]['text'])} characters")
+            print(f"No web search context - query length: {input_text_length} characters (~{estimated_input_tokens} tokens)")
         
         stream = openrouter_client_instance.chat.completions.create(**sdk_params, extra_body=extra_body_params)
         buffer = ""
