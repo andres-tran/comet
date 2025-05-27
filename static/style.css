@@ -1637,37 +1637,7 @@ body.dark-mode .web-search-progress {
     border-radius: 3px;
 }
 
-/* Perplexity-specific citation styles */
-.perplexity-citation,
-.perplexity-source {
-    color: var(--primary-color);
-    font-weight: 600;
-    text-decoration: none;
-    border-bottom: 1px dotted var(--primary-color);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.perplexity-citation:hover,
-.perplexity-source:hover {
-    background-color: rgba(249, 115, 22, 0.15);
-    border-bottom-style: solid;
-    padding: 1px 3px;
-    border-radius: 3px;
-    transform: translateY(-1px);
-}
-
-.perplexity-citation {
-    /* Non-clickable citations (no URL) */
-    color: var(--text-muted-color);
-    border-color: var(--text-muted-color);
-}
-
-.perplexity-source {
-    /* Clickable citations (with URL) */
-    color: var(--primary-color);
-    border-color: var(--primary-color);
-}
+/* Perplexity-specific citation styles removed */
 
 .source-tooltip {
     position: absolute;
@@ -1852,26 +1822,4 @@ body.dark-mode .source-citation:hover {
     }
 }
 
-/* Non-clickable source styling for Perplexity sources */
-.source-link.non-clickable {
-    cursor: default;
-    opacity: 0.8;
-    background-color: var(--bg-color);
-}
-
-.source-link.non-clickable:hover {
-    background-color: var(--bg-color);
-    transform: none;
-    box-shadow: none;
-    border-color: var(--border-color);
-}
-
-.source-link.non-clickable .source-domain {
-    font-style: italic;
-    opacity: 0.7;
-}
-
-.source-link.non-clickable .source-number {
-    background: var(--text-muted-color);
-    opacity: 0.8;
-} 
+/* Non-clickable source styling removed */ 
