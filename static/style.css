@@ -1637,6 +1637,38 @@ body.dark-mode .web-search-progress {
     border-radius: 3px;
 }
 
+/* Perplexity-specific citation styles */
+.perplexity-citation,
+.perplexity-source {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+    border-bottom: 1px dotted var(--primary-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.perplexity-citation:hover,
+.perplexity-source:hover {
+    background-color: rgba(249, 115, 22, 0.15);
+    border-bottom-style: solid;
+    padding: 1px 3px;
+    border-radius: 3px;
+    transform: translateY(-1px);
+}
+
+.perplexity-citation {
+    /* Non-clickable citations (no URL) */
+    color: var(--text-muted-color);
+    border-color: var(--text-muted-color);
+}
+
+.perplexity-source {
+    /* Clickable citations (with URL) */
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
 .source-tooltip {
     position: absolute;
     background: var(--results-bg-color);
@@ -1693,6 +1725,17 @@ body.dark-mode .web-search-progress {
     font-weight: 600;
     margin-bottom: 4px;
     line-height: 1.3;
+}
+
+.tooltip-snippet {
+    color: var(--text-color);
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+    line-height: 1.4;
+    font-style: italic;
+    opacity: 0.9;
+    border-left: 2px solid var(--primary-color);
+    padding-left: 8px;
 }
 
 .tooltip-url {

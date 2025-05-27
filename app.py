@@ -408,6 +408,69 @@ def search_web_tavily(query, max_results=10):
         print(f"Tavily API error: {e}")
         return {"error": f"Web search error: {str(e)}"}
 
+# --- Citation Processing for Perplexity Models ---
+def process_perplexity_citations(content, sources):
+    """
+    Process Perplexity model responses to extract and format citations.
+    Converts numbered citations [1], [2], etc. to structured source data.
+    """
+    import re
+    
+    # Extract numbered citations from content
+    citation_pattern = r'\[(\d+)\]'
+    citations_found = re.findall(citation_pattern, content)
+    
+    if not citations_found:
+        return None
+    
+    processed_sources = []
+    
+    # If we have sources from metadata, use them
+    if sources and isinstance(sources, list):
+        for i, source in enumerate(sources, 1):
+            if str(i) in citations_found:
+                if isinstance(source, dict):
+                    processed_sources.append({
+                        'citation_number': i,
+                        'title': source.get('title', f'Source {i}'),
+                        'url': source.get('url', ''),
+                        'domain': extract_domain(source.get('url', '')),
+                        'snippet': source.get('snippet', source.get('content', ''))[:200] + '...' if source.get('snippet', source.get('content', '')) else ''
+                    })
+                elif isinstance(source, str):
+                    # Sometimes sources might just be URLs
+                    processed_sources.append({
+                        'citation_number': i,
+                        'title': f'Source {i}',
+                        'url': source,
+                        'domain': extract_domain(source),
+                        'snippet': ''
+                    })
+    else:
+        # If no metadata sources, create placeholder sources for found citations
+        for citation_num in set(citations_found):
+            processed_sources.append({
+                'citation_number': int(citation_num),
+                'title': f'Source {citation_num}',
+                'url': '',
+                'domain': 'perplexity.ai',
+                'snippet': 'Source information not available'
+            })
+    
+    return processed_sources
+
+def extract_domain(url):
+    """Extract domain from URL for display purposes."""
+    if not url:
+        return ''
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(url)
+        domain = parsed.netloc.replace('www.', '')
+        return domain
+    except:
+        return url
+
 # --- Streaming Generator for OpenRouter ---
 def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uploaded_file_data=None, file_type=None, web_search_enabled=False):
     """Generator for responses from OpenRouter with enhanced web search integration."""
@@ -814,6 +877,8 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         in_chart_config_block = False
         chart_config_str = ""
         content_received_from_openrouter = False # Flag to track content
+        perplexity_sources = []  # Store sources for Perplexity models
+        accumulated_content = ""  # Accumulate content for citation processing
 
         for chunk in stream:
             # Reduced debug output - only log errors and important events
@@ -836,6 +901,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
             if delta.content is not None:
                 content_received_from_openrouter = True # Mark that content was received
                 buffer += delta.content
+                accumulated_content += delta.content  # Accumulate for citation processing
                 start_marker = "[[CHARTJS_CONFIG_START]]"
                 end_marker = "[[CHARTJS_CONFIG_END]]"
 
@@ -869,6 +935,36 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
                     if "\n" in buffer or len(buffer) > 80:
                         yield f"data: {json.dumps({'chunk': buffer})}\n\n"
                         buffer = ""
+            
+            # Extract sources from Perplexity models - try multiple approaches
+            if hasattr(chunk.choices[0], 'message'):
+                message = chunk.choices[0].message
+                
+                # Check message metadata
+                if hasattr(message, 'metadata') and message.metadata:
+                    if 'sources' in message.metadata:
+                        perplexity_sources = message.metadata['sources']
+                    elif 'citations' in message.metadata:
+                        perplexity_sources = message.metadata['citations']
+                
+                # Check message content for source information
+                if hasattr(message, 'content') and message.content:
+                    # Try to extract sources from content if available
+                    pass
+            
+            # Check for sources in delta metadata
+            if hasattr(delta, 'metadata') and delta.metadata:
+                if 'sources' in delta.metadata:
+                    perplexity_sources = delta.metadata['sources']
+                elif 'citations' in delta.metadata:
+                    perplexity_sources = delta.metadata['citations']
+            
+            # Check for sources in chunk metadata
+            if hasattr(chunk, 'metadata') and chunk.metadata:
+                if 'sources' in chunk.metadata:
+                    perplexity_sources = chunk.metadata['sources']
+                elif 'citations' in chunk.metadata:
+                    perplexity_sources = chunk.metadata['citations']
 
         if buffer: 
             if in_chart_config_block: # Means block was not properly terminated
@@ -879,6 +975,12 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
 
         if not content_received_from_openrouter:
             print(f"Warning: OpenRouter stream for {actual_model_name_for_sdk} finished without yielding any content chunks.")
+
+        # Process citations for Perplexity models
+        if actual_model_name_for_sdk.startswith("perplexity/") and accumulated_content:
+            processed_sources = process_perplexity_citations(accumulated_content, perplexity_sources)
+            if processed_sources:
+                yield f"data: {json.dumps({'perplexity_sources': processed_sources})}\n\n"
 
         yield f"data: {json.dumps({'end_of_stream': True})}\n\n"
     except openai.APIError as e:
