@@ -8,12 +8,87 @@ from dotenv import load_dotenv
 import traceback
 import io # Added for image editing
 from typing import Dict, List, Any, Optional
+import uuid
+import threading
+import time
+from datetime import datetime, timedelta
+from collections import defaultdict
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 # Load environment variables
 load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
+
+# Background task storage
+BACKGROUND_TASKS = {}
+TASK_LOCK = threading.Lock()
+TASK_EXECUTOR = ThreadPoolExecutor(max_workers=5)
+TASK_CLEANUP_INTERVAL = 300  # Clean up old tasks every 5 minutes
+MAX_TASK_AGE = 3600  # Keep tasks for 1 hour
+
+# Task status enum
+class TaskStatus:
+    QUEUED = "queued"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+# Background task class
+class BackgroundTask:
+    def __init__(self, task_id, model, query, **kwargs):
+        self.id = task_id
+        self.model = model
+        self.query = query
+        self.status = TaskStatus.QUEUED
+        self.created_at = datetime.now()
+        self.started_at = None
+        self.completed_at = None
+        self.progress = 0
+        self.result = None
+        self.error = None
+        self.chunks = []
+        self.metadata = kwargs
+        self.cancel_requested = False
+        
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "model": self.model,
+            "query": self.query[:100] + "..." if len(self.query) > 100 else self.query,
+            "status": self.status,
+            "created_at": self.created_at.isoformat(),
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "progress": self.progress,
+            "duration": (self.completed_at - self.started_at).total_seconds() if self.completed_at and self.started_at else None,
+            "error": self.error,
+            "chunks_count": len(self.chunks),
+            "metadata": self.metadata
+        }
+
+# Background task cleanup
+def cleanup_old_tasks():
+    """Clean up old tasks periodically"""
+    while True:
+        time.sleep(TASK_CLEANUP_INTERVAL)
+        with TASK_LOCK:
+            current_time = datetime.now()
+            tasks_to_remove = []
+            for task_id, task in BACKGROUND_TASKS.items():
+                if (current_time - task.created_at).total_seconds() > MAX_TASK_AGE:
+                    tasks_to_remove.append(task_id)
+            
+            for task_id in tasks_to_remove:
+                del BACKGROUND_TASKS[task_id]
+                print(f"Cleaned up old task: {task_id}")
+
+# Start cleanup thread
+cleanup_thread = threading.Thread(target=cleanup_old_tasks, daemon=True)
+cleanup_thread.start()
 
 # Configure API keys
 openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
@@ -38,6 +113,98 @@ OPENROUTER_MODELS = {
 ALLOWED_MODELS = OPENROUTER_MODELS.copy()
 ALLOWED_MODELS.add("gpt-image-1")
 ALLOWED_MODELS.add("agentic-mode")  # Special mode for agentic workflows
+
+# --- Background Streaming for OpenRouter ---
+def stream_openrouter_background(task_id, query, model_name_with_suffix, reasoning_config=None, uploaded_file_data=None, file_type=None, web_search_enabled=False):
+    """
+    Background processing version of stream_openrouter.
+    This runs in a separate thread and updates the task object with progress.
+    """
+    task = BACKGROUND_TASKS.get(task_id)
+    if not task:
+        print(f"Background task {task_id} not found")
+        return
+    
+    try:
+        # Update task status
+        task.status = TaskStatus.IN_PROGRESS
+        task.started_at = datetime.now()
+        
+        # Create a generator to collect chunks
+        generator = stream_openrouter(
+            query=query,
+            model_name_with_suffix=model_name_with_suffix,
+            reasoning_config=reasoning_config,
+            uploaded_file_data=uploaded_file_data,
+            file_type=file_type,
+            web_search_enabled=web_search_enabled
+        )
+        
+        # Process the stream and collect chunks
+        chunk_count = 0
+        total_content = ""
+        
+        for chunk_data in generator:
+            if task.cancel_requested:
+                task.status = TaskStatus.CANCELLED
+                task.completed_at = datetime.now()
+                print(f"Task {task_id} cancelled")
+                return
+            
+            # Parse the SSE data
+            if chunk_data.startswith("data: "):
+                try:
+                    json_data = json.loads(chunk_data[6:].strip())
+                    
+                    # Store the chunk
+                    task.chunks.append(json_data)
+                    chunk_count += 1
+                    
+                    # Extract content for summary
+                    if 'chunk' in json_data:
+                        total_content += json_data['chunk']
+                    
+                    # Update progress (estimate based on typical response length)
+                    if chunk_count < 50:
+                        task.progress = min(chunk_count * 2, 90)
+                    else:
+                        task.progress = min(90 + (chunk_count - 50) // 10, 99)
+                    
+                    # Handle end of stream
+                    if json_data.get('end_of_stream'):
+                        task.progress = 100
+                        task.status = TaskStatus.COMPLETED
+                        task.completed_at = datetime.now()
+                        task.result = {
+                            "total_chunks": chunk_count,
+                            "content_length": len(total_content),
+                            "summary": total_content[:500] + "..." if len(total_content) > 500 else total_content
+                        }
+                        print(f"Task {task_id} completed successfully")
+                        return
+                    
+                    # Handle errors
+                    if 'error' in json_data:
+                        task.status = TaskStatus.FAILED
+                        task.error = json_data['error']
+                        task.completed_at = datetime.now()
+                        print(f"Task {task_id} failed: {json_data['error']}")
+                        return
+                        
+                except json.JSONDecodeError as e:
+                    print(f"Error parsing chunk for task {task_id}: {e}")
+                    continue
+        
+        # If we reach here, the stream ended without explicit completion
+        task.status = TaskStatus.COMPLETED
+        task.completed_at = datetime.now()
+        task.progress = 100
+        
+    except Exception as e:
+        print(f"Error in background task {task_id}: {e}")
+        task.status = TaskStatus.FAILED
+        task.error = str(e)
+        task.completed_at = datetime.now()
 
 # --- Error Handling ---
 def check_api_keys(model_name):
@@ -1785,6 +1952,163 @@ def run_agentic_loop(query, model_name, max_iterations=5):
             error_message += " (Response parsing issue - please try again)"
         
         yield f"data: {json.dumps({'error': error_message})}\n\n"
+
+@app.route('/search/background', methods=['POST'])
+def search_background():
+    """
+    Start a background search task for long-running models.
+    Returns a task ID that can be polled for status.
+    """
+    print("--- Background search request received ---")
+    query = request.json.get('query')
+    selected_model = request.json.get('model')
+    uploaded_file_data = request.json.get('uploaded_file_data')
+    file_type = request.json.get('file_type')
+    web_search_enabled = request.json.get('web_search_enabled', False)
+    
+    if not query:
+        return jsonify({'error': 'No query provided'}), 400
+    
+    if not selected_model or selected_model not in OPENROUTER_MODELS:
+        return jsonify({'error': f'Invalid model: {selected_model}'}), 400
+    
+    # Generate task ID
+    task_id = str(uuid.uuid4())
+    
+    # Create task object
+    task = BackgroundTask(
+        task_id=task_id,
+        model=selected_model,
+        query=query,
+        uploaded_file_data=uploaded_file_data,
+        file_type=file_type,
+        web_search_enabled=web_search_enabled
+    )
+    
+    # Store task
+    with TASK_LOCK:
+        BACKGROUND_TASKS[task_id] = task
+    
+    # Submit to executor
+    TASK_EXECUTOR.submit(
+        stream_openrouter_background,
+        task_id,
+        query,
+        selected_model,
+        None,  # reasoning_config
+        uploaded_file_data,
+        file_type,
+        web_search_enabled
+    )
+    
+    print(f"Started background task: {task_id} for model: {selected_model}")
+    
+    return jsonify({
+        'id': task_id,
+        'status': task.status,
+        'created_at': task.created_at.isoformat(),
+        'model': selected_model,
+        'query_preview': query[:100] + "..." if len(query) > 100 else query
+    })
+
+@app.route('/tasks/<task_id>', methods=['GET'])
+def get_task_status(task_id):
+    """Get the status and results of a background task."""
+    task = BACKGROUND_TASKS.get(task_id)
+    
+    if not task:
+        return jsonify({'error': 'Task not found'}), 404
+    
+    response = task.to_dict()
+    
+    # Include chunks if task is completed or failed
+    if task.status in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
+        response['chunks'] = task.chunks
+        response['result'] = task.result
+    
+    return jsonify(response)
+
+@app.route('/tasks/<task_id>/stream', methods=['GET'])
+def stream_task_results(task_id):
+    """
+    Stream the results of a background task as they become available.
+    This endpoint returns Server-Sent Events (SSE).
+    """
+    task = BACKGROUND_TASKS.get(task_id)
+    
+    if not task:
+        return jsonify({'error': 'Task not found'}), 404
+    
+    def generate():
+        last_chunk_index = 0
+        
+        while True:
+            # Check if task is cancelled
+            if task.cancel_requested:
+                yield f"data: {json.dumps({'status': 'cancelled'})}\n\n"
+                break
+            
+            # Send new chunks
+            current_chunks = task.chunks[last_chunk_index:]
+            for chunk in current_chunks:
+                yield f"data: {json.dumps(chunk)}\n\n"
+            last_chunk_index = len(task.chunks)
+            
+            # Send status update
+            yield f"data: {json.dumps({'status': task.status, 'progress': task.progress})}\n\n"
+            
+            # Check if task is complete
+            if task.status in [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED]:
+                yield f"data: {json.dumps({'end_of_stream': True, 'status': task.status})}\n\n"
+                break
+            
+            # Sleep briefly to avoid busy waiting
+            time.sleep(0.1)
+    
+    return Response(generate(), mimetype='text/event-stream')
+
+@app.route('/tasks/<task_id>', methods=['DELETE'])
+def cancel_task(task_id):
+    """Cancel a background task."""
+    task = BACKGROUND_TASKS.get(task_id)
+    
+    if not task:
+        return jsonify({'error': 'Task not found'}), 404
+    
+    if task.status in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
+        return jsonify({'error': 'Task already completed'}), 400
+    
+    task.cancel_requested = True
+    
+    return jsonify({
+        'id': task_id,
+        'status': 'cancel_requested',
+        'message': 'Task cancellation requested'
+    })
+
+@app.route('/tasks', methods=['GET'])
+def list_tasks():
+    """List all background tasks with optional filtering."""
+    status_filter = request.args.get('status')
+    limit = request.args.get('limit', 50, type=int)
+    
+    tasks = []
+    with TASK_LOCK:
+        for task in BACKGROUND_TASKS.values():
+            if status_filter and task.status != status_filter:
+                continue
+            tasks.append(task.to_dict())
+    
+    # Sort by created_at descending
+    tasks.sort(key=lambda x: x['created_at'], reverse=True)
+    
+    # Apply limit
+    tasks = tasks[:limit]
+    
+    return jsonify({
+        'tasks': tasks,
+        'total': len(tasks)
+    })
 
 @app.route('/debug')
 def debug_info():
