@@ -412,18 +412,37 @@ def search_web_tavily(query, max_results=10):
 def process_perplexity_citations(content, sources):
     """
     Process Perplexity model responses to extract and format citations.
-    Converts numbered citations [1], [2], etc. to structured source data.
+    Handles both numbered citations [1], [2] and markdown links [text](URL).
     """
     import re
     
-    # Extract numbered citations from content
+    processed_sources = []
+    
+    # First, extract markdown links that are already properly formatted
+    markdown_link_pattern = r'\[([^\]]+)\]\((https?://[^\)]+)\)'
+    markdown_links = re.findall(markdown_link_pattern, content)
+    
+    if markdown_links:
+        print(f"Found {len(markdown_links)} markdown links in Perplexity response")
+        for i, (text, url) in enumerate(markdown_links, 1):
+            processed_sources.append({
+                'citation_number': i,
+                'title': text,
+                'url': url,
+                'domain': extract_domain(url),
+                'snippet': f'Linked as: {text}',
+                'type': 'markdown_link'
+            })
+        return processed_sources
+    
+    # If no markdown links, look for numbered citations
     citation_pattern = r'\[(\d+)\]'
     citations_found = re.findall(citation_pattern, content)
     
     if not citations_found:
         return None
     
-    processed_sources = []
+    print(f"Found {len(citations_found)} numbered citations in Perplexity response")
     
     # If we have sources from metadata, use them
     if sources and isinstance(sources, list):
@@ -435,7 +454,8 @@ def process_perplexity_citations(content, sources):
                         'title': source.get('title', f'Source {i}'),
                         'url': source.get('url', ''),
                         'domain': extract_domain(source.get('url', '')),
-                        'snippet': source.get('snippet', source.get('content', ''))[:200] + '...' if source.get('snippet', source.get('content', '')) else ''
+                        'snippet': source.get('snippet', source.get('content', ''))[:200] + '...' if source.get('snippet', source.get('content', '')) else '',
+                        'type': 'numbered_citation'
                     })
                 elif isinstance(source, str):
                     # Sometimes sources might just be URLs
@@ -444,7 +464,8 @@ def process_perplexity_citations(content, sources):
                         'title': f'Source {i}',
                         'url': source,
                         'domain': extract_domain(source),
-                        'snippet': ''
+                        'snippet': '',
+                        'type': 'numbered_citation'
                     })
     else:
         # If no metadata sources, create placeholder sources for found citations
@@ -454,7 +475,8 @@ def process_perplexity_citations(content, sources):
                 'title': f'Source {citation_num}',
                 'url': '',
                 'domain': 'perplexity.ai',
-                'snippet': 'Source information not available'
+                'snippet': 'Source information not available',
+                'type': 'numbered_citation'
             })
     
     return processed_sources
@@ -518,6 +540,14 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         "- Provide detailed explanation with examples\n"
         "- Include relevant tips, best practices, or warnings\n"
         "- End with a summary or next steps when appropriate\n\n"
+        
+        "**CRITICAL CITATION INSTRUCTIONS FOR PERPLEXITY MODELS:**\n"
+        "When you provide information that comes from external sources, you MUST include clickable citations using this EXACT format:\n"
+        "- For sources with URLs: [descriptive text](URL) - Example: According to [recent MIT research](https://mit.edu/study) or [industry analysis shows](https://example.com/report)\n"
+        "- Make citation text descriptive and natural within sentence flow\n"
+        "- Integrate citations seamlessly into your response - don't just list them at the end\n"
+        "- Use multiple citations throughout your response when referencing different sources\n"
+        "- Prioritize embedding clickable links over numbered citations like [1], [2], [3]\n\n"
 
         "Always strive to exceed user expectations with thoughtful, well-crafted responses."
         + web_search_note
@@ -2423,12 +2453,15 @@ def search_web_openrouter(query, max_results=5, search_context_size="medium"):
         # Use a web-search enabled model like Perplexity
         web_search_prompt = (
             f"Search the web for comprehensive information about: {query}\n\n"
-            f"Please provide:\n"
-            f"1. A comprehensive answer based on current web sources\n"
-            f"2. Include clickable source links in markdown format: [source title](URL)\n"
-            f"3. Cite {max_results} high-quality sources\n"
-            f"4. Focus on {search_context_size} level of detail\n"
-            f"5. Ensure all information is current and well-sourced"
+            f"CRITICAL CITATION REQUIREMENTS:\n"
+            f"1. Provide a comprehensive answer based on current web sources\n"
+            f"2. EMBED clickable source links directly in your response using markdown format: [descriptive text](URL)\n"
+            f"3. Make link text natural and descriptive - integrate seamlessly into sentence flow\n"
+            f"4. Example: 'According to [recent MIT research](https://mit.edu/study), quantum computing has advanced significantly'\n"
+            f"5. Cite up to {max_results} high-quality sources throughout your response\n"
+            f"6. Focus on {search_context_size} level of detail\n"
+            f"7. Prioritize embedding clickable links over numbered citations like [1], [2], [3]\n"
+            f"8. Ensure all information is current and well-sourced with embedded citations"
         )
         
         # Use Perplexity which has built-in web search capabilities
@@ -2437,7 +2470,14 @@ def search_web_openrouter(query, max_results=5, search_context_size="medium"):
             messages=[
                 {
                     "role": "system", 
-                    "content": "You are a web search assistant with access to real-time web information. Provide comprehensive, well-cited responses with clickable source links in markdown format."
+                    "content": (
+                        "You are a web search assistant with access to real-time web information. "
+                        "CRITICAL: Always embed clickable source links directly in your response using markdown format: [descriptive text](URL). "
+                        "Make link text natural and descriptive - integrate seamlessly into sentence flow. "
+                        "Example: 'According to [recent MIT research](https://mit.edu/study)' or '[industry experts report](https://example.com)'. "
+                        "Prioritize embedding clickable links over numbered citations like [1], [2], [3]. "
+                        "Provide comprehensive, well-cited responses with embedded clickable source links."
+                    )
                 },
                 {
                     "role": "user", 

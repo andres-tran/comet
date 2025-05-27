@@ -296,8 +296,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to add hover tooltips for source citations
     function addSourceHoverTooltips(container) {
-        // Find all source citations (both regular links and Perplexity citations)
+        // Find all source citations (markdown links, Perplexity citations, and regular links)
         const citations = container.querySelectorAll('a[href^="http"], .perplexity-citation, .perplexity-source');
+        
+        console.log(`Adding hover tooltips to ${citations.length} citations`);
         
         citations.forEach((citation, index) => {
             // Skip if this citation already has a tooltip
@@ -319,46 +321,63 @@ document.addEventListener('DOMContentLoaded', () => {
             let url = '';
             let snippet = '';
             let citationNumber = '';
+            let citationType = 'regular';
             
             if (citation.hasAttribute('data-citation')) {
-                // Perplexity citation
+                // Perplexity citation (numbered)
+                citationType = 'perplexity';
                 citationNumber = citation.getAttribute('data-citation');
                 title = citation.getAttribute('data-title') || `Source ${citationNumber}`;
                 domain = citation.getAttribute('data-domain') || 'perplexity.ai';
                 url = citation.href || '';
                 snippet = citation.getAttribute('data-snippet') || '';
-            } else {
-                // Regular markdown link
+            } else if (citation.href && citation.href.startsWith('http')) {
+                // Regular markdown link or embedded link
+                citationType = 'markdown';
                 try {
                     const urlObj = new URL(citation.href);
                     domain = urlObj.hostname.replace('www.', '');
                 } catch (e) {
                     domain = 'External source';
                 }
-                title = citation.textContent || 'External Link';
+                title = citation.textContent || citation.innerText || 'External Link';
                 url = citation.href;
-                snippet = '';
+                snippet = citation.getAttribute('data-snippet') || '';
+                
+                // Check if this is a Perplexity-style embedded link
+                if (citation.textContent && citation.textContent.match(/^\[\d+\]$/)) {
+                    citationType = 'perplexity_embedded';
+                    citationNumber = citation.textContent.replace(/[\[\]]/g, '');
+                }
             }
             
-            // Create tooltip element
+            // Create enhanced tooltip element
             const tooltip = document.createElement('div');
             tooltip.className = 'source-tooltip';
             
             let tooltipHTML = `
                 <div class="tooltip-header">
                     <i class="fas fa-external-link-alt"></i>
-                    <span class="tooltip-title">${citationNumber ? `Citation [${citationNumber}]` : `Source ${index + 1}`}</span>
+                    <span class="tooltip-title">`;
+            
+            if (citationType === 'perplexity' || citationType === 'perplexity_embedded') {
+                tooltipHTML += `Citation [${citationNumber}]`;
+            } else {
+                tooltipHTML += `Source ${index + 1}`;
+            }
+            
+            tooltipHTML += `</span>
                 </div>
                 <div class="tooltip-content">
                     <div class="tooltip-domain">${domain}</div>
                     <div class="tooltip-text">${title}</div>
             `;
             
-            if (snippet) {
+            if (snippet && snippet !== 'Source information not available') {
                 tooltipHTML += `<div class="tooltip-snippet">${snippet}</div>`;
             }
             
-            if (url) {
+            if (url && url !== '#') {
                 tooltipHTML += `<div class="tooltip-url">${url}</div>`;
                 tooltipHTML += `<div class="tooltip-action">Click to open in new tab</div>`;
             } else {
@@ -383,15 +402,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 hideSourceTooltip(tooltip);
             });
             
-            // Add click tracking
+            // Add enhanced click tracking
             citation.addEventListener('click', (e) => {
-                if (url) {
-                    console.log(`Source citation clicked: ${url}`);
+                if (url && url !== '#') {
+                    console.log(`Source citation clicked (${citationType}): ${title} -> ${url}`);
                 } else {
-                    console.log(`Perplexity citation clicked: [${citationNumber}]`);
+                    console.log(`Perplexity citation clicked: [${citationNumber}] - ${title}`);
                 }
             });
         });
+        
+        console.log(`Successfully added hover tooltips to ${citations.length} citations`);
     }
 
     // Function to show source tooltip
@@ -1538,7 +1559,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 5000);
     }
 
-    // Function to convert Perplexity numbered citations to clickable links
+    // Function to convert Perplexity citations to enhanced clickable links
     function convertPerplexityCitations() {
         if (!window.perplexitySources || !resultsContainer) return;
         
@@ -1546,34 +1567,62 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Get the current HTML content
         let htmlContent = resultsContainer.innerHTML;
+        let conversionsCount = 0;
         
-        // Convert numbered citations [1], [2], etc. to clickable links
+        // Process each source
         window.perplexitySources.forEach(source => {
             const citationNumber = source.citation_number;
+            const sourceType = source.type || 'numbered_citation';
+            
+            if (sourceType === 'markdown_link') {
+                // Markdown links are already properly formatted, just add hover tooltips
+                console.log(`Markdown link already embedded: ${source.title} -> ${source.url}`);
+                return;
+            }
+            
+            // Handle numbered citations [1], [2], etc.
             const citationPattern = new RegExp(`\\[${citationNumber}\\]`, 'g');
             
-            // Create the replacement link
+            // Create the replacement link with enhanced styling
             let linkText = source.title || `Source ${citationNumber}`;
-            let linkUrl = source.url || '#';
+            let linkUrl = source.url || '';
             
-            // If no URL, make it a non-clickable citation with tooltip
-            if (!source.url) {
-                const replacement = `<span class="perplexity-citation" data-citation="${citationNumber}" data-title="${linkText}" data-domain="${source.domain || 'perplexity.ai'}" data-snippet="${source.snippet || 'Source information not available'}">[${citationNumber}]</span>`;
-                htmlContent = htmlContent.replace(citationPattern, replacement);
+            // Clean up title for better display
+            if (linkText.startsWith('Source ') && source.domain && source.domain !== 'perplexity.ai') {
+                linkText = source.domain;
+            }
+            
+            let replacement;
+            if (!linkUrl) {
+                // Non-clickable citation with enhanced tooltip data
+                replacement = `<span class="perplexity-citation" data-citation="${citationNumber}" data-title="${linkText}" data-domain="${source.domain || 'perplexity.ai'}" data-snippet="${source.snippet || 'Source information not available'}" title="Citation ${citationNumber}: ${linkText}">[${citationNumber}]</span>`;
             } else {
-                // Create clickable link with source-citation class for hover tooltips
-                const replacement = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="source-citation perplexity-source" data-citation="${citationNumber}" data-title="${linkText}" data-domain="${source.domain || ''}" data-snippet="${source.snippet || ''}">[${citationNumber}]</a>`;
-                htmlContent = htmlContent.replace(citationPattern, replacement);
+                // Clickable link with enhanced styling and tooltip data
+                replacement = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer" class="source-citation perplexity-source" data-citation="${citationNumber}" data-title="${linkText}" data-domain="${source.domain || ''}" data-snippet="${source.snippet || ''}" title="Click to open: ${linkText}">[${citationNumber}]</a>`;
+            }
+            
+            // Apply the replacement
+            const beforeReplace = htmlContent;
+            htmlContent = htmlContent.replace(citationPattern, replacement);
+            
+            if (beforeReplace !== htmlContent) {
+                conversionsCount++;
+                console.log(`Converted citation [${citationNumber}] to ${linkUrl ? 'clickable link' : 'tooltip citation'}: ${linkText}`);
             }
         });
         
-        // Update the results container
-        resultsContainer.innerHTML = htmlContent;
-        
-        // Re-apply hover tooltips to the new citations
-        addSourceHoverTooltips(resultsContainer);
-        
-        console.log(`Converted ${window.perplexitySources.length} Perplexity citations to clickable links`);
+        // Only update if we made changes
+        if (conversionsCount > 0) {
+            // Update the results container
+            resultsContainer.innerHTML = htmlContent;
+            
+            // Re-apply hover tooltips to the new citations
+            addSourceHoverTooltips(resultsContainer);
+            
+            console.log(`Successfully converted ${conversionsCount} Perplexity citations to enhanced clickable elements`);
+        } else {
+            console.log('No numbered citations found to convert - content may already have embedded markdown links');
+        }
     }
 
 }); 
