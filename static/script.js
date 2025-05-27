@@ -175,6 +175,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Clear web search sources
         clearWebSearchSources();
             
+            // Clean up source tooltips
+            cleanupSourceTooltips();
+            
             // Reset web search state (optional - you might want to keep it enabled)
             // webSearchEnabled = false;
             // if (webSearchButton) {
@@ -284,7 +287,165 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Update the actual container's content
         container.innerHTML = tempDiv.innerHTML;
+        
+        // Add hover tooltips for Perplexity model citations
+        addSourceHoverTooltips(container);
+        
         updateCopyButtonVisibility();
+    }
+
+    // Function to add hover tooltips for source citations
+    function addSourceHoverTooltips(container) {
+        // Only add tooltips for Perplexity models
+        const selectedModel = modelSelect.value;
+        if (!selectedModel.includes('perplexity/')) {
+            return;
+        }
+
+        // Find all external links in the content
+        const links = container.querySelectorAll('a[href^="http"]');
+        
+        links.forEach((link, index) => {
+            // Skip if this link already has a tooltip
+            if (link.hasAttribute('data-tooltip-added')) {
+                return;
+            }
+            
+            // Mark as processed
+            link.setAttribute('data-tooltip-added', 'true');
+            
+            // Add source citation class
+            link.classList.add('source-citation');
+            
+            // Extract domain for better display
+            let domain = '';
+            try {
+                const url = new URL(link.href);
+                domain = url.hostname.replace('www.', '');
+            } catch (e) {
+                domain = 'External source';
+            }
+            
+            // Create tooltip element
+            const tooltip = document.createElement('div');
+            tooltip.className = 'source-tooltip';
+            tooltip.innerHTML = `
+                <div class="tooltip-header">
+                    <i class="fas fa-external-link-alt"></i>
+                    <span class="tooltip-title">Source ${index + 1}</span>
+                </div>
+                <div class="tooltip-content">
+                    <div class="tooltip-domain">${domain}</div>
+                    <div class="tooltip-text">${link.textContent}</div>
+                    <div class="tooltip-url">${link.href}</div>
+                    <div class="tooltip-action">Click to open in new tab</div>
+                </div>
+            `;
+            
+            // Add tooltip to document body
+            document.body.appendChild(tooltip);
+            
+            // Store reference to tooltip on the link
+            link._tooltip = tooltip;
+            
+            // Add hover event listeners
+            link.addEventListener('mouseenter', (e) => {
+                showSourceTooltip(e.target, tooltip);
+            });
+            
+            link.addEventListener('mouseleave', (e) => {
+                hideSourceTooltip(tooltip);
+            });
+            
+            // Add click tracking
+            link.addEventListener('click', (e) => {
+                console.log(`Source citation clicked: ${link.href}`);
+            });
+        });
+    }
+
+    // Function to show source tooltip
+    function showSourceTooltip(link, tooltip) {
+        const rect = link.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Reset classes and make tooltip temporarily visible to measure
+        tooltip.className = 'source-tooltip';
+        tooltip.style.visibility = 'hidden';
+        tooltip.style.opacity = '1';
+        tooltip.style.left = '0px';
+        tooltip.style.top = '0px';
+        
+        // Get tooltip dimensions after it's rendered
+        const tooltipRect = tooltip.getBoundingClientRect();
+        const tooltipWidth = tooltipRect.width;
+        const tooltipHeight = tooltipRect.height;
+        
+        // Calculate position
+        let top, left;
+        let position = 'above'; // Default position
+        
+        // Check if there's space above
+        if (rect.top > tooltipHeight + 10) {
+            position = 'above';
+            top = rect.top - tooltipHeight - 10;
+        } else if (rect.bottom + tooltipHeight + 10 < viewportHeight) {
+            position = 'below';
+            top = rect.bottom + 10;
+        } else {
+            // Use side positioning if no vertical space
+            if (rect.left > tooltipWidth + 10) {
+                position = 'left';
+                left = rect.left - tooltipWidth - 10;
+                top = rect.top + (rect.height / 2) - (tooltipHeight / 2);
+            } else {
+                position = 'right';
+                left = rect.right + 10;
+                top = rect.top + (rect.height / 2) - (tooltipHeight / 2);
+            }
+        }
+        
+        // For above/below positioning, center horizontally
+        if (position === 'above' || position === 'below') {
+            left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+            
+            // Ensure tooltip doesn't go off screen horizontally
+            if (left < 10) {
+                left = 10;
+            } else if (left + tooltipWidth > viewportWidth - 10) {
+                left = viewportWidth - tooltipWidth - 10;
+            }
+        }
+        
+        // Ensure tooltip doesn't go off screen vertically
+        if (top < 10) {
+            top = 10;
+        } else if (top + tooltipHeight > viewportHeight - 10) {
+            top = viewportHeight - tooltipHeight - 10;
+        }
+        
+        // Apply position
+        tooltip.style.left = `${left + window.scrollX}px`;
+        tooltip.style.top = `${top + window.scrollY}px`;
+        
+        // Reset visibility and add position class and show
+        tooltip.style.visibility = 'visible';
+        tooltip.style.opacity = '0';
+        tooltip.classList.add(position, 'visible');
+    }
+
+    // Function to hide source tooltip
+    function hideSourceTooltip(tooltip) {
+        tooltip.classList.remove('visible', 'above', 'below', 'left', 'right');
+    }
+
+    // Clean up tooltips when starting new search
+    function cleanupSourceTooltips() {
+        const tooltips = document.querySelectorAll('.source-tooltip');
+        tooltips.forEach(tooltip => {
+            tooltip.remove();
+        });
     }
 
     let currentEventSource = null;
@@ -304,6 +465,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Clear web search sources
         clearWebSearchSources();
+        
+        // Clean up source tooltips
+        cleanupSourceTooltips();
         
         // Hide web search progress
         hideWebSearchProgress();
