@@ -806,6 +806,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                     console.log(`Received Perplexity sources:`, data.perplexity_sources);
                                     // Store sources for citation conversion
                                     window.perplexitySources = data.perplexity_sources;
+                                    
+                                    // Display Perplexity sources in the same format as Tavily sources
+                                    displayPerplexitySources(data.perplexity_sources);
+                                    
                                     // Convert numbered citations to clickable links in the accumulated response
                                     convertPerplexityCitations();
                                 }
@@ -1276,7 +1280,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function clearWebSearchSources() {
-        // Clear web search sources container
+        // Clear web search sources container (also used for Perplexity sources)
         const sourcesContainer = document.getElementById('web-search-sources');
         if (sourcesContainer) {
             sourcesContainer.remove();
@@ -1291,6 +1295,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset web search results state
         webSearchResults = null;
         webSearchInProgress = false;
+        
+        // Clear Perplexity sources state
+        window.perplexitySources = null;
     }
 
     function displayWebSearchSources(searchResults) {
@@ -1459,6 +1466,156 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Log successful source display
         console.log(`Displayed ${searchResults.results.length} web search sources with simple collapsible interface`);
+    }
+
+    function displayPerplexitySources(perplexitySources) {
+        if (!perplexitySources || perplexitySources.length === 0) {
+            console.log("No Perplexity sources to display");
+            return;
+        }
+
+        console.log(`Frontend received ${perplexitySources.length} Perplexity sources:`, perplexitySources.map(s => s.title));
+
+        // Check if sources container already exists
+        let sourcesContainer = document.getElementById('web-search-sources');
+        if (!sourcesContainer) {
+            // Create sources container
+            sourcesContainer = document.createElement('div');
+            sourcesContainer.id = 'web-search-sources';
+            sourcesContainer.className = 'web-search-sources';
+            
+            // Insert it before the results container
+            const resultsArea = document.querySelector('.results-area');
+            const resultsContainer = document.getElementById('results-container');
+            if (resultsArea && resultsContainer) {
+                resultsArea.insertBefore(sourcesContainer, resultsContainer);
+            }
+        }
+
+        // Clear existing content
+        sourcesContainer.innerHTML = '';
+
+        // Create header for Perplexity sources
+        const header = document.createElement('div');
+        header.className = 'sources-header';
+        header.innerHTML = `
+            <h4>
+                <i class="fas fa-brain"></i> Perplexity Sources
+                <span class="sources-count">(${perplexitySources.length})</span>
+            </h4>
+            <button class="toggle-btn" id="toggle-sources-btn" title="Toggle sources">
+                <i class="fas fa-chevron-up"></i>
+            </button>
+        `;
+        sourcesContainer.appendChild(header);
+
+        // Create sources content container
+        const sourcesContent = document.createElement('div');
+        sourcesContent.className = 'sources-content';
+        sourcesContent.id = 'sources-content';
+
+        // Add metadata for Perplexity sources
+        const metadataDiv = document.createElement('div');
+        metadataDiv.className = 'search-metadata';
+        
+        let metadataHTML = '<div class="metadata-label"><i class="fas fa-info-circle"></i> Source Details</div>';
+        metadataHTML += '<div class="metadata-content">';
+        
+        const citationTypes = [...new Set(perplexitySources.map(s => s.type))];
+        const domainsCount = [...new Set(perplexitySources.map(s => s.domain).filter(d => d))].length;
+        
+        metadataHTML += `<span class="metadata-item"><strong>Citation Types:</strong> ${citationTypes.join(', ')}</span>`;
+        metadataHTML += `<span class="metadata-item"><strong>Unique Domains:</strong> ${domainsCount}</span>`;
+        metadataHTML += `<span class="metadata-item"><strong>Total Citations:</strong> ${perplexitySources.length}</span>`;
+        
+        metadataHTML += '</div>';
+        metadataDiv.innerHTML = metadataHTML;
+        sourcesContent.appendChild(metadataDiv);
+
+        // Create sources list
+        const sourcesList = document.createElement('div');
+        sourcesList.className = 'sources-list';
+
+        perplexitySources.forEach((source, index) => {
+            const sourceItem = document.createElement('div');
+            sourceItem.className = 'source-item';
+            
+            if (source.url && source.url !== '') {
+                // Create clickable source link
+                const sourceLink = document.createElement('a');
+                sourceLink.href = source.url;
+                sourceLink.target = '_blank';
+                sourceLink.rel = 'noopener noreferrer';
+                sourceLink.className = 'source-link';
+                sourceLink.setAttribute('aria-label', `Citation ${source.citation_number}: ${source.title}`);
+                
+                sourceLink.innerHTML = `
+                    <span class="source-number">[${source.citation_number}]</span>
+                    <span class="source-title">${source.title}</span>
+                    <span class="source-domain">${source.domain || 'Unknown domain'}</span>
+                `;
+                
+                sourceItem.appendChild(sourceLink);
+            } else {
+                // Non-clickable source (no URL)
+                const sourceDiv = document.createElement('div');
+                sourceDiv.className = 'source-link non-clickable';
+                sourceDiv.setAttribute('aria-label', `Citation ${source.citation_number}: ${source.title}`);
+                
+                sourceDiv.innerHTML = `
+                    <span class="source-number">[${source.citation_number}]</span>
+                    <span class="source-title">${source.title}</span>
+                    <span class="source-domain">${source.domain || 'Perplexity AI'}</span>
+                `;
+                
+                sourceItem.appendChild(sourceDiv);
+            }
+            
+            sourcesList.appendChild(sourceItem);
+        });
+
+        sourcesContent.appendChild(sourcesList);
+        sourcesContainer.appendChild(sourcesContent);
+
+        // Add toggle functionality
+        const toggleBtn = header.querySelector('#toggle-sources-btn');
+        let isSourcesCollapsed = false;
+        
+        function toggleSources() {
+            isSourcesCollapsed = !isSourcesCollapsed;
+            
+            if (isSourcesCollapsed) {
+                sourcesContent.classList.add('collapsed');
+                toggleBtn.classList.add('collapsed');
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                toggleBtn.title = 'Expand sources';
+            } else {
+                sourcesContent.classList.remove('collapsed');
+                toggleBtn.classList.remove('collapsed');
+                toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i>';
+                toggleBtn.title = 'Collapse sources';
+            }
+        }
+        
+        // Add click event to toggle button and header
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleSources();
+        });
+        
+        header.addEventListener('click', () => {
+            toggleSources();
+        });
+        
+        // Add fade-in animation
+        try {
+            sourcesContainer.classList.add('fade-in');
+        } catch (e) {
+            console.warn('Animation not supported:', e);
+        }
+        
+        // Log successful source display
+        console.log(`Displayed ${perplexitySources.length} Perplexity sources with Tavily-style interface`);
     }
 
     // Function to show web search progress
