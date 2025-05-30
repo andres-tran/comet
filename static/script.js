@@ -571,19 +571,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Set appropriate thinking text
         if (selectedModel === 'gpt-image-1') {
-            if (payload.uploaded_file_data && payload.file_type === 'image') {
-                thinkingText.textContent = 'Editing image...'; // New text for editing
-            } else {
-                thinkingText.textContent = 'Generating image...';
-            }
-        } else if (selectedModel === 'agentic-mode') {
-            thinkingText.textContent = 'Analyzing query and selecting tools...'; // Agentic mode text
+            thinkingText.textContent = 'Generating image...';
         } else {
-            if (webSearchEnabled) {
-                thinkingText.textContent = 'Searching the web...'; // Web search text
-            } else {
-                thinkingText.textContent = 'Thinking...'; // Unified for OpenRouter text models
-            }
+            thinkingText.textContent = 'Thinking...';
         }
 
         let accumulatedResponse = "";

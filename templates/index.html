@@ -50,18 +50,9 @@
                     <input type="file" id="file-input" accept="image/png, image/jpeg, image/webp, application/pdf" style="display: none;">
                     <button type="button" id="attach-file-button" title="Attach File" class="circular-button"><i class="fas fa-paperclip"></i></button>
                     <button type="button" id="web-search-button" title="Enable Web Search" class="circular-button"><i class="fas fa-globe"></i></button>
-                    <select id="model-select">
-                        <!-- Group Agentic Models -->
-                        <optgroup label="Agentic">
-                            <option value="agentic-mode">Agentic Mode</option>
-                        </optgroup>
-                        <!-- Group OpenAI models -->
-                        <optgroup label="OpenAI">
-                            <option value="gpt-image-1">GPT Image 1</option>
-                        </optgroup>
-                        <!-- Group OpenRouter Models -->
+                    <select id="model-select" name="model" class="form-select">
                         <optgroup label="OpenRouter">
-                            <option value="google/gemini-2.5-pro-preview" selected>Gemini 2.5 Pro Preview</option>
+                            <option value="google/gemini-2.5-pro-preview">Gemini 2.5 Pro Preview</option>
                             <option value="google/gemini-2.5-flash-preview-05-20:thinking">Gemini 2.5 Flash Preview 05/20 Thinking</option>
                             <option value="perplexity/sonar-reasoning-pro">Perplexity Sonar Reasoning Pro</option>
                             <option value="openai/gpt-4.1">GPT-4.1</option>
@@ -70,6 +61,9 @@
                             <option value="anthropic/claude-sonnet-4">Claude Sonnet 4</option>
                             <option value="anthropic/claude-opus-4">Claude Opus 4</option>
                             <option value="deepseek/deepseek-r1-0528">DeepSeek R1 05/28</option>
+                        </optgroup>
+                        <optgroup label="OpenAI">
+                            <option value="gpt-image-1">GPT Image 1</option>
                         </optgroup>
                     </select>
                     <button type="submit" id="search-button" title="Submit Search" class="circular-button">

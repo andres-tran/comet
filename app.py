@@ -112,7 +112,6 @@ OPENROUTER_MODELS = {
 }
 ALLOWED_MODELS = OPENROUTER_MODELS.copy()
 ALLOWED_MODELS.add("gpt-image-1")
-ALLOWED_MODELS.add("agentic-mode")  # Special mode for agentic workflows
 
 # --- Background Streaming for OpenRouter ---
 def stream_openrouter_background(task_id, query, model_name_with_suffix, reasoning_config=None, uploaded_file_data=None, file_type=None, web_search_enabled=False):
@@ -1029,12 +1028,6 @@ def search():
         else:
             print(f"Routing to OpenAI Image Generation. Query: '{query}'")
             return generate_image(query)
-    elif selected_model == "agentic-mode":
-        print(f"Routing to Agentic Mode. Query: '{query}'")
-        # Use the working agentic loop implementation
-        agentic_model = "google/gemini-2.5-pro-preview"  # Default agentic model
-        generator = run_agentic_loop(query, agentic_model)
-        return Response(generator, mimetype='text/event-stream')
     elif selected_model in OPENROUTER_MODELS:
         print_query = query[:100] + "..." if query and len(query) > 100 else query
         print_file_data = ""
@@ -1227,7 +1220,7 @@ def search_web_tool(query, max_results=8, search_type="auto"):
     
     Args:
         query: Search query
-        max_results: Maximum number of results to return (default 8 for agentic mode)
+        max_results: Maximum number of results to return
         search_type: Type of search - "auto", "news", "general", "deep"
     """
     # Intelligent search type detection if auto
@@ -1242,7 +1235,7 @@ def search_web_tool(query, max_results=8, search_type="auto"):
         else:
             search_type = "general"
     
-    print(f"Agentic web search: '{query}' (type: {search_type})")
+    print(f"Web search: '{query}' (type: {search_type})")
     
     # Adjust search parameters based on type
     if search_type == "news":
@@ -1255,11 +1248,11 @@ def search_web_tool(query, max_results=8, search_type="auto"):
     if "error" in result:
         return {"error": result["error"], "search_type": search_type}
     
-    # Enhanced result processing for agentic mode
+    # Enhanced result processing
     simplified_results = []
     total_content_length = 0
     
-    # Process more results for agentic mode but with better filtering
+    # Process more results but with better filtering
     results_to_process = result.get("results", [])[:max_results]
     
     for i, item in enumerate(results_to_process):
@@ -1269,13 +1262,13 @@ def search_web_tool(query, max_results=8, search_type="auto"):
         domain = item.get("domain", "unknown")
         quality_score = item.get("quality_score", 0)
         
-        # For agentic mode, provide more content but still manageable
+        # For deep search, provide more content but still manageable
         if search_type == "deep":
             content_preview = content[:400] + "..." if len(content) > 400 else content
         else:
             content_preview = content[:250] + "..." if len(content) > 250 else content
         
-        # Quality indicator for the AI
+        # Quality indicator
         quality_level = "HIGH" if quality_score > 200 else "MEDIUM" if quality_score > 100 else "STANDARD"
         
         simplified_results.append({
@@ -1290,7 +1283,7 @@ def search_web_tool(query, max_results=8, search_type="auto"):
         
         total_content_length += len(content_preview)
     
-    # Enhanced metadata for agentic decision making
+    # Enhanced metadata
     search_metadata = result.get("search_metadata", {})
     
     return {
@@ -2241,8 +2234,7 @@ def health_check():
             "status": "healthy",
             "timestamp": get_current_time()["current_time"],
             "api_keys_configured": bool(openrouter_api_key and openai_api_key and tavily_api_key),
-            "tools_available": len(TOOL_MAPPING),
-            "agentic_tools_configured": len(AGENTIC_TOOLS)
+            "tools_available": len(TOOL_MAPPING) if 'TOOL_MAPPING' in globals() else 0
         }
         return jsonify(test_results)
     except Exception as e:
