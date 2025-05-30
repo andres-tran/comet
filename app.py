@@ -103,12 +103,12 @@ OPENROUTER_MODELS = {
     "google/gemini-2.5-pro-preview",
     "google/gemini-2.5-flash-preview-05-20:thinking",
     "perplexity/sonar-reasoning-pro",
-    "perplexity/sonar-deep-research", # Added new model
     "openai/gpt-4.1",
     "openai/gpt-4.5-preview",
     "openai/codex-mini",
     "anthropic/claude-sonnet-4",
     "anthropic/claude-opus-4",
+    "deepseek/deepseek-r1-0528", # Added new model with 163,840 token limit
 }
 ALLOWED_MODELS = OPENROUTER_MODELS.copy()
 ALLOWED_MODELS.add("gpt-image-1")
@@ -663,8 +663,6 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
     # Adjust max_tokens based on model specifics
     if actual_model_name_for_sdk == "perplexity/sonar-reasoning-pro": # 128,000 total context
         max_tokens_val = 50000 # Conservative to avoid credit/token limit errors
-    elif actual_model_name_for_sdk == "perplexity/sonar-deep-research": # 128,000 total context
-        max_tokens_val = 50000 # Conservative allocation to ensure we don't exceed credit limits
     elif actual_model_name_for_sdk == "openai/gpt-4.1": # 1,047,576 token context window
         max_tokens_val = 1047576 - 4096  # Reserve 4096 tokens for prompt
     elif actual_model_name_for_sdk == "openai/gpt-4o-search-preview": # Stated 16,384 generation capacity
@@ -675,6 +673,8 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         max_tokens_val = 95000
     elif actual_model_name_for_sdk == "deepseek/deepseek-r1:free":
         max_tokens_val = 163800 # Reduced slightly to accommodate prompt tokens
+    elif actual_model_name_for_sdk == "deepseek/deepseek-r1-0528": # 163,840 token context window
+        max_tokens_val = 163840 - 4096  # Reserve 4096 tokens for prompt
     elif actual_model_name_for_sdk == "google/gemini-2.5-flash-preview:thinking":
         max_tokens_val = 65535
     elif actual_model_name_for_sdk == "openai/o3-mini-high":
