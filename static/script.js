@@ -1673,18 +1673,35 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (startError) {
                 console.error('Error starting speech recognition:', startError);
                 
-                // Try to reinitialize and start again
-                if (initSpeechRecognition()) {
+                // Handle specific errors
+                if (startError.message && startError.message.includes('already started')) {
+                    console.log('Speech recognition already active, stopping and restarting...');
                     try {
-                        recognition.start();
-                    } catch (retryError) {
-                        console.error('Retry failed:', retryError);
+                        recognition.stop();
+                        setTimeout(() => {
+                            if (isVoiceModeActive) {
+                                recognition.start();
+                            }
+                        }, 100);
+                    } catch (e) {
+                        console.error('Failed to restart recognition:', e);
                         stopVoiceMode();
-                        alert('Unable to start voice recognition. Please try again.');
+                        alert('Voice recognition restart failed. Please try again.');
                     }
                 } else {
-                    stopVoiceMode();
-                    alert('Voice recognition initialization failed.');
+                    // Try to reinitialize and start again
+                    if (initSpeechRecognition()) {
+                        try {
+                            recognition.start();
+                        } catch (retryError) {
+                            console.error('Retry failed:', retryError);
+                            stopVoiceMode();
+                            alert('Unable to start voice recognition. Please try again.');
+                        }
+                    } else {
+                        stopVoiceMode();
+                        alert('Voice recognition initialization failed.');
+                    }
                 }
             }
         } catch (error) {
@@ -1694,8 +1711,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Initialize voice mode button with mobile-optimized event handling
-    document.addEventListener('DOMContentLoaded', () => {
+    // Initialize voice mode button
+    function initializeVoiceMode() {
         const voiceButton = document.getElementById('voice-mode-button');
         if (!voiceButton) {
             console.error('Voice mode button not found');
@@ -1708,6 +1725,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isSpeechRecognitionSupported()) {
             voiceButton.style.display = 'none'; // Hide button if not supported
             console.warn('Speech recognition not supported, hiding voice button');
+            return;
+        }
+
+        // Add visual indicator for unsupported browsers
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            voiceButton.style.opacity = '0.5';
+            voiceButton.title = 'Voice mode requires microphone access (not available in this browser)';
+            voiceButton.disabled = true;
             return;
         }
 
@@ -1747,7 +1772,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         console.log('Voice mode button initialized successfully');
-    });
+    }
 
-    // ... existing code ...
+    // Initialize voice mode when DOM is ready
+    initializeVoiceMode();
 }); 
