@@ -359,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Add hover event listeners
             citation.addEventListener('mouseenter', (e) => {
-                showSourceTooltip(e.target, tooltip);
+                showSourceTooltip(e, title);
             });
             
             citation.addEventListener('mouseleave', (e) => {
@@ -376,74 +376,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Function to show source tooltip
-    function showSourceTooltip(link, tooltip) {
-        const rect = link.getBoundingClientRect();
+    function showSourceTooltip(event, source) {
+        const tooltip = document.createElement('div');
+        tooltip.className = 'source-tooltip';
+        tooltip.textContent = source;
+        
+        // Get viewport dimensions
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
         
-        // Reset classes and make tooltip temporarily visible to measure
-        tooltip.className = 'source-tooltip';
-        tooltip.style.visibility = 'hidden';
-        tooltip.style.opacity = '1';
-        tooltip.style.left = '0px';
-        tooltip.style.top = '0px';
+        // Get link dimensions and position
+        const link = event.currentTarget;
+        const linkRect = link.getBoundingClientRect();
         
-        // Get tooltip dimensions after it's rendered
-        const tooltipRect = tooltip.getBoundingClientRect();
-        const tooltipWidth = tooltipRect.width;
-        const tooltipHeight = tooltipRect.height;
+        // Calculate tooltip position
+        let tooltipLeft = linkRect.left;
+        let tooltipTop = linkRect.bottom + 5;
         
-        // Calculate position
-        let top, left;
-        let position = 'above'; // Default position
-        
-        // Check if there's space above
-        if (rect.top > tooltipHeight + 10) {
-            position = 'above';
-            top = rect.top - tooltipHeight - 10;
-        } else if (rect.bottom + tooltipHeight + 10 < viewportHeight) {
-            position = 'below';
-            top = rect.bottom + 10;
-        } else {
-            // Use side positioning if no vertical space
-            if (rect.left > tooltipWidth + 10) {
-                position = 'left';
-                left = rect.left - tooltipWidth - 10;
-                top = rect.top + (rect.height / 2) - (tooltipHeight / 2);
-            } else {
-                position = 'right';
-                left = rect.right + 10;
-                top = rect.top + (rect.height / 2) - (tooltipHeight / 2);
-            }
+        // Check if tooltip would overflow right edge
+        const tooltipWidth = 200; // Approximate tooltip width
+        if (tooltipLeft + tooltipWidth > viewportWidth - 20) {
+            tooltipLeft = viewportWidth - tooltipWidth - 20;
         }
         
-        // For above/below positioning, center horizontally
-        if (position === 'above' || position === 'below') {
-            left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
-            
-            // Ensure tooltip doesn't go off screen horizontally
-            if (left < 10) {
-                left = 10;
-            } else if (left + tooltipWidth > viewportWidth - 10) {
-                left = viewportWidth - tooltipWidth - 10;
-            }
+        // Check if tooltip would overflow bottom edge
+        const tooltipHeight = 40; // Approximate tooltip height
+        if (tooltipTop + tooltipHeight > viewportHeight - 20) {
+            tooltipTop = linkRect.top - tooltipHeight - 5;
         }
         
-        // Ensure tooltip doesn't go off screen vertically
-        if (top < 10) {
-            top = 10;
-        } else if (top + tooltipHeight > viewportHeight - 10) {
-            top = viewportHeight - tooltipHeight - 10;
+        // Ensure tooltip stays within viewport on mobile
+        if (viewportWidth <= 768) {
+            tooltipLeft = Math.max(10, Math.min(tooltipLeft, viewportWidth - tooltipWidth - 10));
+            tooltipTop = Math.max(10, Math.min(tooltipTop, viewportHeight - tooltipHeight - 10));
         }
         
-        // Apply position
-        tooltip.style.left = `${left + window.scrollX}px`;
-        tooltip.style.top = `${top + window.scrollY}px`;
+        tooltip.style.left = `${tooltipLeft}px`;
+        tooltip.style.top = `${tooltipTop}px`;
         
-        // Reset visibility and add position class and show
-        tooltip.style.visibility = 'visible';
-        tooltip.style.opacity = '0';
-        tooltip.classList.add(position, 'visible');
+        document.body.appendChild(tooltip);
+        
+        // Remove tooltip on click or after 3 seconds
+        const removeTooltip = () => {
+            tooltip.remove();
+            document.removeEventListener('click', removeTooltip);
+        };
+        
+        document.addEventListener('click', removeTooltip);
+        setTimeout(removeTooltip, 3000);
     }
 
     // Function to hide source tooltip

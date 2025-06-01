@@ -564,11 +564,29 @@ body {
     border-bottom: 1px solid transparent;
     transition: border-color 0.2s ease;
     overflow-wrap: break-word;
-    word-break: break-all;
+    word-break: break-word;
+    max-width: 100%;
+    display: inline-block;
+    line-height: 1.4;
 }
 
 .results-container-perplexity a:hover {
     border-bottom-color: var(--link-color);
+}
+
+/* Mobile-specific link adjustments */
+@media (max-width: 768px) {
+    .results-container-perplexity a {
+        font-size: 0.95em;
+        padding: 0 2px;
+    }
+}
+
+@media (max-width: 480px) {
+    .results-container-perplexity a {
+        font-size: 0.9em;
+        padding: 0 1px;
+    }
 }
 
 /* Emphasis Styles */
