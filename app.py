@@ -110,6 +110,7 @@ OPENROUTER_MODELS = {
     "anthropic/claude-opus-4",
     "deepseek/deepseek-r1-0528", # Added new model with 163,840 token limit
     "openai/o4-mini-high", # Added new model with 200,000 token limit
+    "openai/o3", # Added new model with 200,000 token limit
 }
 ALLOWED_MODELS = OPENROUTER_MODELS.copy()
 ALLOWED_MODELS.add("gpt-image-1")
@@ -670,6 +671,8 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
     elif actual_model_name_for_sdk == "openai/gpt-4.5-preview": # 128,000 token context window
         max_tokens_val = 128000 - 4096  # Reserve 4096 tokens for prompt
     elif actual_model_name_for_sdk == "openai/o4-mini-high": # 200,000 token context window
+        max_tokens_val = 200000 - 4096  # Reserve 4096 tokens for prompt
+    elif actual_model_name_for_sdk == "openai/o3": # 200,000 token context window
         max_tokens_val = 200000 - 4096  # Reserve 4096 tokens for prompt
     elif actual_model_name_for_sdk == "deepseek/deepseek-r1:free":
         max_tokens_val = 163800 # Reduced slightly to accommodate prompt tokens
