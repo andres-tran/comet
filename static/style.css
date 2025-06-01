@@ -1835,4 +1835,26 @@ body.dark-mode .source-citation:hover {
     }
 }
 
-/* Non-clickable source styling removed */ 
+/* Non-clickable source styling removed */
+
+#web-search-button.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#voice-mode-button {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+    transition: all 0.2s ease;
+}
+
+#voice-mode-button:hover {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+#voice-mode-button.active {
+    background-color: #dc3545;
+    color: white;
+} 

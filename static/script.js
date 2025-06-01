@@ -1489,4 +1489,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Perplexity citation conversion function removed
 
+    // Voice mode functionality
+    let isVoiceModeActive = false;
+    let recognition = null;
+
+    // Initialize speech recognition if available
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById('user-input').value = transcript;
+        };
+
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error:', event.error);
+            isVoiceModeActive = false;
+            document.getElementById('voice-mode-button').classList.remove('active');
+        };
+
+        recognition.onend = function() {
+            if (isVoiceModeActive) {
+                recognition.start();
+            }
+        };
+    }
+
+    document.getElementById('voice-mode-button').addEventListener('click', function() {
+        if (!recognition) {
+            alert('Speech recognition is not supported in your browser.');
+            return;
+        }
+
+        isVoiceModeActive = !isVoiceModeActive;
+        this.classList.toggle('active');
+
+        if (isVoiceModeActive) {
+            try {
+                recognition.start();
+                this.querySelector('i').classList.remove('fa-microphone');
+                this.querySelector('i').classList.add('fa-stop');
+            } catch (error) {
+                console.error('Error starting speech recognition:', error);
+                isVoiceModeActive = false;
+                this.classList.remove('active');
+            }
+        } else {
+            recognition.stop();
+            this.querySelector('i').classList.remove('fa-stop');
+            this.querySelector('i').classList.add('fa-microphone');
+        }
+    });
+
 }); 
