@@ -221,7 +221,7 @@ def check_api_keys(model_name):
     return missing
 
 # --- Enhanced Web Search Function ---
-def search_web_tavily(query, max_results=15):  # Increased from 10
+def search_web_tavily(query, max_results=10):
     """Performs enhanced web search using Tavily API with improved source diversity and quality filtering."""
     if not tavily_api_key:
         return {"error": "Tavily API key not configured"}
@@ -243,29 +243,25 @@ def search_web_tavily(query, max_results=15):  # Increased from 10
             search_depth = "advanced"
         elif any(word in query_lower for word in ['tutorial', 'guide', 'how to', 'learn', 'course']):
             time_range = "year"  # Broader timeframe for educational content
-            search_depth = "advanced"  # Changed to advanced for deeper results
+            search_depth = "basic"
         elif any(word in query_lower for word in ['review', 'comparison', 'vs', 'versus', 'best']):
             time_range = "month"  # Medium timeframe for reviews
             search_depth = "advanced"
-        elif any(word in query_lower for word in ['research', 'study', 'analysis', 'paper', 'scientific']):
-            time_range = None  # No time restriction for research
-            search_depth = "advanced"
-            topic = "research"
         
         # Prepare payload according to Tavily API documentation
         payload = {
             "query": query,
             "topic": topic,
             "search_depth": search_depth,
-            "chunks_per_source": 5 if search_depth == "advanced" else 3,  # Increased from 3
-            "max_results": min(max_results * 2, 20),  # Request more to filter later
+            "chunks_per_source": 3 if search_depth == "advanced" else None,
+            "max_results": min(max_results, 20),  # API limit is 20
             "time_range": time_range,
             "include_answer": True,
-            "include_raw_content": True,  # Get more detailed content
+            "include_raw_content": False,
             "include_images": False,
             "include_image_descriptions": False,
             "include_domains": [],
-            "exclude_domains": ["pinterest.com", "instagram.com", "facebook.com", "twitter.com", "tiktok.com", "reddit.com/r/"]  # Expanded exclusions
+            "exclude_domains": ["pinterest.com", "instagram.com", "facebook.com", "twitter.com"]
         }
         
         # Add days parameter only for news topic
@@ -281,7 +277,7 @@ def search_web_tavily(query, max_results=15):  # Increased from 10
             "Content-Type": "application/json"
         }
         
-        print(f"Performing enhanced web search with strategy: topic={topic}, depth={search_depth}, time_range={time_range}")
+        print(f"Performing web search with strategy: topic={topic}, depth={search_depth}, time_range={time_range}")
         
         response = requests.post(url, json=payload, headers=headers, timeout=30)
         response.raise_for_status()
@@ -295,7 +291,7 @@ def search_web_tavily(query, max_results=15):  # Increased from 10
             
             # Filter and enhance results
             filtered_results = []
-            seen_domains = defaultdict(int)
+            seen_domains = set()
             
             for result in data["results"]:
                 # Extract domain for diversity checking
@@ -307,41 +303,24 @@ def search_web_tavily(query, max_results=15):  # Increased from 10
                 # Quality filters
                 title = result.get("title", "").strip()
                 content = result.get("content", "").strip()
-                raw_content = result.get("raw_content", "").strip()
                 url = result.get("url", "")
                 score = result.get("score", 0)  # Tavily provides relevance score
                 
-                # Use raw_content if available and longer
-                if raw_content and len(raw_content) > len(content):
-                    content = raw_content[:1500]  # Use more content
-                
                 # Skip low-quality results
-                if (len(title) < 10 or len(content) < 100 or 
-                    not url or "404" in title.lower() or "error" in title.lower() or
-                    "blocked" in title.lower() or "forbidden" in title.lower()):
+                if (len(title) < 10 or len(content) < 50 or 
+                    not url or "404" in title.lower() or "error" in title.lower()):
                     continue
                 
-                # Promote domain diversity (max 3 results per domain)
-                if seen_domains[domain] >= 3:  # Increased from 2
+                # Promote domain diversity (max 2 results per domain)
+                domain_count = sum(1 for r in filtered_results if r.get("domain") == domain)
+                if domain_count >= 2:
                     continue
-                seen_domains[domain] += 1
                 
                 # Add domain info and enhanced quality score
                 result["domain"] = domain
-                result["content"] = content  # Update with potentially longer content
-                
-                # Enhanced quality scoring
-                quality_bonus = 0
-                if any(word in title.lower() for word in ['official', 'documentation', 'docs']):
-                    quality_bonus += 150
-                if any(word in title.lower() for word in ['guide', 'tutorial', 'how-to']):
-                    quality_bonus += 100
-                if any(word in title.lower() for word in ['research', 'study', 'analysis', 'paper']):
-                    quality_bonus += 120
-                if any(word in domain for word in ['.edu', '.gov', '.org']):
-                    quality_bonus += 80
-                
-                result["quality_score"] = int((score * 1000) + (len(content) * 0.5) + quality_bonus)
+                # Combine Tavily's relevance score with content length and quality indicators
+                quality_bonus = 50 if any(word in title.lower() for word in ['official', 'guide', 'tutorial']) else 0
+                result["quality_score"] = int((score * 1000) + len(content) + quality_bonus)
                 
                 filtered_results.append(result)
             
@@ -351,55 +330,58 @@ def search_web_tavily(query, max_results=15):  # Increased from 10
             # Update data with filtered results
             data["results"] = filtered_results[:max_results]
             
-            print(f"Filtered to {len(data['results'])} high-quality sources from {len(seen_domains)} different domains")
+            print(f"Filtered to {len(data['results'])} high-quality sources from {len(set(r['domain'] for r in data['results']))} different domains")
             
             # If we have very few results, try fallback strategies
-            if len(data["results"]) < 5:  # Increased threshold
+            if len(data["results"]) < 3:
                 print(f"Only got {len(data['results'])} sources, trying fallback strategies...")
                 
-                # Strategy 1: Broader search without time restrictions
-                broader_payload = payload.copy()
-                broader_payload.pop("time_range", None)
-                broader_payload.pop("days", None)
-                broader_payload["search_depth"] = "advanced"
-                broader_payload["max_results"] = 20
-                
-                try:
-                    broader_response = requests.post(url, json=broader_payload, headers=headers, timeout=30)
-                    broader_response.raise_for_status()
-                    broader_data = broader_response.json()
+                # Strategy 1: Broader time window
+                if time_range and time_range != "year":
+                    broader_payload = payload.copy()
+                    broader_payload["time_range"] = "year"
+                    broader_payload["search_depth"] = "basic"
+                    broader_payload["exclude_domains"] = []  # Remove domain restrictions
                     
-                    if "results" in broader_data:
-                        # Merge results, avoiding duplicates
-                        existing_urls = {r["url"] for r in data["results"]}
-                        for result in broader_data["results"]:
-                            if result["url"] not in existing_urls and len(data["results"]) < max_results:
-                                # Apply same quality filtering
-                                title = result.get("title", "").strip()
-                                content = result.get("content", "").strip()
-                                if len(title) >= 10 and len(content) >= 100:
-                                    data["results"].append(result)
+                    try:
+                        broader_response = requests.post(url, json=broader_payload, headers=headers, timeout=30)
+                        broader_response.raise_for_status()
+                        broader_data = broader_response.json()
                         
-                        print(f"After broader search: {len(data['results'])} total sources")
-                except Exception as e:
-                    print(f"Broader search failed: {e}")
+                        if "results" in broader_data and len(broader_data["results"]) > len(data["results"]):
+                            print(f"Broader search returned {len(broader_data['results'])} sources")
+                            data = broader_data
+                    except Exception as e:
+                        print(f"Broader search failed: {e}")
+                
+                # Strategy 2: Remove time restrictions entirely
+                if len(data["results"]) < 2:
+                    unrestricted_payload = payload.copy()
+                    unrestricted_payload.pop("time_range", None)
+                    unrestricted_payload.pop("days", None)
+                    unrestricted_payload["search_depth"] = "basic"
+                    unrestricted_payload["exclude_domains"] = []
+                    
+                    try:
+                        unrestricted_response = requests.post(url, json=unrestricted_payload, headers=headers, timeout=30)
+                        unrestricted_response.raise_for_status()
+                        unrestricted_data = unrestricted_response.json()
+                        
+                        if "results" in unrestricted_data and len(unrestricted_data["results"]) > len(data["results"]):
+                            print(f"Unrestricted search returned {len(unrestricted_data['results'])} sources")
+                            data = unrestricted_data
+                    except Exception as e:
+                        print(f"Unrestricted search failed: {e}")
         
-        # Add enhanced search metadata
+        # Add search metadata
         data["search_metadata"] = {
             "query": query,
             "topic": topic,
             "search_depth": search_depth,
-            "time_range": time_range or "all time",
+            "time_range": time_range,
             "total_sources": len(data.get("results", [])),
             "unique_domains": len(set(r.get("domain", "unknown") for r in data.get("results", []))),
-            "response_time": data.get("response_time", "N/A"),
-            "enhanced_search": True,
-            "avg_content_length": sum(len(r.get("content", "")) for r in data.get("results", [])) // max(len(data.get("results", [])), 1),
-            "quality_distribution": {
-                "high": len([r for r in data.get("results", []) if r.get("quality_score", 0) > 500]),
-                "medium": len([r for r in data.get("results", []) if 200 < r.get("quality_score", 0) <= 500]),
-                "standard": len([r for r in data.get("results", []) if r.get("quality_score", 0) <= 200])
-            }
+            "response_time": data.get("response_time", "N/A")
         }
         
         return data
@@ -477,7 +459,6 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         "2. **Concise**: Get to the point while being thorough.\n"
         "3. **Accurate**: Base responses on factual information and indicate uncertainties.\n"
         "4. **Helpful**: Provide actionable insights and practical solutions.\n\n"
-        
         "When answering questions:\n"
         "- Start with a direct answer\n"
         "- Provide relevant details and examples\n"
