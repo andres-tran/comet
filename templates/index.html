@@ -2,10 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff" id="theme-color-meta">
     <title>Comet</title>
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <meta name="theme-color" content="#ffffff" id="theme-color-meta">
     <!-- Favicon using downloaded comet icon -->
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='comet-32.png') }}">
@@ -18,8 +22,6 @@
     <!-- Default apple-touch-icon (fallback) -->
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon-180x180.png') }}">
     <!-- iOS Safari specific meta tags for better PWA experience -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Comet">
     <!-- Microsoft Windows/Edge -->
     <meta name="msapplication-TileColor" content="#ffffff">
