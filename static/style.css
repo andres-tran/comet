@@ -373,11 +373,6 @@ body {
     font-size: 1em;
 }
 
-#model-select optgroup {
-    font-weight: bold;
-    font-style: italic;
-}
-
 #search-button {
     background-color: var(--primary-color);
     color: var(--button-text-color);
