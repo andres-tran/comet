@@ -1492,179 +1492,126 @@ document.addEventListener('DOMContentLoaded', () => {
     // Voice mode functionality
     let isVoiceModeActive = false;
     let recognition = null;
-    let finalTranscript = '';
-    let interimTranscript = '';
 
-    // Check if running on mobile device
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    // Initialize speech recognition
+    function initSpeechRecognition() {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            console.error('Speech recognition not supported');
+            return false;
+        }
 
-    // Initialize speech recognition if available
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         try {
             recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.continuous = true;
+            recognition.continuous = false;
             recognition.interimResults = true;
             recognition.lang = 'en-US';
 
-            // Set mobile-specific configurations
-            if (isMobileDevice) {
-                recognition.continuous = false; // Disable continuous mode on mobile
-                recognition.maxAlternatives = 1;
-            }
-
-            recognition.onstart = function() {
+            recognition.onstart = () => {
                 console.log('Speech recognition started');
-                finalTranscript = '';
-                interimTranscript = '';
-                const searchInput = document.getElementById('search-input');
-                if (searchInput) {
-                    searchInput.placeholder = 'Listening...';
-                }
+                document.getElementById('search-input').placeholder = 'Listening...';
             };
 
-            recognition.onresult = function(event) {
+            recognition.onresult = (event) => {
                 console.log('Speech recognition result received');
-                interimTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const transcript = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) {
-                        finalTranscript += transcript + ' ';
-                    } else {
-                        interimTranscript += transcript;
-                    }
-                }
+                const transcript = Array.from(event.results)
+                    .map(result => result[0].transcript)
+                    .join('');
                 
-                // Update input field with both final and interim results
-                const searchInput = document.getElementById('search-input');
-                if (searchInput) {
-                    searchInput.value = finalTranscript + interimTranscript;
-                    // Auto-resize the textarea
-                    searchInput.style.height = 'auto';
-                    searchInput.style.height = (searchInput.scrollHeight) + 'px';
-                }
+                document.getElementById('search-input').value = transcript;
             };
 
-            recognition.onerror = function(event) {
+            recognition.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
-                if (event.error === 'no-speech') {
-                    // Restart recognition if no speech detected
-                    if (isVoiceModeActive) {
-                        try {
-                            recognition.start();
-                        } catch (error) {
-                            console.error('Error restarting recognition:', error);
-                        }
-                    }
-                } else if (event.error === 'not-allowed') {
-                    alert('Please allow microphone access to use voice mode.');
-                    isVoiceModeActive = false;
-                    const voiceButton = document.getElementById('voice-mode-button');
-                    if (voiceButton) {
-                        voiceButton.classList.remove('active');
-                    }
-                } else {
-                    isVoiceModeActive = false;
-                    const voiceButton = document.getElementById('voice-mode-button');
-                    if (voiceButton) {
-                        voiceButton.classList.remove('active');
-                    }
-                    const searchInput = document.getElementById('search-input');
-                    if (searchInput) {
-                        searchInput.placeholder = 'Ask anything...';
-                    }
-                }
+                stopVoiceMode();
             };
 
-            recognition.onend = function() {
+            recognition.onend = () => {
                 console.log('Speech recognition ended');
                 if (isVoiceModeActive) {
                     try {
                         recognition.start();
                     } catch (error) {
-                        console.error('Error restarting speech recognition:', error);
-                        isVoiceModeActive = false;
-                        const voiceButton = document.getElementById('voice-mode-button');
-                        if (voiceButton) {
-                            voiceButton.classList.remove('active');
-                        }
-                        const searchInput = document.getElementById('search-input');
-                        if (searchInput) {
-                            searchInput.placeholder = 'Ask anything...';
-                        }
+                        console.error('Error restarting recognition:', error);
+                        stopVoiceMode();
                     }
                 }
             };
+
+            return true;
         } catch (error) {
             console.error('Error initializing speech recognition:', error);
+            return false;
         }
     }
 
-    // Add event listener when DOM is fully loaded
-    document.addEventListener('DOMContentLoaded', function() {
+    // Stop voice mode
+    function stopVoiceMode() {
+        isVoiceModeActive = false;
         const voiceButton = document.getElementById('voice-mode-button');
         if (voiceButton) {
-            // Handle click event
-            voiceButton.addEventListener('click', async function() {
-                console.log('Voice button clicked');
-                if (!recognition) {
-                    alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
-                    return;
-                }
-
-                try {
-                    // Request microphone permission
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    stream.getTracks().forEach(track => track.stop()); // Stop the stream after getting permission
-
-                    isVoiceModeActive = !isVoiceModeActive;
-                    this.classList.toggle('active');
-
-                    if (isVoiceModeActive) {
-                        try {
-                            recognition.start();
-                            this.querySelector('i').classList.remove('fa-microphone');
-                            this.querySelector('i').classList.add('fa-stop');
-                            const searchInput = document.getElementById('search-input');
-                            if (searchInput) {
-                                searchInput.placeholder = 'Listening...';
-                            }
-                        } catch (error) {
-                            console.error('Error starting speech recognition:', error);
-                            isVoiceModeActive = false;
-                            this.classList.remove('active');
-                            const searchInput = document.getElementById('search-input');
-                            if (searchInput) {
-                                searchInput.placeholder = 'Ask anything...';
-                            }
-                        }
-                    } else {
-                        recognition.stop();
-                        this.querySelector('i').classList.remove('fa-stop');
-                        this.querySelector('i').classList.add('fa-microphone');
-                        const searchInput = document.getElementById('search-input');
-                        if (searchInput) {
-                            searchInput.placeholder = 'Ask anything...';
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error accessing microphone:', error);
-                    alert('Please allow microphone access to use voice mode.');
-                }
-            });
-
-            // Handle touch events for mobile
-            if (isMobileDevice) {
-                voiceButton.addEventListener('touchstart', function(event) {
-                    event.preventDefault(); // Prevent double-firing
-                }, { passive: false });
-
-                voiceButton.addEventListener('touchend', function(event) {
-                    event.preventDefault(); // Prevent double-firing
-                }, { passive: false });
-            }
-        } else {
-            console.error('Voice mode button not found in the DOM');
+            voiceButton.classList.remove('active');
+            voiceButton.querySelector('i').classList.remove('fa-stop');
+            voiceButton.querySelector('i').classList.add('fa-microphone');
         }
+        document.getElementById('search-input').placeholder = 'Ask anything...';
+        if (recognition) {
+            try {
+                recognition.stop();
+            } catch (error) {
+                console.error('Error stopping recognition:', error);
+            }
+        }
+    }
+
+    // Start voice mode
+    async function startVoiceMode() {
+        try {
+            // Request microphone permission
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(track => track.stop());
+
+            if (!recognition && !initSpeechRecognition()) {
+                throw new Error('Failed to initialize speech recognition');
+            }
+
+            isVoiceModeActive = true;
+            const voiceButton = document.getElementById('voice-mode-button');
+            voiceButton.classList.add('active');
+            voiceButton.querySelector('i').classList.remove('fa-microphone');
+            voiceButton.querySelector('i').classList.add('fa-stop');
+
+            recognition.start();
+        } catch (error) {
+            console.error('Error starting voice mode:', error);
+            alert('Please allow microphone access to use voice mode.');
+            stopVoiceMode();
+        }
+    }
+
+    // Initialize voice mode button
+    document.addEventListener('DOMContentLoaded', () => {
+        const voiceButton = document.getElementById('voice-mode-button');
+        if (!voiceButton) {
+            console.error('Voice mode button not found');
+            return;
+        }
+
+        // Handle click/touch events
+        voiceButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            console.log('Voice button clicked');
+            
+            if (isVoiceModeActive) {
+                stopVoiceMode();
+            } else {
+                await startVoiceMode();
+            }
+        });
+
+        // Prevent double-firing on mobile
+        voiceButton.addEventListener('touchstart', (event) => {
+            event.preventDefault();
+        }, { passive: false });
     });
 
     // Add touch event handling for mobile devices
