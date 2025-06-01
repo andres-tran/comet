@@ -1495,6 +1495,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let finalTranscript = '';
     let interimTranscript = '';
 
+    // Check if running on mobile device
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
     // Initialize speech recognition if available
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         try {
@@ -1502,6 +1505,12 @@ document.addEventListener('DOMContentLoaded', () => {
             recognition.continuous = true;
             recognition.interimResults = true;
             recognition.lang = 'en-US';
+
+            // Set mobile-specific configurations
+            if (isMobileDevice) {
+                recognition.continuous = false; // Disable continuous mode on mobile
+                recognition.maxAlternatives = 1;
+            }
 
             recognition.onstart = function() {
                 console.log('Speech recognition started');
@@ -1546,6 +1555,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             console.error('Error restarting recognition:', error);
                         }
                     }
+                } else if (event.error === 'not-allowed') {
+                    alert('Please allow microphone access to use voice mode.');
+                    isVoiceModeActive = false;
+                    const voiceButton = document.getElementById('voice-mode-button');
+                    if (voiceButton) {
+                        voiceButton.classList.remove('active');
+                    }
                 } else {
                     isVoiceModeActive = false;
                     const voiceButton = document.getElementById('voice-mode-button');
@@ -1587,49 +1603,65 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('DOMContentLoaded', function() {
         const voiceButton = document.getElementById('voice-mode-button');
         if (voiceButton) {
-            voiceButton.addEventListener('click', function() {
+            // Handle click event
+            voiceButton.addEventListener('click', async function() {
                 console.log('Voice button clicked');
                 if (!recognition) {
                     alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
                     return;
                 }
 
-                isVoiceModeActive = !isVoiceModeActive;
-                this.classList.toggle('active');
+                try {
+                    // Request microphone permission
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(track => track.stop()); // Stop the stream after getting permission
 
-                if (isVoiceModeActive) {
-                    try {
-                        recognition.start();
-                        this.querySelector('i').classList.remove('fa-microphone');
-                        this.querySelector('i').classList.add('fa-stop');
-                        const searchInput = document.getElementById('search-input');
-                        if (searchInput) {
-                            searchInput.placeholder = 'Listening...';
+                    isVoiceModeActive = !isVoiceModeActive;
+                    this.classList.toggle('active');
+
+                    if (isVoiceModeActive) {
+                        try {
+                            recognition.start();
+                            this.querySelector('i').classList.remove('fa-microphone');
+                            this.querySelector('i').classList.add('fa-stop');
+                            const searchInput = document.getElementById('search-input');
+                            if (searchInput) {
+                                searchInput.placeholder = 'Listening...';
+                            }
+                        } catch (error) {
+                            console.error('Error starting speech recognition:', error);
+                            isVoiceModeActive = false;
+                            this.classList.remove('active');
+                            const searchInput = document.getElementById('search-input');
+                            if (searchInput) {
+                                searchInput.placeholder = 'Ask anything...';
+                            }
                         }
-                    } catch (error) {
-                        console.error('Error starting speech recognition:', error);
-                        isVoiceModeActive = false;
-                        this.classList.remove('active');
+                    } else {
+                        recognition.stop();
+                        this.querySelector('i').classList.remove('fa-stop');
+                        this.querySelector('i').classList.add('fa-microphone');
                         const searchInput = document.getElementById('search-input');
                         if (searchInput) {
                             searchInput.placeholder = 'Ask anything...';
                         }
                     }
-                } else {
-                    recognition.stop();
-                    this.querySelector('i').classList.remove('fa-stop');
-                    this.querySelector('i').classList.add('fa-microphone');
-                    const searchInput = document.getElementById('search-input');
-                    if (searchInput) {
-                        searchInput.placeholder = 'Ask anything...';
-                    }
+                } catch (error) {
+                    console.error('Error accessing microphone:', error);
+                    alert('Please allow microphone access to use voice mode.');
                 }
             });
 
-            // Add touch event handling for mobile devices
-            voiceButton.addEventListener('touchstart', function(event) {
-                event.preventDefault(); // Prevent double-firing on mobile devices
-            });
+            // Handle touch events for mobile
+            if (isMobileDevice) {
+                voiceButton.addEventListener('touchstart', function(event) {
+                    event.preventDefault(); // Prevent double-firing
+                }, { passive: false });
+
+                voiceButton.addEventListener('touchend', function(event) {
+                    event.preventDefault(); // Prevent double-firing
+                }, { passive: false });
+            }
         } else {
             console.error('Voice mode button not found in the DOM');
         }
