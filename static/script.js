@@ -389,30 +389,39 @@ document.addEventListener('DOMContentLoaded', () => {
         const link = event.currentTarget;
         const linkRect = link.getBoundingClientRect();
         
-        // Calculate tooltip position
+        // Calculate tooltip dimensions
+        const tooltipWidth = Math.min(300, viewportWidth * 0.9); // Responsive width
+        const tooltipHeight = 40; // Approximate tooltip height
+        
+        // Calculate initial position
         let tooltipLeft = linkRect.left;
         let tooltipTop = linkRect.bottom + 5;
         
-        // Check if tooltip would overflow right edge
-        const tooltipWidth = 200; // Approximate tooltip width
-        if (tooltipLeft + tooltipWidth > viewportWidth - 20) {
-            tooltipLeft = viewportWidth - tooltipWidth - 20;
-        }
+        // Determine if we should show tooltip above or below
+        const showAbove = linkRect.top > viewportHeight / 2;
         
-        // Check if tooltip would overflow bottom edge
-        const tooltipHeight = 40; // Approximate tooltip height
-        if (tooltipTop + tooltipHeight > viewportHeight - 20) {
+        // Adjust position based on available space
+        if (showAbove) {
             tooltipTop = linkRect.top - tooltipHeight - 5;
         }
         
-        // Ensure tooltip stays within viewport on mobile
-        if (viewportWidth <= 768) {
-            tooltipLeft = Math.max(10, Math.min(tooltipLeft, viewportWidth - tooltipWidth - 10));
-            tooltipTop = Math.max(10, Math.min(tooltipTop, viewportHeight - tooltipHeight - 10));
+        // Ensure tooltip stays within viewport horizontally
+        tooltipLeft = Math.max(10, Math.min(tooltipLeft, viewportWidth - tooltipWidth - 10));
+        
+        // Ensure tooltip stays within viewport vertically
+        tooltipTop = Math.max(10, Math.min(tooltipTop, viewportHeight - tooltipHeight - 10));
+        
+        // Add position class for arrow styling
+        if (showAbove) {
+            tooltip.classList.add('above');
+        } else {
+            tooltip.classList.add('below');
         }
         
+        // Set tooltip position
         tooltip.style.left = `${tooltipLeft}px`;
         tooltip.style.top = `${tooltipTop}px`;
+        tooltip.style.maxWidth = `${tooltipWidth}px`;
         
         document.body.appendChild(tooltip);
         
