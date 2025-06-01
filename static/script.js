@@ -1489,51 +1489,110 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Perplexity citation conversion function removed
 
-    // Voice mode functionality
+    // Voice mode functionality - Mobile optimized
     let isVoiceModeActive = false;
     let recognition = null;
+    let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // Initialize speech recognition
+    // Check if speech recognition is available
+    function isSpeechRecognitionSupported() {
+        return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+    }
+
+    // Initialize speech recognition with mobile-specific settings
     function initSpeechRecognition() {
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        if (!isSpeechRecognitionSupported()) {
             console.error('Speech recognition not supported');
             return false;
         }
 
         try {
-            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.continuous = false;
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            
+            // Mobile-optimized settings
+            recognition.continuous = false; // Always false for mobile compatibility
             recognition.interimResults = true;
-            recognition.lang = 'en-US';
+            recognition.maxAlternatives = 1;
+            recognition.lang = navigator.language || 'en-US';
 
             recognition.onstart = () => {
                 console.log('Speech recognition started');
-                document.getElementById('search-input').placeholder = 'Listening...';
+                updateVoiceButtonState(true);
+                document.getElementById('search-input').placeholder = 'Listening... Speak now!';
             };
 
             recognition.onresult = (event) => {
                 console.log('Speech recognition result received');
-                const transcript = Array.from(event.results)
-                    .map(result => result[0].transcript)
-                    .join('');
+                let finalTranscript = '';
+                let interimTranscript = '';
+
+                for (let i = 0; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                const searchInput = document.getElementById('search-input');
+                const currentValue = searchInput.value;
                 
-                document.getElementById('search-input').value = transcript;
+                // On mobile, replace the entire value with the final transcript
+                if (finalTranscript) {
+                    searchInput.value = currentValue + finalTranscript + ' ';
+                } else if (interimTranscript) {
+                    searchInput.value = currentValue + interimTranscript;
+                }
+
+                // Auto-resize textarea
+                searchInput.style.height = 'auto';
+                searchInput.style.height = (searchInput.scrollHeight) + 'px';
             };
 
             recognition.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
+                
+                if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    alert('Microphone access denied. Please enable microphone permissions in your browser settings.');
+                } else if (event.error === 'no-speech') {
+                    console.log('No speech detected, trying again...');
+                    if (isVoiceModeActive) {
+                        setTimeout(() => {
+                            if (isVoiceModeActive) {
+                                try {
+                                    recognition.start();
+                                } catch (e) {
+                                    console.error('Error restarting after no-speech:', e);
+                                    stopVoiceMode();
+                                }
+                            }
+                        }, 100);
+                    }
+                    return;
+                } else if (event.error === 'aborted') {
+                    console.log('Speech recognition aborted');
+                    return;
+                }
+                
                 stopVoiceMode();
             };
 
             recognition.onend = () => {
                 console.log('Speech recognition ended');
                 if (isVoiceModeActive) {
-                    try {
-                        recognition.start();
-                    } catch (error) {
-                        console.error('Error restarting recognition:', error);
-                        stopVoiceMode();
-                    }
+                    // On mobile, restart recognition after a short delay
+                    setTimeout(() => {
+                        if (isVoiceModeActive) {
+                            try {
+                                recognition.start();
+                            } catch (error) {
+                                console.error('Error restarting recognition:', error);
+                                stopVoiceMode();
+                            }
+                        }
+                    }, 100);
                 }
             };
 
@@ -1544,16 +1603,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Update voice button visual state
+    function updateVoiceButtonState(isListening) {
+        const voiceButton = document.getElementById('voice-mode-button');
+        if (!voiceButton) return;
+
+        const icon = voiceButton.querySelector('i');
+        if (isListening) {
+            voiceButton.classList.add('active');
+            icon.classList.remove('fa-microphone');
+            icon.classList.add('fa-stop');
+        } else {
+            voiceButton.classList.remove('active');
+            icon.classList.remove('fa-stop');
+            icon.classList.add('fa-microphone');
+        }
+    }
+
     // Stop voice mode
     function stopVoiceMode() {
         isVoiceModeActive = false;
-        const voiceButton = document.getElementById('voice-mode-button');
-        if (voiceButton) {
-            voiceButton.classList.remove('active');
-            voiceButton.querySelector('i').classList.remove('fa-stop');
-            voiceButton.querySelector('i').classList.add('fa-microphone');
-        }
+        updateVoiceButtonState(false);
         document.getElementById('search-input').placeholder = 'Ask anything...';
+        
         if (recognition) {
             try {
                 recognition.stop();
@@ -1563,32 +1635,66 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Start voice mode
+    // Start voice mode with mobile-specific permission handling
     async function startVoiceMode() {
         try {
-            // Request microphone permission
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            stream.getTracks().forEach(track => track.stop());
+            console.log('Starting voice mode on mobile:', isMobile);
+            
+            // Request microphone permission explicitly
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                
+                // Stop the stream immediately after getting permission
+                stream.getTracks().forEach(track => track.stop());
+                console.log('Microphone permission granted');
+            } catch (permError) {
+                console.error('Microphone permission denied:', permError);
+                alert('Please allow microphone access to use voice mode. Check your browser settings if needed.');
+                return;
+            }
 
+            // Initialize speech recognition if not already done
             if (!recognition && !initSpeechRecognition()) {
-                throw new Error('Failed to initialize speech recognition');
+                alert('Speech recognition is not supported in your browser. Please use Chrome or Safari.');
+                return;
             }
 
             isVoiceModeActive = true;
-            const voiceButton = document.getElementById('voice-mode-button');
-            voiceButton.classList.add('active');
-            voiceButton.querySelector('i').classList.remove('fa-microphone');
-            voiceButton.querySelector('i').classList.add('fa-stop');
-
-            recognition.start();
+            
+            try {
+                recognition.start();
+                console.log('Speech recognition started successfully');
+            } catch (startError) {
+                console.error('Error starting speech recognition:', startError);
+                
+                // Try to reinitialize and start again
+                if (initSpeechRecognition()) {
+                    try {
+                        recognition.start();
+                    } catch (retryError) {
+                        console.error('Retry failed:', retryError);
+                        stopVoiceMode();
+                        alert('Unable to start voice recognition. Please try again.');
+                    }
+                } else {
+                    stopVoiceMode();
+                    alert('Voice recognition initialization failed.');
+                }
+            }
         } catch (error) {
-            console.error('Error starting voice mode:', error);
-            alert('Please allow microphone access to use voice mode.');
+            console.error('Error in startVoiceMode:', error);
             stopVoiceMode();
+            alert('Voice mode failed to start. Please try again.');
         }
     }
 
-    // Initialize voice mode button
+    // Initialize voice mode button with mobile-optimized event handling
     document.addEventListener('DOMContentLoaded', () => {
         const voiceButton = document.getElementById('voice-mode-button');
         if (!voiceButton) {
@@ -1596,27 +1702,52 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Handle click/touch events
-        voiceButton.addEventListener('click', async (event) => {
+        console.log('Initializing voice mode button for mobile:', isMobile);
+
+        // Check if speech recognition is supported
+        if (!isSpeechRecognitionSupported()) {
+            voiceButton.style.display = 'none'; // Hide button if not supported
+            console.warn('Speech recognition not supported, hiding voice button');
+            return;
+        }
+
+        // Single event handler for both desktop and mobile
+        const handleVoiceButtonClick = async (event) => {
             event.preventDefault();
-            console.log('Voice button clicked');
+            event.stopPropagation();
+            
+            console.log('Voice button activated, current state:', isVoiceModeActive);
             
             if (isVoiceModeActive) {
                 stopVoiceMode();
             } else {
                 await startVoiceMode();
             }
-        });
+        };
 
-        // Prevent double-firing on mobile
-        voiceButton.addEventListener('touchstart', (event) => {
-            event.preventDefault();
-        }, { passive: false });
+        // Add click event listener
+        voiceButton.addEventListener('click', handleVoiceButtonClick);
+
+        // For mobile devices, also handle touch events to prevent issues
+        if (isMobile) {
+            let touchStartTime = 0;
+            
+            voiceButton.addEventListener('touchstart', (event) => {
+                touchStartTime = Date.now();
+                event.preventDefault();
+            }, { passive: false });
+
+            voiceButton.addEventListener('touchend', (event) => {
+                const touchDuration = Date.now() - touchStartTime;
+                if (touchDuration < 1000) { // Prevent accidental long presses
+                    event.preventDefault();
+                    handleVoiceButtonClick(event);
+                }
+            }, { passive: false });
+        }
+
+        console.log('Voice mode button initialized successfully');
     });
 
-    // Add touch event handling for mobile devices
-    document.getElementById('voice-mode-button').addEventListener('touchstart', function(event) {
-        event.preventDefault(); // Prevent double-firing on mobile devices
-    });
-
+    // ... existing code ...
 }); 
