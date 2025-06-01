@@ -1288,17 +1288,43 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
 }
 
 /* Smooth transitions for all interactive elements */
-button, a, input, select, textarea {
+button, a.button {
+    border-radius: 50%;
+    aspect-ratio: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5em;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    cursor: pointer;
     transition: all 0.2s ease;
+    font-size: 1em;
+    line-height: 1;
+    text-decoration: none;
+    outline: none;
 }
 
-/* Enhanced hover states */
-button:hover, a:hover {
+button:hover, a.button:hover {
+    background: var(--hover-color);
     transform: translateY(-1px);
 }
 
-button:active, a:active {
-    transform: translateY(0);
+button:active, a.button:active {
+    transform: translateY(1px);
+}
+
+/* Form elements styling */
+input, select, textarea {
+    border-radius: 4px;
+    padding: 0.5em;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    transition: all 0.2s ease;
+    font-size: 1em;
+    outline: none;
 }
 
 /* Responsive Table Wrapper */
