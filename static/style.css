@@ -81,35 +81,35 @@
 }
 
 body.dark-mode {
-    /* Dark Mode Color Overrides */
+    /* Dark Mode Color Overrides - Pure Black/Gray Theme */
     --bg-color: #000000;
-    --text-color: #e5e7eb;
-    --text-muted-color: #9ca3af;
-    --border-color: #374151;
-    --input-bg-color: #1f2937;
-    --input-placeholder-color: #6b7280;
-    --select-bg-color: #374151;
-    --select-border-color: #4b5563;
-    --results-bg-color: #111827;
-    --results-border-color: #374151;
+    --text-color: #e0e0e0;
+    --text-muted-color: #a0a0a0;
+    --border-color: #333333;
+    --input-bg-color: #1a1a1a;
+    --input-placeholder-color: #777777;
+    --select-bg-color: #2c2c2c;
+    --select-border-color: #444444;
+    --results-bg-color: #0d0d0d;
+    --results-border-color: #2a2a2a;
     --results-shadow-color: rgba(255, 255, 255, 0.05);
-    --code-bg-color: #374151;
-    --code-text-color: #d1d5db;
-    --blockquote-color: #9ca3af;
-    --table-border-color: #4b5563;
-    --table-header-bg-color: #374151;
-    --error-bg-color: #1f1618;
-    --error-text-color: #fca5a5;
-    --error-border-color: #7f1d1d;
-    --success-bg-color: #14532d;
-    --success-text-color: #86efac;
-    --success-border-color: #16a34a;
-    --thinking-text-color: #9ca3af;
+    --code-bg-color: #282828;
+    --code-text-color: #cccccc;
+    --blockquote-color: #a0a0a0;
+    --table-border-color: #444444;
+    --table-header-bg-color: #252525;
+    --error-bg-color: #4d2226;
+    --error-text-color: #f8d7da;
+    --error-border-color: #721c24;
+    --success-bg-color: #1e3a1e;
+    --success-text-color: #90ee90;
+    --success-border-color: #4caf50;
+    --thinking-text-color: #a0a0a0;
     --spinner-base-color: rgba(255, 255, 255, 0.1);
-    --code-block-outer-bg: #1f2937;
-    --code-block-inner-bg: #374151;
-    --code-block-text-color: #d1d5db;
-    --code-block-border-color: #4b5563;
+    --code-block-outer-bg: #1a1a1a;
+    --code-block-inner-bg: #2d2d2d;
+    --code-block-text-color: #e0e0e0;
+    --code-block-border-color: #4a4a4a;
 
     /* Dark mode shadow adjustments */
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
