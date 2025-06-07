@@ -1081,6 +1081,12 @@ body.dark-mode .reasoning-header h4 {
     position: relative;
 }
 
+/* Light mode styling for reasoning content */
+.reasoning-content {
+    background: var(--results-bg-color);
+    color: var(--text-color);
+}
+
 /* Dark mode styling for reasoning content */
 body.dark-mode .reasoning-content {
     background: #000000;
@@ -1471,6 +1477,12 @@ body.dark-mode .sources-count {
     position: relative;
 }
 
+/* Light mode styling for sources content */
+.sources-content {
+    color: var(--text-color);
+    background: var(--results-bg-color);
+}
+
 /* Dark mode styling for sources content */
 body.dark-mode .sources-content {
     color: #e0e0e0;
@@ -1607,15 +1619,25 @@ body.dark-mode .web-search-progress {
 
 .progress-title {
     font-weight: 600;
-    color: #ffffff;
+    color: var(--text-color);
     font-size: 1rem;
     margin-bottom: 4px;
+}
+
+/* Dark mode styling for progress title */
+body.dark-mode .progress-title {
+    color: #ffffff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .progress-subtitle {
-    color: #888888;
+    color: var(--text-muted-color);
     font-size: 0.85rem;
+}
+
+/* Dark mode styling for progress subtitle */
+body.dark-mode .progress-subtitle {
+    color: #888888;
 }
 
 /* Terminal Error States */
@@ -1639,19 +1661,27 @@ body.dark-mode .web-search-progress {
 }
 
 .retry-search-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--select-bg-color);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
-    color: #ffffff;
+    color: var(--text-color);
     cursor: pointer;
     padding: 8px 16px;
     transition: all 0.3s ease;
     margin-left: auto;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-sm);
     font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
     font-size: 0.85rem;
     font-weight: 500;
     backdrop-filter: blur(10px);
+}
+
+/* Dark mode styling for retry search button */
+body.dark-mode .retry-search-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .retry-search-btn:hover {
@@ -2652,16 +2682,23 @@ body.dark-mode .reasoning-content pre {
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--code-block-outer-bg);
+    border: 1px solid var(--border-color);
     border-radius: 10px;
     text-decoration: none;
-    color: #e0e0e0;
+    color: var(--text-color);
     font-size: 0.9rem;
     transition: all 0.3s ease;
     cursor: pointer;
     position: relative;
     backdrop-filter: blur(10px);
+}
+
+/* Dark mode styling for source links */
+body.dark-mode .source-link {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #e0e0e0;
 }
 
 .source-link::before {
@@ -2683,6 +2720,13 @@ body.dark-mode .reasoning-content pre {
     transform: translateY(-2px);
     box-shadow: 
         0 8px 25px rgba(0, 170, 255, 0.15),
+        0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode hover styling for source links */
+body.dark-mode .source-link:hover {
+    box-shadow: 
+        0 8px 25px rgba(0, 170, 255, 0.15),
         0 3px 10px rgba(0, 0, 0, 0.2);
 }
 
@@ -2690,11 +2734,7 @@ body.dark-mode .reasoning-content pre {
     opacity: 1;
 }
 
-body.dark-mode .source-link:hover {
-    box-shadow: 
-        0 8px 25px rgba(0, 170, 255, 0.15),
-        0 3px 10px rgba(0, 0, 0, 0.3);
-}
+
 
 /* Terminal-Style Source Number */
 .source-number {
@@ -2722,19 +2762,31 @@ body.dark-mode .source-link:hover {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: #ffffff;
+    color: var(--text-color);
     font-size: 0.9rem;
 }
 
+/* Dark mode styling for source title */
+body.dark-mode .source-title {
+    color: #ffffff;
+}
+
 .source-domain {
-    color: #888888;
+    color: var(--text-muted-color);
     font-size: 0.8rem;
     flex-shrink: 0;
     padding: 2px 8px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--code-block-inner-bg);
     border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
     font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+/* Dark mode styling for source domain */
+body.dark-mode .source-domain {
+    color: #888888;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Mobile Terminal Web Sources & Progress */
