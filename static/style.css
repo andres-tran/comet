@@ -1306,7 +1306,15 @@ html {
     opacity: 0;
     animation: fadeInStaggered 0.7s ease-out forwards;
     animation-delay: 0.3s;
-    margin-bottom: var(--space-2xl);
+    margin-bottom: 24px;
+    background: linear-gradient(135deg, #000000 0%, #0a0a0a 100%);
+    border: 1px solid #333333;
+    border-radius: 16px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        0 2px 8px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
 }
 
 .web-search-sources.fade-in {
@@ -1314,220 +1322,263 @@ html {
     animation-delay: 0.3s;
 }
 
+/* Terminal-Style Sources Header */
 .sources-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--container-padding);
-    background-color: var(--results-bg-color);
-    border-bottom: 1px solid var(--border-color);
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+    border-bottom: 1px solid #333333;
     cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.sources-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #00aaff, transparent);
+    opacity: 0.6;
+}
+
+.sources-header:hover {
+    background: linear-gradient(135deg, #222222 0%, #111111 100%);
 }
 
 .sources-header h4 {
     margin: 0;
-    color: var(--text-color);
-    font-size: var(--text-lg);
+    color: #ffffff;
+    font-size: 1rem;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
+    gap: 12px;
+    font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.sources-header h4::before {
+    content: '🌐';
+    font-size: 0.9em;
+    filter: drop-shadow(0 0 5px rgba(0, 170, 255, 0.5));
 }
 
 .sources-header .fa-globe {
-    color: var(--primary-color);
+    color: #00aaff;
+    text-shadow: 0 0 8px rgba(0, 170, 255, 0.4);
 }
 
 .sources-count {
-    font-size: 0.9rem;
-    color: var(--text-muted-color);
+    font-size: 0.85rem;
+    color: #888888;
     font-weight: normal;
+    background: rgba(0, 170, 255, 0.1);
+    padding: 4px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 170, 255, 0.2);
+    font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 }
 
+/* Terminal-Style Sources Content */
 .sources-content {
-    padding: var(--container-padding);
+    padding: 24px;
     max-height: 500px;
     overflow-y: auto;
     transition: all 0.3s ease;
-    font-size: var(--text-base);
+    font-size: 14px;
     line-height: 1.6;
-    color: var(--text-color);
+    color: #e0e0e0;
+    background: #000000;
+    font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    position: relative;
+}
+
+.sources-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 30% 30%, rgba(0, 170, 255, 0.02) 0%, transparent 50%),
+        radial-gradient(circle at 70% 70%, rgba(0, 255, 136, 0.02) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 .sources-content.collapsed {
     max-height: 0;
-    padding: 0 var(--container-padding);
+    padding: 0;
     overflow: hidden;
 }
 
-.quick-answer {
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: var(--bg-color);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
+/* Custom Scrollbar for Sources */
+.sources-content::-webkit-scrollbar {
+    width: 8px;
 }
 
-.quick-answer-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    color: var(--primary-color);
-    font-weight: 600;
-    font-size: 0.9rem;
+.sources-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
 }
 
-.quick-answer-content {
-    color: var(--text-color);
-    line-height: 1.6;
+.sources-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #00aaff, #0088cc);
+    border-radius: 4px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.sources-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
+.sources-content::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #00bbff, #0099dd);
 }
 
-.source-item {
-    position: relative;
-}
 
-.source-link {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    background: var(--bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    text-decoration: none;
-    color: var(--text-color);
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-    cursor: pointer;
-}
-
-.source-link:hover {
-    background: var(--select-bg-color);
-    border-color: var(--primary-color);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-body.dark-mode .source-link:hover {
-    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
-}
-
-.source-number {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    background: var(--primary-color);
-    color: white;
-    border-radius: 50%;
-    font-size: 0.8rem;
-    font-weight: 600;
-    flex-shrink: 0;
-}
-
-.source-title {
-    flex: 1;
-    font-weight: 500;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.source-domain {
-    color: var(--text-muted-color);
-    font-size: 0.8rem;
-    flex-shrink: 0;
-}
 
 /* Mobile Responsive */
 /* Mobile web search sources - maintain desktop styling for consistency */
 
-/* Web Search Progress Indicator */
+/* Terminal-Style Web Search Progress Animation */
 .web-search-progress {
     display: none;
-    padding: var(--space-lg) var(--space-xl);
-    background: var(--results-bg-color);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-sm);
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #000000 0%, #0a0a0a 100%);
+    border-radius: 16px;
+    border: 1px solid #333333;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        0 2px 8px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
     animation: fadeInStaggered 0.6s ease-out forwards;
     animation-delay: 0.2s;
-    margin-bottom: var(--space-2xl);
+    margin-bottom: 24px;
     opacity: 0;
+    position: relative;
+}
+
+.web-search-progress::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #00aaff, transparent);
+    opacity: 0.6;
+    border-radius: 16px 16px 0 0;
 }
 
 body.dark-mode .web-search-progress {
-    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.05);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        0 2px 8px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .progress-content {
     display: flex;
     align-items: center;
-    gap: var(--space-lg);
+    gap: 16px;
+    position: relative;
+    z-index: 1;
 }
 
 .progress-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: var(--space-4xl);
-    height: var(--space-4xl);
-    background: var(--primary-color);
-    border-radius: var(--radius-full);
-    color: white;
-    font-size: var(--text-xl);
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #00aaff, #0088cc);
+    border-radius: 12px;
+    color: #000000;
+    font-size: 1.2rem;
+    font-weight: 700;
+    box-shadow: 
+        0 4px 12px rgba(0, 170, 255, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    animation: searchPulse 2s ease-in-out infinite;
+}
+
+@keyframes searchPulse {
+    0%, 100% {
+        box-shadow: 
+            0 4px 12px rgba(0, 170, 255, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    50% {
+        box-shadow: 
+            0 6px 20px rgba(0, 170, 255, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
+    }
 }
 
 .progress-text {
     flex: 1;
+    font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 }
 
 .progress-title {
     font-weight: 600;
-    color: var(--text-color);
-    font-size: var(--text-base);
-    margin-bottom: var(--space-xs);
+    color: #ffffff;
+    font-size: 1rem;
+    margin-bottom: 4px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .progress-subtitle {
-    color: var(--text-muted-color);
-    font-size: var(--text-sm);
+    color: #888888;
+    font-size: 0.85rem;
 }
 
+/* Terminal Error States */
 .progress-content.error {
-    border-left: 4px solid #ef4444;
-    padding-left: 1rem;
+    border-left: 4px solid #ff6b6b;
+    padding-left: 16px;
+    background: rgba(255, 107, 107, 0.05);
+    border-radius: 8px;
+    padding: 12px 16px;
 }
 
 .progress-icon.error {
-    background: #ef4444;
+    background: linear-gradient(135deg, #ff6b6b, #e55555);
+    animation: errorShake 0.5s ease-in-out;
+}
+
+@keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
 }
 
 .retry-search-btn {
-    background: var(--bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    color: var(--text-color);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #ffffff;
     cursor: pointer;
-    padding: var(--space-sm);
-    transition: all 0.2s ease;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
     margin-left: auto;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.85rem;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
 }
 
 .retry-search-btn:hover {
-    background: var(--select-bg-color);
-    border-color: var(--primary-color);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+    background: rgba(0, 170, 255, 0.1);
+    border-color: rgba(0, 170, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 
+        0 4px 15px rgba(0, 170, 255, 0.2),
+        0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* Enhanced Web Search Sources Styles */
@@ -2453,4 +2504,223 @@ body.dark-mode .reasoning-content pre {
     padding: 12px;
     margin: 1em 0;
     border-radius: 6px;
+}
+
+/* Terminal-Style Quick Answer */
+.quick-answer {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: rgba(0, 170, 255, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(0, 170, 255, 0.2);
+    position: relative;
+    z-index: 1;
+}
+
+.quick-answer-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: #00aaff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-shadow: 0 0 5px rgba(0, 170, 255, 0.3);
+}
+
+.quick-answer-label::before {
+    content: '⚡';
+    font-size: 0.8em;
+    filter: drop-shadow(0 0 3px rgba(0, 170, 255, 0.5));
+}
+
+.quick-answer-content {
+    color: #e0e0e0;
+    line-height: 1.6;
+    position: relative;
+    z-index: 1;
+}
+
+/* Terminal-Style Sources List */
+.sources-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.source-item {
+    position: relative;
+}
+
+/* Modern Terminal Source Links */
+.source-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    text-decoration: none;
+    color: #e0e0e0;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    backdrop-filter: blur(10px);
+}
+
+.source-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent, rgba(0, 170, 255, 0.05), transparent);
+    border-radius: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.source-link:hover {
+    background: rgba(0, 170, 255, 0.1);
+    border-color: rgba(0, 170, 255, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 
+        0 8px 25px rgba(0, 170, 255, 0.15),
+        0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.source-link:hover::before {
+    opacity: 1;
+}
+
+body.dark-mode .source-link:hover {
+    box-shadow: 
+        0 8px 25px rgba(0, 170, 255, 0.15),
+        0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Terminal-Style Source Number */
+.source-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #00aaff, #0088cc);
+    color: #000000;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: 
+        0 2px 8px rgba(0, 170, 255, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    text-shadow: none;
+    font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+.source-title {
+    flex: 1;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #ffffff;
+    font-size: 0.9rem;
+}
+
+.source-domain {
+    color: #888888;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+/* Mobile Terminal Web Sources & Progress */
+@media (max-width: 480px) {
+    .web-search-sources {
+        margin-bottom: 16px;
+        border-radius: 12px;
+    }
+    
+    .sources-header {
+        padding: 12px 16px;
+    }
+    
+    .sources-header h4 {
+        font-size: 0.9rem;
+        gap: 8px;
+    }
+    
+    .sources-count {
+        font-size: 0.8rem;
+        padding: 3px 6px;
+    }
+    
+    .sources-content {
+        padding: 16px;
+        font-size: 13px;
+    }
+    
+    .source-link {
+        padding: 10px 12px;
+        gap: 10px;
+        font-size: 0.85rem;
+    }
+    
+    .source-number {
+        width: 24px;
+        height: 24px;
+        font-size: 0.75rem;
+    }
+    
+    .source-title {
+        font-size: 0.85rem;
+    }
+    
+    .source-domain {
+        font-size: 0.75rem;
+        padding: 1px 6px;
+    }
+    
+    .web-search-progress {
+        padding: 16px 18px;
+        margin-bottom: 16px;
+        border-radius: 12px;
+    }
+    
+    .progress-content {
+        gap: 12px;
+    }
+    
+    .progress-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .progress-title {
+        font-size: 0.9rem;
+    }
+    
+    .progress-subtitle {
+        font-size: 0.8rem;
+    }
+    
+    .quick-answer {
+        padding: 12px;
+        margin-bottom: 16px;
+    }
+    
+    .retry-search-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
 } 
