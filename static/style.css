@@ -477,15 +477,14 @@ body {
     position: relative;
     font-size: var(--text-lg);
     line-height: 1.7;
+    display: none;
     opacity: 0;
-    animation: fadeInStaggered 0.9s ease-out forwards;
-    animation-delay: 0.7s;
 }
 
-.results-container-perplexity.visible {
-    opacity: 0;
+.results-container-perplexity.streaming {
+    display: block;
     animation: fadeInStaggered 0.9s ease-out forwards;
-    animation-delay: 0.7s;
+    animation-delay: 0.2s;
 }
 
 /* Enhanced Typography for Results */

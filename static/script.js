@@ -133,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Clear results container
             resultsContainer.innerHTML = '';
             resultsContainer.style.display = 'none';
+            resultsContainer.classList.remove('streaming');
             
             // Clear and hide reasoning container (AI thinking process)
             if (reasoningContainer) {
@@ -454,6 +455,10 @@ document.addEventListener('DOMContentLoaded', () => {
             currentResultsWrapper.innerHTML = ''; // Clear previous results content
         }
         
+        // Reset results container state
+        resultsContainer.classList.remove('streaming');
+        resultsContainer.style.display = 'none';
+        
         // Clear web search sources
         clearWebSearchSources();
         
@@ -538,7 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Reset UI states
         initializeNewSearch(); // Initialize the search properly
-        resultsContainer.style.display = 'block'; // Make sure results container is visible
+        resultsContainer.style.display = 'none'; // Keep results container hidden until streaming starts
         downloadArea.style.display = 'none'; // Hide download area
         downloadArea.innerHTML = ''; // Clear previous button
         thinkingIndicator.style.display = 'flex'; // Show thinking animation
@@ -565,7 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // This block is specifically for gpt-image-1 now
             console.log(`Image model selected: ${selectedModel}. Using non-streaming fetch.`);
             resultsContainer.innerHTML = ''; // Clear results area
-            resultsContainer.style.display = 'block'; 
+            resultsContainer.style.display = 'none'; // Keep hidden until image is ready
             thinkingIndicator.style.display = 'flex'; 
             // thinkingText already set above
 
@@ -597,6 +602,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     img.alt = data.is_edit ? "Edited Image: " + query : "Generated Image: " + query;
                     img.classList.add('generated-image');
                     resultsContainer.appendChild(img);
+                    
+                    // Show results container with image content
+                    resultsContainer.style.display = 'block';
+                    resultsContainer.classList.add('streaming'); // Add animation
 
                     // Create and add download button
                     const downloadButton = document.createElement('a');
@@ -702,6 +711,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     thinkingIndicator.style.display = 'none'; // Hide after first actual data
                                     resultsContainer.innerHTML = ''; // Clear any initial "Thinking..." text from results
                                     resultsContainer.style.display = 'block'; // Explicitly show container
+                                    resultsContainer.classList.add('streaming'); // Add streaming class for animation
                                     isFirstChunkProcessed = true;
                                 }
 
