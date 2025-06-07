@@ -921,11 +921,21 @@ body {
     margin-top: 10px;
 }
 
-/* Reasoning Container Styling */
+/* Reasoning Container Styling - Modern Terminal Design */
 .reasoning-container-perplexity {
     width: 100%;
     padding: 0;
     display: none;
+    overflow: hidden;
+    background: linear-gradient(135deg, #000000 0%, #0a0a0a 100%);
+    border: 1px solid #333333;
+    border-radius: 16px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        0 2px 8px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    margin-bottom: 24px;
+    position: relative;
     overflow: hidden;
 }
 
@@ -936,108 +946,114 @@ body {
     animation-delay: 0.5s;
 }
 
+/* Modern Header with Terminal Aesthetic */
 .reasoning-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--container-padding);
-    background-color: var(--results-bg-color);
-    border-bottom: 1px solid var(--border-color);
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+    border-bottom: 1px solid #333333;
     cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.reasoning-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #00ff88, transparent);
+    opacity: 0.6;
+}
+
+.reasoning-header:hover {
+    background: linear-gradient(135deg, #222222 0%, #111111 100%);
 }
 
 .reasoning-header h4 {
     margin: 0;
-    color: var(--text-color);
-    font-size: var(--text-lg);
+    color: #ffffff;
+    font-size: 1rem;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
+    gap: 12px;
+    font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.sources-header .fa-globe {
-    color: var(--primary-color);
+.reasoning-header h4::before {
+    content: '◉';
+    color: #00ff88;
+    font-size: 0.8em;
+    animation: pulse 2s infinite;
 }
 
-.sources-count {
-    font-size: 0.9rem;
-    color: var(--text-muted-color);
-    font-weight: normal;
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
 }
 
-/* Removed tooltip-citation styles since we now use embedded links */
-
-/* Enhanced tooltip positioning */
-.source-tooltip.above {
-    transform: translateY(-5px);
-}
-
-.source-tooltip.below {
-    transform: translateY(5px);
-}
-
-.source-tooltip.left {
-    transform: translateX(-10px);
-}
-
-.source-tooltip.right {
-    transform: translateX(10px);
-}
-
-.source-tooltip.visible.above {
-    transform: translateY(0);
-}
-
-.source-tooltip.visible.below {
-    transform: translateY(0);
-}
-
-.source-tooltip.visible.left {
-    transform: translateX(0);
-}
-
-.source-tooltip.visible.right {
-    transform: translateX(0);
-}
-
+/* Enhanced Toggle Button */
 .toggle-btn {
-    background: none;
-    border: none;
-    color: var(--text-muted-color);
-    font-size: var(--text-base);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    font-size: 14px;
     cursor: pointer;
-    padding: var(--space-sm) var(--space-md);
-    border-radius: var(--radius-sm);
-    transition: all 0.2s ease;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
+    backdrop-filter: blur(10px);
 }
 
 .toggle-btn:hover {
-    background-color: var(--select-bg-color);
-    color: var(--text-color);
+    background: rgba(0, 255, 136, 0.1);
+    border-color: rgba(0, 255, 136, 0.3);
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);
 }
 
 .toggle-btn i {
     transition: transform 0.3s ease;
+    color: #00ff88;
 }
 
 .toggle-btn.collapsed i {
     transform: rotate(-90deg);
 }
 
+/* Modern Terminal-Style Content */
 .reasoning-content {
     max-height: 600px;
     overflow-y: auto;
-    padding: var(--space-xl);
-    background-color: var(--code-bg-color);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-color);
-    font-size: var(--text-base);
-    line-height: 1.8;
+    padding: 24px;
+    background: #000000;
+    font-size: 14px;
+    line-height: 1.7;
+    font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    color: #e0e0e0;
+    position: relative;
+}
+
+.reasoning-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 20%, rgba(0, 255, 136, 0.02) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(0, 136, 255, 0.02) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 .reasoning-content.collapsed {
@@ -1047,74 +1063,24 @@ body {
     border: none;
 }
 
-/* Enhanced reasoning typography */
-.reasoning-content h1,
-.reasoning-content h2,
-.reasoning-content h3,
-.reasoning-content h4,
-.reasoning-content h5,
-.reasoning-content h6 {
-    margin-top: 2em;
-    margin-bottom: 1em;
-    font-weight: 600;
-    line-height: 1.4;
-    color: var(--text-color);
-    letter-spacing: -0.01em;
+/* Custom Scrollbar for Terminal Look */
+.reasoning-content::-webkit-scrollbar {
+    width: 8px;
 }
 
-.reasoning-content h1 { 
-    font-size: 1.6em; 
-    border-bottom: 1px solid var(--border-color); 
-    padding-bottom: 0.4em; 
-    margin-top: 1.5em;
-    line-height: 1.3;
-}
-.reasoning-content h2 { 
-    font-size: 1.4em; 
-    border-bottom: 1px solid var(--border-color); 
-    padding-bottom: 0.3em; 
-    margin-top: 1.8em;
-    line-height: 1.35;
-}
-.reasoning-content h3 { 
-    font-size: 1.2em; 
-    margin-top: 1.6em;
-    line-height: 1.4;
-}
-.reasoning-content h4 { 
-    font-size: 1.1em; 
-    margin-top: 1.4em;
-    line-height: 1.45;
+.reasoning-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
 }
 
-.reasoning-content p {
-    margin-bottom: 1.5em;
-    overflow-wrap: break-word;
-    line-height: 1.8;
-    color: var(--text-color);
-    text-align: justify;
-    hyphens: auto;
-    -webkit-hyphens: auto;
+.reasoning-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #00ff88, #00aa55);
+    border-radius: 4px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.reasoning-content p + p {
-    margin-top: 1.6em;
-}
-
-.reasoning-content ul,
-.reasoning-content ol {
-    margin-left: 0;
-    margin-bottom: 1.6em;
-    padding-left: 2em;
-    line-height: 1.7;
-}
-
-.reasoning-content li {
-    margin-bottom: 0.7em;
-    overflow-wrap: break-word;
-    line-height: 1.7;
-    padding-left: 0.4em;
-    text-align: justify;
+.reasoning-content::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #00ff99, #00bb66);
 }
 
 /* === Modern Card/Panel Effects === */
@@ -2168,78 +2134,7 @@ body {
     border-bottom-color: var(--link-color);
 }
 
-/* Dark mode specific shadow for reasoning pre elements */
-body.dark-mode .reasoning-content pre {
-    box-shadow: var(--shadow-md);
-}
 
-/* Mobile reasoning container improvements */
-.reasoning-container-perplexity {
-    font-size: 1rem;
-    padding: var(--space-md);
-}
-
-.reasoning-content {
-    font-size: 1rem;
-    line-height: 1.7;
-    padding: var(--space-lg);
-    max-height: 400px;
-}
-
-.reasoning-content h1 {
-    font-size: 1.4rem;
-    line-height: 1.3;
-    margin-top: 1.2em;
-    margin-bottom: 0.8em;
-}
-
-.reasoning-content h2 {
-    font-size: 1.25rem;
-    line-height: 1.35;
-    margin-top: 1.4em;
-    margin-bottom: 0.7em;
-}
-
-.reasoning-content h3 {
-    font-size: 1.15rem;
-    line-height: 1.4;
-    margin-top: 1.2em;
-    margin-bottom: 0.6em;
-}
-
-.reasoning-content h4 {
-    font-size: 1.1rem;
-    line-height: 1.45;
-    margin-top: 1em;
-    margin-bottom: 0.5em;
-}
-
-.reasoning-content p {
-    font-size: 1rem;
-    line-height: 1.7;
-    margin-bottom: 1.4em;
-    text-align: left;
-}
-
-.reasoning-content ul,
-.reasoning-content ol {
-    padding-left: 1.5em;
-    margin-bottom: 1.4em;
-}
-
-.reasoning-content li {
-    margin-bottom: 0.6em;
-    line-height: 1.6;
-    padding-left: 0.3em;
-    text-align: left;
-}
-
-.reasoning-content blockquote {
-    margin: 1.5em 0;
-    padding: 1em 1.3em;
-    font-size: 1rem;
-    line-height: 1.6;
-}
 
 /* Enhanced reading experience class */
 .enhanced-reading {
@@ -2301,4 +2196,261 @@ body.dark-mode .reasoning-content pre {
         margin-bottom: 1.6em;
         text-align: left;
     }
+}
+
+/* Terminal-Style Typography */
+.reasoning-content h1,
+.reasoning-content h2,
+.reasoning-content h3,
+.reasoning-content h4,
+.reasoning-content h5,
+.reasoning-content h6 {
+    margin-top: 1.8em;
+    margin-bottom: 0.8em;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+    position: relative;
+    z-index: 1;
+}
+
+.reasoning-content h1 { 
+    font-size: 1.4em; 
+    color: #00ff88;
+    border-bottom: 1px solid #333333; 
+    padding-bottom: 0.4em; 
+    margin-top: 1.2em;
+    line-height: 1.3;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+}
+
+.reasoning-content h2 { 
+    font-size: 1.2em; 
+    color: #00aaff;
+    border-bottom: 1px solid #2a2a2a; 
+    padding-bottom: 0.3em; 
+    margin-top: 1.5em;
+    line-height: 1.35;
+    text-shadow: 0 0 8px rgba(0, 170, 255, 0.2);
+}
+
+.reasoning-content h3 { 
+    font-size: 1.1em; 
+    color: #ffaa00;
+    margin-top: 1.4em;
+    line-height: 1.4;
+}
+
+.reasoning-content h4 { 
+    font-size: 1.05em; 
+    color: #ff6b6b;
+    margin-top: 1.2em;
+    line-height: 1.45;
+}
+
+.reasoning-content p {
+    margin-bottom: 1.2em;
+    overflow-wrap: break-word;
+    line-height: 1.7;
+    color: #e0e0e0;
+    text-align: left;
+    position: relative;
+    z-index: 1;
+}
+
+.reasoning-content p + p {
+    margin-top: 1.4em;
+}
+
+.reasoning-content ul,
+.reasoning-content ol {
+    margin-left: 0;
+    margin-bottom: 1.4em;
+    padding-left: 1.8em;
+    line-height: 1.6;
+}
+
+.reasoning-content li {
+    margin-bottom: 0.6em;
+    overflow-wrap: break-word;
+    line-height: 1.6;
+    color: #e0e0e0;
+    position: relative;
+}
+
+.reasoning-content li::marker {
+    color: #00ff88;
+}
+
+.reasoning-content ul > li::before {
+    content: '▸';
+    color: #00ff88;
+    font-weight: bold;
+    position: absolute;
+    left: -1.2em;
+}
+
+/* Terminal-Style Code Blocks */
+.reasoning-content code {
+    background: rgba(0, 255, 136, 0.1);
+    color: #00ff88;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.95em;
+    border: 1px solid rgba(0, 255, 136, 0.2);
+    box-shadow: 0 0 5px rgba(0, 255, 136, 0.1);
+}
+
+.reasoning-content pre {
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 1.2em 0;
+    overflow-x: auto;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.reasoning-content pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+    display: block;
+    color: #e0e0e0;
+}
+
+.reasoning-content blockquote {
+    border-left: 3px solid #00ff88;
+    padding: 12px 18px;
+    margin: 1.5em 0;
+    background: rgba(0, 255, 136, 0.05);
+    border-radius: 0 8px 8px 0;
+    color: #f0f0f0;
+    font-style: italic;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.reasoning-content blockquote::before {
+    content: '"';
+    font-size: 2em;
+    color: #00ff88;
+    position: absolute;
+    top: -8px;
+    left: 8px;
+    opacity: 0.3;
+}
+
+.reasoning-content strong {
+    color: #ffffff;
+    font-weight: 600;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+}
+
+.reasoning-content em {
+    color: #ffaa00;
+    font-style: italic;
+}
+
+.reasoning-content a {
+    color: #00aaff;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: all 0.3s ease;
+    text-shadow: 0 0 5px rgba(0, 170, 255, 0.3);
+}
+
+.reasoning-content a:hover {
+    color: #00ccff;
+    border-bottom-color: #00aaff;
+    text-shadow: 0 0 8px rgba(0, 170, 255, 0.5);
+}
+
+/* Dark mode specific shadow for reasoning pre elements */
+body.dark-mode .reasoning-content pre {
+    box-shadow: var(--shadow-md);
+}
+
+/* Mobile reasoning container improvements */
+.reasoning-container-perplexity {
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.3),
+        0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.reasoning-header {
+    padding: 12px 16px;
+}
+
+.reasoning-header h4 {
+    font-size: 0.95rem;
+}
+
+.reasoning-content {
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 18px;
+    max-height: 400px;
+}
+
+.reasoning-content h1 {
+    font-size: 1.25em;
+    margin-top: 1em;
+    margin-bottom: 0.7em;
+}
+
+.reasoning-content h2 {
+    font-size: 1.15em;
+    margin-top: 1.2em;
+    margin-bottom: 0.6em;
+}
+
+.reasoning-content h3 {
+    font-size: 1.1em;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+
+.reasoning-content h4 {
+    font-size: 1.05em;
+    margin-top: 0.9em;
+    margin-bottom: 0.4em;
+}
+
+.reasoning-content p {
+    margin-bottom: 1.2em;
+    line-height: 1.6;
+}
+
+.reasoning-content ul,
+.reasoning-content ol {
+    padding-left: 1.5em;
+    margin-bottom: 1.2em;
+}
+
+.reasoning-content li {
+    margin-bottom: 0.5em;
+    line-height: 1.5;
+}
+
+.reasoning-content blockquote {
+    margin: 1.2em 0;
+    padding: 12px 15px;
+    font-size: 0.95em;
+}
+
+.reasoning-content code {
+    font-size: 0.9em;
+    padding: 1px 4px;
+}
+
+.reasoning-content pre {
+    padding: 12px;
+    margin: 1em 0;
+    border-radius: 6px;
 } 
