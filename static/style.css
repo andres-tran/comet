@@ -77,7 +77,7 @@
     --button-height: 42px;
     --input-height: 48px;
     --container-padding: var(--space-2xl);
-    --container-max-width: 800px;
+    --container-max-width: 900px;
 }
 
 body.dark-mode {
@@ -129,20 +129,23 @@ body {
     background-color: var(--bg-color);
     color: var(--text-color);
     line-height: 1.6;
-    display: flex;
-    justify-content: center;
     padding-top: var(--space-4xl);
     transition: background-color 0.3s ease, color 0.3s ease;
     -webkit-tap-highlight-color: transparent;
     min-height: 100vh;
     width: 100%;
     font-size: var(--text-base);
+    margin: 0;
+    padding-left: 0;
+    padding-right: 0;
+    overflow-x: hidden;
 }
 
 .main-container {
     width: 100%;
     max-width: var(--container-max-width);
     padding: 0 var(--container-padding);
+    padding-bottom: var(--space-4xl);
     display: flex;
     flex-direction: column;
     gap: var(--space-4xl);
@@ -1014,15 +1017,27 @@ body {
     backdrop-filter: blur(10px);
 }
 
+/* Default toggle button styling (used for sources) */
 .toggle-btn:hover {
-    background: rgba(0, 255, 136, 0.1);
-    border-color: rgba(0, 255, 136, 0.3);
+    background: rgba(0, 170, 255, 0.1);
+    border-color: rgba(0, 170, 255, 0.3);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 170, 255, 0.2);
 }
 
 .toggle-btn i {
     transition: transform 0.3s ease;
+    color: #00aaff;
+}
+
+/* Specific styling for reasoning toggle button (green) */
+#toggle-reasoning-btn:hover {
+    background: rgba(0, 255, 136, 0.1);
+    border-color: rgba(0, 255, 136, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.2);
+}
+
+#toggle-reasoning-btn i {
     color: #00ff88;
 }
 
@@ -1824,28 +1839,14 @@ body.dark-mode .source-citation:hover {
 html {
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
-    height: 100%;
-    position: fixed;
-    width: 100%;
-    overflow: hidden;
 }
 
-body {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-}
+/* Removed duplicate body positioning that caused double scrollbars */
 
 .main-container {
     min-height: 100vh;
     width: 100%;
-    max-width: 100vw;
+    max-width: var(--container-max-width);
     overflow-x: hidden;
     position: relative;
 }
@@ -1895,6 +1896,32 @@ body {
 }
 
 /* Enhanced mobile responsive design */
+/* Large Mobile: 481px - 600px (fills gap between mobile and tablet) */
+@media (min-width: 481px) and (max-width: 600px) {
+    body {
+        padding-top: var(--space-3xl);
+    }
+    
+    .main-container {
+        padding: 0 var(--space-lg);
+        gap: var(--space-3xl);
+    }
+    
+    /* Intermediate button sizes */
+    .circular-button {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+    }
+    
+    /* Intermediate typography */
+    .results-container-perplexity p {
+        font-size: 1.08rem;
+        line-height: 1.72;
+    }
+}
+
 @media (max-width: 480px) {
     /* Force stable layout */
     html {
@@ -2724,3 +2751,434 @@ body.dark-mode .source-link:hover {
         font-size: 0.8rem;
     }
 } 
+
+/* === Enhanced Responsive Design === */
+
+/* Tablet Portrait: 601px - 768px */
+@media (min-width: 601px) and (max-width: 768px) {
+    body {
+        padding-top: var(--space-3xl);
+    }
+    
+    .main-container {
+        padding: 0 var(--space-xl);
+        max-width: 100vw;
+        gap: var(--space-3xl);
+    }
+    
+    /* Tablet-optimized search form */
+    .search-form-perplexity {
+        padding: var(--space-md);
+        gap: var(--space-md);
+    }
+    
+    /* Ensure buttons are touch-friendly but not oversized */
+    .circular-button {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        font-size: var(--text-base) !important;
+    }
+    
+    #theme-toggle-button,
+    #new-search-button {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+    }
+    
+    /* Tablet typography - slightly larger than mobile but smaller than desktop */
+    .results-container-perplexity,
+    .reasoning-container-perplexity,
+    .web-search-sources {
+        font-size: 1.05rem;
+        line-height: 1.65;
+    }
+    
+    .results-container-perplexity p {
+        font-size: 1.05rem;
+        line-height: 1.7;
+        margin-bottom: 1.6em;
+    }
+    
+    .results-container-perplexity h1 {
+        font-size: 1.5rem;
+        margin-top: 1.4em;
+        margin-bottom: 0.9em;
+    }
+    
+    .results-container-perplexity h2 {
+        font-size: 1.3rem;
+        margin-top: 1.6em;
+        margin-bottom: 0.8em;
+    }
+    
+    .results-container-perplexity h3 {
+        font-size: 1.2rem;
+        margin-top: 1.5em;
+        margin-bottom: 0.7em;
+    }
+    
+    .results-container-perplexity h4 {
+        font-size: 1.1rem;
+        margin-top: 1.3em;
+        margin-bottom: 0.6em;
+    }
+    
+    /* Tablet table handling */
+    .table-wrapper {
+        margin: 0 calc(-1 * var(--space-xl));
+        padding: 0 var(--space-xl);
+    }
+    
+    /* Web search sources optimization for tablet */
+    .web-search-sources {
+        margin-bottom: 18px;
+    }
+    
+    .source-link {
+        padding: 11px 14px;
+        gap: 11px;
+        font-size: 0.9rem;
+    }
+    
+    .source-number {
+        width: 26px;
+        height: 26px;
+        font-size: 0.8rem;
+    }
+}
+
+/* Tablet Landscape: 769px - 1024px */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .main-container {
+        padding: 0 var(--space-3xl);
+        max-width: var(--container-max-width);
+    }
+    
+    /* Desktop-like experience but with touch considerations */
+    .circular-button:hover {
+        transform: translateY(-1px);
+    }
+    
+    /* Ensure hover states work well on touch devices */
+    @media (hover: hover) {
+        .circular-button:hover,
+        #theme-toggle-button:hover,
+        #new-search-button:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+    }
+    
+    /* Typography closer to desktop but optimized for tablets */
+    .results-container-perplexity p {
+        font-size: 1.02rem;
+        line-height: 1.65;
+    }
+}
+
+/* Large Tablet/Small Desktop: 1025px - 1199px */
+@media (min-width: 1025px) and (max-width: 1199px) {
+    .main-container {
+        max-width: calc(var(--container-max-width) * 0.95);
+        padding: 0 var(--space-3xl);
+    }
+    
+    /* Slightly reduced container for better readability */
+    .results-container-perplexity,
+    .reasoning-container-perplexity {
+        font-size: 1rem;
+    }
+}
+
+/* Ultra-wide screens: 1400px+ */
+@media (min-width: 1400px) {
+    .main-container {
+        max-width: calc(var(--container-max-width) * 1.1);
+    }
+    
+    /* Prevent content from becoming too spread out on very wide screens */
+    .results-container-perplexity,
+    .reasoning-container-perplexity {
+        max-width: 100%;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    /* Enhanced touch targets */
+    button, 
+    a,
+    .source-link,
+    .toggle-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Remove hover effects that don't work on touch */
+    .circular-button:hover,
+    #theme-toggle-button:hover,
+    #new-search-button:hover,
+    .source-link:hover {
+        transform: none;
+    }
+    
+    /* Enhanced active states for touch feedback */
+    .circular-button:active,
+    #theme-toggle-button:active,
+    #new-search-button:active {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
+    }
+    
+    .source-link:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    /* Crisp borders and shadows on high DPI displays */
+    .search-form-perplexity,
+    .results-container-perplexity,
+    .reasoning-container-perplexity,
+    .web-search-sources {
+        border-width: 0.5px;
+    }
+    
+    .circular-button,
+    #theme-toggle-button,
+    #new-search-button {
+        border-width: 0.5px;
+    }
+}
+
+/* Device orientation optimizations */
+@media (orientation: landscape) and (max-height: 500px) {
+    /* Landscape mobile optimization */
+    body {
+        padding-top: var(--space-lg);
+    }
+    
+    .search-header h1 {
+        font-size: var(--text-xl);
+        margin-bottom: var(--space-lg);
+    }
+    
+    .logo-title {
+        font-size: var(--text-2xl);
+        margin-bottom: var(--space-sm);
+    }
+    
+    .main-container {
+        gap: var(--space-xl);
+    }
+}
+
+/* Consistent spacing across all breakpoints */
+@media (min-width: 481px) {
+    /* Ensure consistent padding and spacing for all devices above mobile */
+    .search-form-perplexity {
+        min-height: 60px;
+    }
+    
+    #search-input {
+        min-height: 48px;
+        font-size: var(--text-base);
+    }
+    
+    #model-select {
+        min-height: 42px;
+    }
+}
+
+/* Force consistent layout behavior across devices */
+@media (max-width: 1024px) {
+    /* Tablet and mobile optimizations */
+    .results-container-perplexity img,
+    .reasoning-container-perplexity img {
+        max-width: 100% !important;
+        height: auto !important;
+        object-fit: contain;
+    }
+    
+    /* Prevent horizontal scroll on all touch devices */
+    body {
+        overflow-x: hidden;
+    }
+    
+    .main-container {
+        overflow-x: hidden;
+    }
+    
+    /* Consistent code block handling */
+    .results-container-perplexity pre,
+    .reasoning-content pre {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        max-width: 100%;
+    }
+}
+
+/* === Final Responsive Enhancements === */
+
+/* Universal responsive fixes */
+* {
+    /* Ensure consistent sizing across all devices */
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+/* Safe area handling for devices with notches/cutouts */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: max(0px, env(safe-area-inset-left));
+        padding-right: max(0px, env(safe-area-inset-right));
+    }
+    
+    .main-container {
+        padding-left: max(var(--container-padding), env(safe-area-inset-left));
+        padding-right: max(var(--container-padding), env(safe-area-inset-right));
+    }
+}
+
+/* Consistent button behavior across all devices */
+@media (any-pointer: coarse) {
+    /* Optimize for touch-first devices */
+    button,
+    .circular-button,
+    #theme-toggle-button,
+    #new-search-button,
+    .source-link,
+    .toggle-btn {
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+        tap-highlight-color: rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* Cross-browser consistency */
+@supports (-webkit-backdrop-filter: blur(10px)) or (backdrop-filter: blur(10px)) {
+    .search-form-perplexity,
+    .results-container-perplexity,
+    .reasoning-container-perplexity,
+    .web-search-sources {
+        -webkit-backdrop-filter: blur(20px);
+        backdrop-filter: blur(20px);
+    }
+}
+
+/* Container queries for future-proofing (where supported) */
+@supports (container-type: inline-size) {
+    .main-container {
+        container-type: inline-size;
+    }
+}
+
+/* Print styles for consistency */
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+        font-size: 12pt;
+        line-height: 1.4;
+    }
+    
+    .search-header,
+    .header-controls,
+    .header-left-controls,
+    .circular-button,
+    #theme-toggle-button,
+    #new-search-button {
+        display: none !important;
+    }
+    
+    .main-container {
+        max-width: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .results-container-perplexity,
+    .reasoning-container-perplexity {
+        box-shadow: none;
+        border: 1px solid #ccc;
+        margin-bottom: 20pt;
+        padding: 12pt;
+        page-break-inside: avoid;
+    }
+}
+
+/* Accessibility improvements for consistent UX */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --border-color: #000000;
+        --text-color: #000000;
+        --bg-color: #ffffff;
+    }
+    
+    body.dark-mode {
+        --border-color: #ffffff;
+        --text-color: #ffffff;
+        --bg-color: #000000;
+    }
+}
+
+/* Ensure consistent rendering across different zoom levels */
+@media (min-resolution: 1.5dppx) {
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+}
+
+/* Final fallback for very small screens (smart watches, etc.) */
+@media (max-width: 320px) {
+    .main-container {
+        padding: 0 var(--space-sm);
+        gap: var(--space-lg);
+    }
+    
+    .logo-title {
+        font-size: var(--text-lg);
+    }
+    
+    .search-header h1 {
+        font-size: var(--text-base);
+    }
+    
+    .circular-button {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 0.8rem !important;
+    }
+}
+
+/* Extra large screens consistency */
+@media (min-width: 1920px) {
+    .main-container {
+        max-width: min(var(--container-max-width), 50vw);
+    }
+    
+    body {
+        font-size: 1.1rem;
+    }
+}

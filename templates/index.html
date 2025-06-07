@@ -2,11 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0, user-scalable=yes, viewport-fit=cover, shrink-to-fit=no">
     <meta name="format-detection" content="telephone=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Comet">
+    <meta name="HandheldFriendly" content="true">
+    <meta name="MobileOptimized" content="width">
+    <meta name="screen-orientation" content="natural">
     <meta name="theme-color" content="#ffffff" id="theme-color-meta">
     <title>Comet</title>
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
@@ -26,7 +30,7 @@
     <!-- Microsoft Windows/Edge -->
     <meta name="msapplication-TileColor" content="#ffffff">
     <meta name="msapplication-TileImage" content="{{ url_for('static', filename='apple-touch-icon-192x192.png') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20240607">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20250607">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- Add Font Awesome for icons (optional, but helps mimic UI) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -108,7 +112,7 @@
 
     </div> <!-- End main-container -->
 
-    <script src="{{ url_for('static', filename='script.js') }}?v=20240607"></script>
+    <script src="{{ url_for('static', filename='script.js') }}?v=20250607"></script>
     <script>
       window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
     </script>
