@@ -1232,11 +1232,24 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
     /* Only essential touch target improvements */
     
     /* Ensure minimum touch target size for accessibility */
-    button, 
-    .circular-button,
+    button,
     #model-select,
     #search-input {
         min-height: 44px;
+    }
+    
+    /* Circular buttons must maintain perfect circle shape */
+    .circular-button {
+        /* Override any height changes and force circular buttons to stay perfectly round */
+        width: var(--button-height) !important;
+        height: var(--button-height) !important;
+        min-width: var(--button-height) !important;
+        min-height: var(--button-height) !important;
+        max-width: var(--button-height) !important;
+        max-height: var(--button-height) !important;
+        border-radius: var(--radius-full) !important;
+        flex-shrink: 0;
+        aspect-ratio: 1 / 1; /* Ensure 1:1 aspect ratio for perfect circles */
     }
     
     /* Keep desktop styling for everything else */
