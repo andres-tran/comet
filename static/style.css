@@ -143,10 +143,12 @@ body {
 .main-container {
     width: 100%;
     max-width: var(--container-max-width);
-    padding: 0 var(--space-xl);
+    padding: 0 var(--container-padding);
     display: flex;
     flex-direction: column;
     gap: var(--space-4xl);
+    margin: 0 auto;
+    box-sizing: border-box;
 }
 
 /* === Search Header === */
@@ -1118,129 +1120,21 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
 /* Circular button styles moved to unified section */
 
 /* === Responsive Adjustments === */
-@media (max-width: 768px) {
-    /* Keep only essential mobile fixes, remove visual differences */
-    
-    /* Maintain desktop container width and padding */
-    .main-container {
-        padding: 0 var(--container-padding);
-        max-width: var(--container-max-width);
-        width: 100%;
-        margin: 0 auto;
-        /* Remove mobile-specific gap override */
-    }
-    
-    /* Keep desktop header positioning */
-    .header-controls,
-    .header-left-controls {
-        /* Remove mobile positioning overrides */
-    }
-    
-    /* Keep desktop logo and title sizes */
-    .logo-title {
-        /* Remove mobile font-size override */
-    }
-    
-    .comet-logo {
-        /* Remove mobile size override */
-    }
-    
-    .search-header h1 {
-        /* Remove mobile font-size override */
-    }
-    
-    /* Keep desktop results styling */
-    .results-container-perplexity {
-        /* Remove mobile-specific padding and border radius overrides */
-    }
-    
-    .results-container-perplexity h1, 
-    .results-container-perplexity h2, 
-    .results-container-perplexity h3 {
-        /* Remove mobile font-size overrides */
-    }
-    
-    /* Keep desktop reasoning container styling */
-    .reasoning-container-perplexity {
-        /* Remove mobile border radius override */
-    }
-    
-    .reasoning-header {
-        /* Remove mobile padding override */
-    }
-    
-    .reasoning-content {
-        /* Remove mobile padding override */
-    }
-    
-    /* Keep desktop thinking indicator styling */
-    .thinking-indicator-content {
-        /* Remove mobile size overrides */
-    }
-    
-    /* Keep desktop image styling */
-    .generated-image {
-        /* Remove mobile size overrides */
-    }
-    
-    /* Keep desktop button styling */
-    #download-area a.download-button {
-        /* Remove mobile size overrides */
-    }
-    
-    /* Keep desktop web search sources styling */
-    .sources-header {
-        /* Remove mobile padding override */
-    }
-    
-    .sources-content {
-        /* Remove mobile padding override */
-    }
-    
-    .source-link {
-        /* Remove mobile size overrides */
-    }
-    
-    .source-number {
-        /* Remove mobile size overrides */
-    }
-    
-    /* Keep desktop tooltip styling */
-    .source-tooltip {
-        /* Remove mobile size overrides */
-    }
-    
-    .tooltip-header {
-        /* Remove mobile padding override */
-    }
-    
-    .tooltip-content {
-        /* Remove mobile padding override */
-    }
-    
-    .tooltip-url {
-        /* Remove mobile font-size override */
-    }
-    
-    .tooltip-action {
-        /* Remove mobile font-size override */
-    }
-}
+/* Mobile device consistency - desktop UI preserved across all screen sizes */
 
-/* Minimal mobile optimizations for very small screens - keep only accessibility essentials */
+/* Essential mobile accessibility - preserve desktop UI with minimal touch target improvements */
 @media (max-width: 480px) {
-    /* Only essential touch target improvements */
+    /* Only accessibility improvements while maintaining desktop visual consistency */
     
-    /* Ensure minimum touch target size for accessibility */
-    button,
+    /* Minimum touch target size for non-circular buttons */
+    button:not(.circular-button),
     #model-select,
     #search-input {
         min-height: 44px;
     }
     
-    /* Circular buttons must maintain perfect circle shape */
+    /* Force circular buttons to maintain perfect desktop appearance */
     .circular-button {
-        /* Override any height changes and force circular buttons to stay perfectly round */
         width: var(--button-height) !important;
         height: var(--button-height) !important;
         min-width: var(--button-height) !important;
@@ -1249,102 +1143,13 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
         max-height: var(--button-height) !important;
         border-radius: var(--radius-full) !important;
         flex-shrink: 0;
-        aspect-ratio: 1 / 1; /* Ensure 1:1 aspect ratio for perfect circles */
+        aspect-ratio: 1 / 1;
     }
     
-    /* Keep desktop styling for everything else */
-    .main-container {
-        /* Remove all mobile-specific overrides */
-    }
-    
-    .search-header h1 {
-        /* Remove mobile font-size override */
-    }
-    
-    .logo-title {
-        /* Remove mobile font-size override */
-    }
-    
-    .comet-logo {
-        /* Remove mobile size override */
-    }
-    
-    .search-form-perplexity {
-        /* Remove mobile padding and border radius overrides */
-    }
-    
-    #search-input {
-        /* Remove mobile size overrides except min-height for accessibility */
-    }
-    
-    .controls-wrapper {
-        /* Remove mobile gap override */
-    }
-    
-    #model-select {
-        /* Remove mobile size overrides except min-height for accessibility */
-    }
-    
-    .circular-button {
-        /* Remove mobile size overrides except min-height for accessibility */
-    }
-    
-    .results-container-perplexity {
-        /* Remove mobile padding and border radius overrides */
-    }
-    
-    .reasoning-container-perplexity {
-        /* Remove mobile border radius override */
-    }
-    
-    .reasoning-header {
-        /* Remove mobile padding override */
-    }
-    
-    .reasoning-content {
-        /* Remove mobile padding override */
-    }
-    
-    .results-container-perplexity h1,
-    .results-container-perplexity h2,
-    .results-container-perplexity h3 {
-        /* Remove mobile margin overrides */
-    }
-    
-    .results-container-perplexity p {
-        /* Remove mobile margin override */
-    }
-    
-    /* Keep table responsiveness for usability */
+    /* Essential scroll support for tables only */
     .table-wrapper {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-    }
-    
-    /* Keep desktop web search sources styling */
-    .web-search-sources {
-        /* Remove mobile border radius override */
-    }
-    
-    .sources-header {
-        /* Remove mobile padding override */
-    }
-    
-    .sources-content {
-        /* Remove mobile padding override */
-    }
-    
-    .source-link {
-        /* Remove mobile size overrides */
-    }
-    
-    .source-number {
-        /* Remove mobile size overrides */
-    }
-    
-    /* Keep desktop tooltip styling */
-    .source-tooltip {
-        /* Remove mobile max-width override */
     }
 }
 
