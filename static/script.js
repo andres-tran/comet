@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Clear and hide reasoning container (AI thinking process)
             if (reasoningContainer) {
-                reasoningContainer.style.display = 'none';
+                reasoningContainer.classList.remove('visible');
                 reasoningContainer.classList.remove('fade-in');
             }
             if (reasoningContent) {
@@ -483,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const placeholder = resultsContainer.querySelector('.placeholder-text');
         if(placeholder) placeholder.style.display = 'none';
 
-        if (reasoningContainer) reasoningContainer.style.display = 'none'; // Hide reasoning container
+                    if (reasoningContainer) reasoningContainer.classList.remove('visible'); // Hide reasoning container
         if (reasoningContent) {
             reasoningContent.innerHTML = ''; // Clear old reasoning
             reasoningContent.classList.remove('collapsed'); // Reset to expanded state
@@ -752,10 +752,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                         reasoningContent.innerHTML = reasoningHtml;
                                     }
                                     if (reasoningContainer && reasoningBuffer.trim() !== '') {
-                                        reasoningContainer.style.display = 'block'; // Show if there's content
-                                        // Add smooth fade-in animation
-                                        if (!reasoningContainer.classList.contains('fade-in')) {
-                                            reasoningContainer.classList.add('fade-in');
+                                        // Add visible class for CSS animation instead of direct style
+                                        if (!reasoningContainer.classList.contains('visible')) {
+                                            reasoningContainer.classList.add('visible');
                                         }
                                     }
                                 }
@@ -779,7 +778,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     console.log('End of stream signal received from backend.');
                                     // The main loop's `done` condition will handle final cleanup.
                                     if (reasoningBuffer.trim() === '' && reasoningContainer) {
-                                        reasoningContainer.style.display = 'none'; // Hide if empty
+                                        reasoningContainer.classList.remove('visible'); // Hide if empty
                                     }
                                     return; // Or break, depending on if more data could follow `end_of_stream`
                                 }
