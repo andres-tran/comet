@@ -2728,11 +2728,17 @@ body.dark-mode .reasoning-content pre {
 .quick-answer {
     margin-bottom: 20px;
     padding: 16px;
-    background: rgba(0, 170, 255, 0.05);
+    background: rgba(249, 115, 22, 0.1);
     border-radius: 10px;
-    border: 1px solid rgba(0, 170, 255, 0.2);
+    border: 1px solid var(--border-color);
     position: relative;
     z-index: 1;
+}
+
+/* Dark mode styling for quick answer */
+body.dark-mode .quick-answer {
+    background: rgba(0, 170, 255, 0.05);
+    border: 1px solid rgba(0, 170, 255, 0.2);
 }
 
 .quick-answer-label {
@@ -2740,23 +2746,37 @@ body.dark-mode .reasoning-content pre {
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
-    color: #00aaff;
+    color: var(--primary-color);
     font-weight: 600;
     font-size: 0.9rem;
+}
+
+/* Dark mode styling for quick answer label */
+body.dark-mode .quick-answer-label {
+    color: #00aaff;
     text-shadow: 0 0 5px rgba(0, 170, 255, 0.3);
 }
 
 .quick-answer-label::before {
     content: '⚡';
     font-size: 0.8em;
+}
+
+/* Dark mode styling for quick answer label::before */
+body.dark-mode .quick-answer-label::before {
     filter: drop-shadow(0 0 3px rgba(0, 170, 255, 0.5));
 }
 
 .quick-answer-content {
-    color: #e0e0e0;
+    color: var(--text-color);
     line-height: 1.6;
     position: relative;
     z-index: 1;
+}
+
+/* Dark mode styling for quick answer content */
+body.dark-mode .quick-answer-content {
+    color: #e0e0e0;
 }
 
 /* Terminal-Style Sources List */
