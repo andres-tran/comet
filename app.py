@@ -454,16 +454,34 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
     
     enhanced_openrouter_system_prompt = (
         "You are Comet, an advanced AI assistant that provides clear, helpful, and accurate responses. "
-        "Your responses should be:\n\n"
-        "1. **Clear and Organized**: Use proper formatting, bullet points, and lists when helpful.\n"
-        "2. **Concise**: Get to the point while being thorough.\n"
-        "3. **Accurate**: Base responses on factual information and indicate uncertainties.\n"
-        "4. **Helpful**: Provide actionable insights and practical solutions.\n\n"
-        "When answering questions:\n"
-        "- Start with a direct answer\n"
-        "- Provide relevant details and examples\n"
-        "- Include helpful tips or warnings when applicable\n"
-        "- End with a clear summary or next steps\n\n"
+        "Your responses should be exceptionally well-formatted and reader-friendly:\n\n"
+        
+        "**FORMATTING EXCELLENCE:**\n"
+        "1. **Structure**: Use clear headings (##, ###) to organize your response\n"
+        "2. **Paragraphs**: Keep paragraphs focused and digestible (3-5 sentences max)\n"
+        "3. **Lists**: Use bullet points and numbered lists for clarity\n"
+        "4. **Emphasis**: Use **bold** for key points and *italics* for subtle emphasis\n"
+        "5. **White Space**: Leave space between sections for better readability\n"
+        "6. **Progressive Disclosure**: Start with key points, then dive deeper\n\n"
+        
+        "**CONTENT QUALITY:**\n"
+        "1. **Clear and Organized**: Lead with the main answer, then provide context\n"
+        "2. **Concise yet Thorough**: Be comprehensive but avoid unnecessary verbosity\n"
+        "3. **Accurate**: Base responses on factual information and indicate uncertainties\n"
+        "4. **Helpful**: Provide actionable insights and practical solutions\n"
+        "5. **Accessible**: Explain complex topics in understandable terms\n\n"
+        
+        "**RESPONSE STRUCTURE:**\n"
+        "- **Direct Answer First**: Lead with the key information\n"
+        "- **Supporting Details**: Provide relevant context and examples\n"
+        "- **Practical Applications**: Include helpful tips or warnings when applicable\n"
+        "- **Clear Conclusion**: End with a summary or next steps when appropriate\n\n"
+        
+        "**SPECIAL CONSIDERATIONS:**\n"
+        "- For mobile readers: Use shorter paragraphs and clear section breaks\n"
+        "- For complex topics: Break down into digestible steps or components\n"
+        "- For comparisons: Use tables or structured layouts when helpful\n"
+        "- For instructions: Provide clear, numbered steps\n\n"
         
         "**CRITICAL CITATION INSTRUCTIONS FOR PERPLEXITY MODELS:**\n"
         "When using external sources, include clickable citations using this format:\n"
@@ -471,7 +489,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         "- Make citations natural within the text\n"
         "- Use multiple citations when referencing different sources\n\n"
 
-        "Always aim to be helpful and exceed user expectations."
+        "Always aim to create responses that are a pleasure to read and exceed user expectations in both content and presentation."
         + web_search_note
     )
     
@@ -652,43 +670,51 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
     actual_model_name_for_sdk = model_name_with_suffix
     max_tokens_val = 30000 # Default value for most models
 
-    # Adjust max_tokens based on model specifics
+    # Adjust max_tokens based on model specifics - Enhanced for better AI thinking
     if actual_model_name_for_sdk == "perplexity/sonar-reasoning-pro": # 128,000 total context
-        max_tokens_val = 50000 # Conservative to avoid credit/token limit errors
+        max_tokens_val = 60000 # Increased for more comprehensive reasoning
     elif actual_model_name_for_sdk == "openai/gpt-4.1": # 1,047,576 token context window
-        max_tokens_val = 1047576 - 4096  # Reserve 4096 tokens for prompt
+        max_tokens_val = min(1047576 - 8192, 80000)  # Reserve 8192 tokens for prompt, allow comprehensive responses
     elif actual_model_name_for_sdk == "openai/gpt-4o-search-preview": # Stated 16,384 generation capacity
         max_tokens_val = 16384
     elif actual_model_name_for_sdk == "openai/gpt-4.5-preview": # 128,000 token context window
-        max_tokens_val = 128000 - 4096  # Reserve 4096 tokens for prompt
+        max_tokens_val = min(128000 - 8192, 60000)  # Reserve 8192 tokens for prompt, allow detailed responses
     elif actual_model_name_for_sdk == "openai/o4-mini-high": # 200,000 token context window
-        max_tokens_val = 200000 - 4096  # Reserve 4096 tokens for prompt
+        max_tokens_val = min(200000 - 8192, 80000)  # Reserve 8192 tokens for prompt, allow comprehensive responses
     elif actual_model_name_for_sdk == "openai/o3": # 200,000 token context window
-        max_tokens_val = 200000 - 4096  # Reserve 4096 tokens for prompt
+        max_tokens_val = min(200000 - 8192, 80000)  # Reserve 8192 tokens for prompt, allow comprehensive responses
     elif actual_model_name_for_sdk == "deepseek/deepseek-r1:free":
         max_tokens_val = 163800 # Reduced slightly to accommodate prompt tokens
     elif actual_model_name_for_sdk == "deepseek/deepseek-r1-0528": # 163,840 token context window
-        max_tokens_val = 163840 - 4096  # Reserve 4096 tokens for prompt
+        max_tokens_val = min(163840 - 8192, 70000)  # Reserve 8192 tokens for prompt, allow detailed reasoning
     elif actual_model_name_for_sdk == "google/gemini-2.5-flash-preview:thinking":
-        max_tokens_val = 65535
+        max_tokens_val = 80000  # Increased for deeper thinking
     elif actual_model_name_for_sdk == "openai/o3-mini-high":
         max_tokens_val = 100000
     elif actual_model_name_for_sdk == "anthropic/claude-opus-4": # 200,000 token context window
-        max_tokens_val = 200000 - 4096  # Reserve 4096 tokens for prompt
+        max_tokens_val = min(200000 - 8192, 80000)  # Reserve 8192 tokens for prompt, allow comprehensive responses
     elif actual_model_name_for_sdk == "anthropic/claude-sonnet-4": # 200,000 token context window
-        max_tokens_val = 200000 - 4096  # Reserve 4096 tokens for prompt
+        max_tokens_val = min(200000 - 8192, 80000)  # Reserve 8192 tokens for prompt, allow comprehensive responses
     elif actual_model_name_for_sdk == "google/gemini-2.5-flash-preview-05-20:thinking": # 1,048,576 token context window
-        max_tokens_val = 1048576 - 4096  # Reserve 4096 tokens for prompt
+        max_tokens_val = min(1048576 - 8192, 100000)  # Reserve 8192 tokens for prompt, allow extensive thinking
     elif actual_model_name_for_sdk == "google/gemini-2.5-pro-preview": # 1,048,576 token context window
-        max_tokens_val = 1048576 - 4096  # Reserve 4096 tokens for prompt
+        max_tokens_val = min(1048576 - 8192, 100000)  # Reserve 8192 tokens for prompt, allow extensive responses
     elif actual_model_name_for_sdk == "openai/codex-mini": # 200,000 token context window
-        max_tokens_val = 200000 - 4096  # Reserve 4096 tokens for prompt
+        max_tokens_val = min(200000 - 8192, 60000)  # Reserve 8192 tokens for prompt, allow detailed code responses
     # For other models, max_tokens_val remains the default of 30000
 
     # Always enable reasoning for models that support it (e.g., :thinking or reasoning_config)
     reasoning_config_to_pass = None
     if model_name_with_suffix.endswith(':thinking') or 'thinking' in model_name_with_suffix or 'reasoning' in model_name_with_suffix:
-        reasoning_config_to_pass = {"effort": "high", "exclude": False}
+        reasoning_config_to_pass = {
+            "effort": "high", 
+            "exclude": False,
+            "depth": "comprehensive",
+            "analysis_depth": "thorough",
+            "step_by_step": True,
+            "consider_alternatives": True,
+            "verify_reasoning": True
+        }
 
     sdk_params = {
         "model": actual_model_name_for_sdk,

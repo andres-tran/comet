@@ -493,50 +493,120 @@ body {
 .results-container-perplexity h4,
 .results-container-perplexity h5,
 .results-container-perplexity h6 {
-    margin-top: 1.8em;
-    margin-bottom: 0.8em;
+    margin-top: 2.2em;
+    margin-bottom: 1.1em;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.4;
     color: var(--text-color);
+    letter-spacing: -0.01em;
 }
 
 .results-container-perplexity h1 { 
     font-size: 1.8em; 
     border-bottom: 2px solid var(--border-color); 
-    padding-bottom: 0.4em; 
-    margin-top: 1em;
+    padding-bottom: 0.5em; 
+    margin-top: 1.5em;
+    margin-bottom: 1.2em;
+    line-height: 1.3;
 }
 .results-container-perplexity h2 { 
     font-size: 1.5em; 
     border-bottom: 1px solid var(--border-color); 
-    padding-bottom: 0.3em; 
+    padding-bottom: 0.4em; 
+    margin-top: 2em;
+    margin-bottom: 1em;
+    line-height: 1.35;
 }
-.results-container-perplexity h3 { font-size: 1.3em; }
-.results-container-perplexity h4 { font-size: 1.15em; }
+.results-container-perplexity h3 { 
+    font-size: 1.3em; 
+    margin-top: 1.8em;
+    margin-bottom: 0.9em;
+    line-height: 1.4;
+}
+.results-container-perplexity h4 { 
+    font-size: 1.15em; 
+    margin-top: 1.6em;
+    margin-bottom: 0.8em;
+    line-height: 1.45;
+}
 
 .results-container-perplexity p {
-    margin-bottom: 1.2em;
+    margin-bottom: 1.6em;
     overflow-wrap: break-word;
+    line-height: 1.8;
+    font-size: var(--text-lg);
+    color: var(--text-color);
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    -moz-hyphens: auto;
+    -ms-hyphens: auto;
+}
+
+/* Improved paragraph spacing for better reading flow */
+.results-container-perplexity p + p {
+    margin-top: 1.8em;
+}
+
+.results-container-perplexity p:first-child {
+    margin-top: 0;
+}
+
+.results-container-perplexity p:last-child {
+    margin-bottom: 0;
 }
 
 /* Enhanced Lists */
 .results-container-perplexity ul,
 .results-container-perplexity ol {
-    margin-left: 1.5em;
-    margin-bottom: 1.2em;
-    padding-left: 1em;
+    margin-left: 0;
+    margin-bottom: 1.8em;
+    padding-left: 2em;
+    line-height: 1.7;
 }
 
 .results-container-perplexity li {
-    margin-bottom: 0.6em;
+    margin-bottom: 0.8em;
     overflow-wrap: break-word;
-    line-height: 1.6;
+    line-height: 1.75;
+    padding-left: 0.5em;
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    -moz-hyphens: auto;
+    -ms-hyphens: auto;
 }
 
 .results-container-perplexity li > ul,
 .results-container-perplexity li > ol {
-    margin-top: 0.6em;
-    margin-bottom: 0.6em;
+    margin-top: 0.8em;
+    margin-bottom: 0.8em;
+    padding-left: 1.5em;
+}
+
+/* Improved bullet and number styling */
+.results-container-perplexity ul > li {
+    list-style-type: disc;
+}
+
+.results-container-perplexity ul ul > li {
+    list-style-type: circle;
+}
+
+.results-container-perplexity ul ul ul > li {
+    list-style-type: square;
+}
+
+.results-container-perplexity ol > li {
+    list-style-type: decimal;
+}
+
+.results-container-perplexity ol ol > li {
+    list-style-type: lower-alpha;
+}
+
+.results-container-perplexity ol ol ol > li {
+    list-style-type: lower-roman;
 }
 
 /* Enhanced Code Styling */
@@ -577,14 +647,36 @@ body {
 
 /* Enhanced Blockquotes */
 .results-container-perplexity blockquote {
-    border-left: 4px solid var(--border-color);
-    padding: 0.8em 1.2em;
-    margin: 1.5em 0;
+    border-left: 4px solid var(--primary-color);
+    padding: 1.5em 2em;
+    margin: 2.5em 0;
     background-color: var(--code-bg-color);
-    border-radius: 0 8px 8px 0;
+    border-radius: 0 12px 12px 0;
     color: var(--text-color);
     font-style: italic;
+    font-size: 1.05em;
+    line-height: 1.8;
     overflow-wrap: break-word;
+    position: relative;
+    box-shadow: var(--shadow-sm);
+}
+
+.results-container-perplexity blockquote::before {
+    content: '"';
+    font-size: 4em;
+    color: var(--primary-color);
+    position: absolute;
+    top: -0.2em;
+    left: 0.3em;
+    line-height: 1;
+    opacity: 0.3;
+}
+
+.results-container-perplexity blockquote p {
+    margin-bottom: 1.2em;
+    text-align: left;
+    position: relative;
+    z-index: 1;
 }
 
 .results-container-perplexity blockquote p:last-child {
@@ -938,121 +1030,91 @@ body {
 }
 
 .reasoning-content {
-    padding: var(--container-padding);
-    max-height: 500px;
+    max-height: 600px;
     overflow-y: auto;
-    transition: all 0.3s ease;
+    padding: var(--space-xl);
+    background-color: var(--code-bg-color);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
     font-size: var(--text-base);
-    line-height: 1.6;
-    color: var(--text-color);
+    line-height: 1.8;
 }
 
 .reasoning-content.collapsed {
     max-height: 0;
-    padding: 0 var(--container-padding);
     overflow: hidden;
+    padding: 0;
+    border: none;
 }
 
-/* Apply same markdown styles to reasoning content */
+/* Enhanced reasoning typography */
 .reasoning-content h1,
 .reasoning-content h2,
 .reasoning-content h3,
 .reasoning-content h4,
 .reasoning-content h5,
 .reasoning-content h6 {
-    margin-top: 1.5em;
-    margin-bottom: 0.8em;
+    margin-top: 2em;
+    margin-bottom: 1em;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.4;
     color: var(--text-color);
+    letter-spacing: -0.01em;
 }
 
-.reasoning-content h1 { font-size: 1.6em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
-.reasoning-content h2 { font-size: 1.4em; border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
-.reasoning-content h3 { font-size: 1.2em; }
-.reasoning-content h4 { font-size: 1.1em; }
+.reasoning-content h1 { 
+    font-size: 1.6em; 
+    border-bottom: 1px solid var(--border-color); 
+    padding-bottom: 0.4em; 
+    margin-top: 1.5em;
+    line-height: 1.3;
+}
+.reasoning-content h2 { 
+    font-size: 1.4em; 
+    border-bottom: 1px solid var(--border-color); 
+    padding-bottom: 0.3em; 
+    margin-top: 1.8em;
+    line-height: 1.35;
+}
+.reasoning-content h3 { 
+    font-size: 1.2em; 
+    margin-top: 1.6em;
+    line-height: 1.4;
+}
+.reasoning-content h4 { 
+    font-size: 1.1em; 
+    margin-top: 1.4em;
+    line-height: 1.45;
+}
 
 .reasoning-content p {
-    margin-bottom: 1em;
+    margin-bottom: 1.5em;
     overflow-wrap: break-word;
+    line-height: 1.8;
+    color: var(--text-color);
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+}
+
+.reasoning-content p + p {
+    margin-top: 1.6em;
 }
 
 .reasoning-content ul,
 .reasoning-content ol {
-    margin-left: 1.5em;
-    margin-bottom: 1em;
-    padding-left: 1em;
+    margin-left: 0;
+    margin-bottom: 1.6em;
+    padding-left: 2em;
+    line-height: 1.7;
 }
 
 .reasoning-content li {
-    margin-bottom: 0.5em;
+    margin-bottom: 0.7em;
     overflow-wrap: break-word;
-}
-
-.reasoning-content code {
-    background-color: var(--code-bg-color);
-    padding: 0.2em 0.5em;
-    border-radius: 4px;
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-    font-size: 0.875em;
-    color: var(--code-text-color);
-}
-
-.reasoning-content pre {
-    background-color: var(--code-block-outer-bg);
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid var(--code-block-border-color);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    margin-bottom: 1.5em;
-    overflow: hidden;
-}
-
-.reasoning-content pre code {
-    display: block;
-    background-color: var(--code-block-inner-bg);
-    color: var(--code-block-text-color);
-    padding: 12px 15px;
-    border-radius: 4px;
-    overflow-x: auto;
-    font-size: 0.875em;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-}
-
-.reasoning-content blockquote {
-    border-left: 3px solid var(--border-color);
-    padding-left: 1em;
-    margin-left: 0;
-    margin-bottom: 1em;
-    color: var(--blockquote-color);
-    overflow-wrap: break-word;
-}
-
-.reasoning-content strong {
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-.reasoning-content em {
-    font-style: italic;
-}
-
-.reasoning-content a {
-    color: var(--link-color);
-    text-decoration: none;
-    overflow-wrap: break-word;
-    word-break: break-all;
-}
-
-.reasoning-content a:hover {
-    text-decoration: underline;
-}
-
-/* Dark mode specific shadow for reasoning pre elements */
-body.dark-mode .reasoning-content pre {
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2), 0 2px 5px rgba(0,0,0,0.3);
+    line-height: 1.7;
+    padding-left: 0.4em;
+    text-align: justify;
 }
 
 /* === Modern Card/Panel Effects === */
@@ -1947,5 +2009,296 @@ body {
         flex-shrink: 0;
         aspect-ratio: 1 / 1;
         font-size: var(--text-base) !important;
+    }
+}
+
+/* Enhanced mobile text readability */
+.results-container-perplexity,
+.reasoning-container-perplexity,
+.web-search-sources {
+    max-width: 100vw;
+    width: 100%;
+    overflow-x: hidden;
+    margin-left: 0;
+    margin-right: 0;
+    font-size: 1.1rem;
+    line-height: 1.7;
+}
+
+/* Mobile typography improvements */
+.results-container-perplexity p {
+    font-size: 1.1rem;
+    line-height: 1.75;
+    margin-bottom: 1.8em;
+    text-align: left;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.results-container-perplexity h1 {
+    font-size: 1.6rem;
+    line-height: 1.3;
+    margin-top: 1.5em;
+    margin-bottom: 1em;
+    padding-bottom: 0.5em;
+}
+
+.results-container-perplexity h2 {
+    font-size: 1.4rem;
+    line-height: 1.35;
+    margin-top: 1.8em;
+    margin-bottom: 0.9em;
+    padding-bottom: 0.4em;
+}
+
+.results-container-perplexity h3 {
+    font-size: 1.25rem;
+    line-height: 1.4;
+    margin-top: 1.6em;
+    margin-bottom: 0.8em;
+}
+
+.results-container-perplexity h4 {
+    font-size: 1.15rem;
+    line-height: 1.45;
+    margin-top: 1.4em;
+    margin-bottom: 0.7em;
+}
+
+/* Mobile list improvements */
+.results-container-perplexity ul,
+.results-container-perplexity ol {
+    padding-left: 1.5em;
+    margin-bottom: 1.6em;
+    line-height: 1.7;
+}
+
+.results-container-perplexity li {
+    margin-bottom: 0.9em;
+    line-height: 1.7;
+    padding-left: 0.3em;
+    text-align: left;
+    word-break: break-word;
+}
+
+/* Mobile blockquote adjustments */
+.results-container-perplexity blockquote {
+    margin: 2em 0;
+    padding: 1.2em 1.5em;
+    font-size: 1.05rem;
+    line-height: 1.7;
+}
+
+.results-container-perplexity blockquote::before {
+    font-size: 3em;
+    top: -0.1em;
+    left: 0.2em;
+}
+
+/* Reasoning content code styling */
+.reasoning-content code {
+    background-color: var(--code-bg-color);
+    padding: 0.3em 0.6em;
+    border-radius: 6px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 0.9em;
+    color: var(--code-text-color);
+    line-height: 1.5;
+}
+
+.reasoning-content pre {
+    background-color: var(--code-block-outer-bg);
+    padding: 0;
+    border-radius: 10px;
+    border: 1px solid var(--code-block-border-color);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.8em;
+    overflow: hidden;
+}
+
+.reasoning-content pre code {
+    display: block;
+    background-color: var(--code-block-inner-bg);
+    color: var(--code-block-text-color);
+    padding: 16px 20px;
+    border-radius: 0;
+    overflow-x: auto;
+    font-size: 0.875em;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.reasoning-content blockquote {
+    border-left: 4px solid var(--primary-color);
+    padding: 1.2em 1.8em;
+    margin: 2em 0;
+    background-color: var(--code-bg-color);
+    border-radius: 0 10px 10px 0;
+    font-style: italic;
+    font-size: 1.02em;
+    line-height: 1.7;
+    overflow-wrap: break-word;
+    box-shadow: var(--shadow-sm);
+}
+
+.reasoning-content strong {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.reasoning-content em {
+    font-style: italic;
+    color: var(--text-color);
+}
+
+.reasoning-content a {
+    color: var(--link-color);
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.reasoning-content a:hover {
+    border-bottom-color: var(--link-color);
+}
+
+/* Dark mode specific shadow for reasoning pre elements */
+body.dark-mode .reasoning-content pre {
+    box-shadow: var(--shadow-md);
+}
+
+/* Mobile reasoning container improvements */
+.reasoning-container-perplexity {
+    font-size: 1rem;
+    padding: var(--space-md);
+}
+
+.reasoning-content {
+    font-size: 1rem;
+    line-height: 1.7;
+    padding: var(--space-lg);
+    max-height: 400px;
+}
+
+.reasoning-content h1 {
+    font-size: 1.4rem;
+    line-height: 1.3;
+    margin-top: 1.2em;
+    margin-bottom: 0.8em;
+}
+
+.reasoning-content h2 {
+    font-size: 1.25rem;
+    line-height: 1.35;
+    margin-top: 1.4em;
+    margin-bottom: 0.7em;
+}
+
+.reasoning-content h3 {
+    font-size: 1.15rem;
+    line-height: 1.4;
+    margin-top: 1.2em;
+    margin-bottom: 0.6em;
+}
+
+.reasoning-content h4 {
+    font-size: 1.1rem;
+    line-height: 1.45;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+
+.reasoning-content p {
+    font-size: 1rem;
+    line-height: 1.7;
+    margin-bottom: 1.4em;
+    text-align: left;
+}
+
+.reasoning-content ul,
+.reasoning-content ol {
+    padding-left: 1.5em;
+    margin-bottom: 1.4em;
+}
+
+.reasoning-content li {
+    margin-bottom: 0.6em;
+    line-height: 1.6;
+    padding-left: 0.3em;
+    text-align: left;
+}
+
+.reasoning-content blockquote {
+    margin: 1.5em 0;
+    padding: 1em 1.3em;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* Enhanced reading experience class */
+.enhanced-reading {
+    font-size: 1.125rem;
+    line-height: 1.8;
+    max-width: 75ch;
+    margin: 0 auto;
+}
+
+.enhanced-reading h1,
+.enhanced-reading h2,
+.enhanced-reading h3 {
+    margin-top: 2.5em;
+    margin-bottom: 1.2em;
+    line-height: 1.3;
+}
+
+.enhanced-reading p {
+    margin-bottom: 1.8em;
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+}
+
+.enhanced-reading ul,
+.enhanced-reading ol {
+    margin-bottom: 2em;
+    padding-left: 2.5em;
+}
+
+.enhanced-reading li {
+    margin-bottom: 1em;
+    line-height: 1.75;
+}
+
+.enhanced-reading blockquote {
+    margin: 3em 0;
+    padding: 2em;
+    font-size: 1.1em;
+    line-height: 1.8;
+}
+
+/* Mobile enhancement for reading mode */
+@media (max-width: 480px) {
+    .enhanced-reading {
+        font-size: 1.1rem;
+        line-height: 1.75;
+        max-width: 100%;
+    }
+    
+    .enhanced-reading h1,
+    .enhanced-reading h2,
+    .enhanced-reading h3 {
+        margin-top: 2em;
+        margin-bottom: 1em;
+    }
+    
+    .enhanced-reading p {
+        margin-bottom: 1.6em;
+        text-align: left;
     }
 } 
