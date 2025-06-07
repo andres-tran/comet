@@ -477,6 +477,15 @@ body {
     position: relative;
     font-size: var(--text-lg);
     line-height: 1.7;
+    opacity: 0;
+    animation: fadeInStaggered 0.9s ease-out forwards;
+    animation-delay: 0.7s;
+}
+
+.results-container-perplexity.visible {
+    opacity: 0;
+    animation: fadeInStaggered 0.9s ease-out forwards;
+    animation-delay: 0.7s;
 }
 
 /* Enhanced Typography for Results */
@@ -677,6 +686,10 @@ body {
     justify-content: center;
     padding: var(--space-xl) 0;
     width: 100%;
+    margin-bottom: var(--space-2xl);
+    opacity: 0;
+    animation: fadeInStaggered 0.6s ease-out forwards;
+    animation-delay: 0.1s;
 }
 
 .thinking-indicator-content {
@@ -690,6 +703,18 @@ body {
     border-radius: var(--radius-xl);
     box-sizing: border-box;
     box-shadow: var(--shadow-sm);
+    animation: thinkingPulse 2s ease-in-out infinite;
+}
+
+@keyframes thinkingPulse {
+    0%, 100% {
+        box-shadow: var(--shadow-sm);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: var(--shadow-md);
+        transform: scale(1.02);
+    }
 }
 
 .spinner {
@@ -812,6 +837,16 @@ body {
     padding: 0;
     display: none;
     overflow: hidden;
+    opacity: 0;
+    animation: fadeInStaggered 0.8s ease-out forwards;
+    animation-delay: 0.5s;
+}
+
+.reasoning-container-perplexity.visible {
+    display: block;
+    opacity: 0;
+    animation: fadeInStaggered 0.8s ease-out forwards;
+    animation-delay: 0.5s;
 }
 
 .reasoning-header {
@@ -1187,6 +1222,24 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
     }
 }
 
+/* === Enhanced Container Spacing During Search === */
+.thinking-indicator + .web-search-sources,
+.thinking-indicator + .reasoning-container-perplexity,
+.web-search-sources + .reasoning-container-perplexity,
+.reasoning-container-perplexity + .results-container-perplexity,
+.web-search-sources + .results-container-perplexity {
+    margin-top: var(--space-3xl);
+}
+
+/* Additional spacing for loading states */
+.results-container-perplexity.loading {
+    margin-top: var(--space-3xl);
+}
+
+.web-search-progress {
+    margin-bottom: var(--space-2xl);
+}
+
 /* === Animations === */
 @keyframes fadeIn {
     from {
@@ -1196,6 +1249,17 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+@keyframes fadeInStaggered {
+    from {
+        opacity: 0;
+        transform: translateY(15px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
     }
 }
 
@@ -1288,11 +1352,14 @@ html {
     padding: 0;
     overflow: hidden;
     opacity: 0;
-    animation: fadeIn 0.3s ease-out forwards;
+    animation: fadeInStaggered 0.7s ease-out forwards;
+    animation-delay: 0.3s;
+    margin-bottom: var(--space-2xl);
 }
 
 .web-search-sources.fade-in {
-    animation: fadeIn 0.5s ease-out forwards;
+    animation: fadeInStaggered 0.7s ease-out forwards;
+    animation-delay: 0.3s;
 }
 
 .sources-header {
@@ -1439,7 +1506,10 @@ body.dark-mode .source-link:hover {
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeInStaggered 0.6s ease-out forwards;
+    animation-delay: 0.2s;
+    margin-bottom: var(--space-2xl);
+    opacity: 0;
 }
 
 body.dark-mode .web-search-progress {
