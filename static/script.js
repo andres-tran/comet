@@ -483,7 +483,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const placeholder = resultsContainer.querySelector('.placeholder-text');
         if(placeholder) placeholder.style.display = 'none';
 
-                    if (reasoningContainer) reasoningContainer.classList.remove('visible'); // Hide reasoning container
+                    if (reasoningContainer) {
+            reasoningContainer.classList.remove('visible'); // Hide reasoning container
+            reasoningContainer.style.display = ''; // Clear any inline display style
+        }
         if (reasoningContent) {
             reasoningContent.innerHTML = ''; // Clear old reasoning
             reasoningContent.classList.remove('collapsed'); // Reset to expanded state

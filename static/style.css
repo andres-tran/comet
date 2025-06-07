@@ -836,9 +836,6 @@ body {
     padding: 0;
     display: none;
     overflow: hidden;
-    opacity: 0;
-    animation: fadeInStaggered 0.8s ease-out forwards;
-    animation-delay: 0.5s;
 }
 
 .reasoning-container-perplexity.visible {
