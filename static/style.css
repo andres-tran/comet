@@ -173,7 +173,7 @@ body {
     left: 0;
 }
 
-/* Standardized Icon Buttons - Same as Circular Buttons */
+/* Standardized Icon Buttons - Smaller Size */
 #theme-toggle-button,
 #new-search-button {
     background-color: var(--select-bg-color);
@@ -182,11 +182,11 @@ body {
     padding: 0;
     border-radius: var(--radius-full);
     cursor: pointer;
-    font-size: var(--text-lg);
+    font-size: var(--text-base);
     transition: all 0.2s ease;
-    height: var(--button-height);
-    width: var(--button-height);
-    min-width: var(--button-height);
+    height: 36px;
+    width: 36px;
+    min-width: 36px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -471,13 +471,8 @@ body {
 
 .results-container-perplexity {
     width: 100%;
-    background-color: var(--results-bg-color);
-    border: 1px solid var(--results-border-color);
-    border-radius: var(--radius-xl);
     padding: var(--container-padding);
     min-height: 100px;
-    box-shadow: var(--shadow-lg);
-    transition: all 0.3s ease;
     overflow-wrap: break-word;
     position: relative;
     font-size: var(--text-lg);
@@ -814,21 +809,16 @@ body {
 /* Reasoning Container Styling */
 .reasoning-container-perplexity {
     width: 100%;
-    background-color: var(--results-bg-color);
-    border: 1px solid var(--results-border-color);
-    border-radius: var(--radius-xl);
     padding: 0;
     display: none;
     overflow: hidden;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-lg);
 }
 
 .reasoning-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--space-xl) var(--container-padding);
+    padding: var(--container-padding);
     background-color: var(--results-bg-color);
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
@@ -1036,7 +1026,7 @@ body.dark-mode .reasoning-content pre {
 }
 
 /* === Modern Card/Panel Effects === */
-.results-container-perplexity, .reasoning-container-perplexity {
+.results-container-perplexity, .reasoning-container-perplexity, .web-search-sources {
     box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1.5px 6px rgba(0,0,0,0.04);
     border-radius: 18px;
     background: var(--results-bg-color);
@@ -1135,9 +1125,7 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
     }
     
     /* Force all circular-style buttons to maintain perfect desktop appearance */
-    .circular-button,
-    #theme-toggle-button,
-    #new-search-button {
+    .circular-button {
         width: var(--button-height) !important;
         height: var(--button-height) !important;
         min-width: var(--button-height) !important;
@@ -1148,6 +1136,21 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
         flex-shrink: 0;
         aspect-ratio: 1 / 1;
         font-size: var(--text-lg) !important;
+    }
+    
+    /* Smaller size for theme toggle and new search buttons */
+    #theme-toggle-button,
+    #new-search-button {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+        max-width: 36px !important;
+        max-height: 36px !important;
+        border-radius: var(--radius-full) !important;
+        flex-shrink: 0;
+        aspect-ratio: 1 / 1;
+        font-size: var(--text-base) !important;
     }
     
     /* Essential scroll support for tables only */
@@ -1255,13 +1258,8 @@ html {
 /* Simplified Web Search Sources Styles - Like Reasoning Container */
 .web-search-sources {
     width: 100%;
-    background-color: var(--results-bg-color);
-    border: 1px solid var(--results-border-color);
-    border-radius: var(--radius-xl);
     padding: 0;
     overflow: hidden;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-lg);
     opacity: 0;
     animation: fadeIn 0.3s ease-out forwards;
 }
@@ -1274,7 +1272,7 @@ html {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--space-xl) var(--container-padding);
+    padding: var(--container-padding);
     background-color: var(--results-bg-color);
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
@@ -1725,6 +1723,8 @@ html, body {
 @media (hover: none) {
     button:active,
     .circular-button:active,
+    #theme-toggle-button:active,
+    #new-search-button:active,
     #model-select:active {
         opacity: 0.7;
         transform: scale(0.98);
