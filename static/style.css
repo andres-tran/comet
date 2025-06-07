@@ -136,7 +136,6 @@ body {
     -webkit-tap-highlight-color: transparent;
     min-height: 100vh;
     width: 100%;
-    overflow-x: hidden;
     font-size: var(--text-base);
 }
 
@@ -1145,78 +1144,7 @@ body, .main-container, .results-container-perplexity, .reasoning-container-perpl
 /* Mobile device consistency - desktop UI preserved across all screen sizes */
 
 /* Essential mobile accessibility - preserve desktop UI with minimal touch target improvements */
-@media (max-width: 480px) {
-    /* Mobile optimizations for wider content display */
-    
-    /* Reduce container padding on mobile to show more content */
-    .main-container {
-        padding: 0 var(--space-md);
-        max-width: 100vw;
-        gap: var(--space-2xl);
-    }
-    
-    /* Reduce body top padding on mobile */
-    body {
-        padding-top: var(--space-2xl);
-    }
-    
-    /* Optimize search form spacing on mobile */
-    .search-form-perplexity {
-        padding: var(--space-sm);
-        gap: var(--space-sm);
-    }
-    
-    /* Reduce header spacing on mobile */
-    .search-header h1 {
-        margin-bottom: var(--space-3xl);
-    }
-    
-    .logo-title {
-        margin-bottom: var(--space-sm);
-    }
-    
-    /* Minimum touch target size for non-circular buttons */
-    button:not(.circular-button):not(#theme-toggle-button):not(#new-search-button),
-    #model-select,
-    #search-input {
-        min-height: 44px;
-    }
-    
-    /* Force all circular-style buttons to maintain perfect desktop appearance */
-    .circular-button {
-        width: var(--button-height) !important;
-        height: var(--button-height) !important;
-        min-width: var(--button-height) !important;
-        min-height: var(--button-height) !important;
-        max-width: var(--button-height) !important;
-        max-height: var(--button-height) !important;
-        border-radius: var(--radius-full) !important;
-        flex-shrink: 0;
-        aspect-ratio: 1 / 1;
-        font-size: var(--text-lg) !important;
-    }
-    
-    /* Smaller size for theme toggle and new search buttons */
-    #theme-toggle-button,
-    #new-search-button {
-        width: 36px !important;
-        height: 36px !important;
-        min-width: 36px !important;
-        min-height: 36px !important;
-        max-width: 36px !important;
-        max-height: 36px !important;
-        border-radius: var(--radius-full) !important;
-        flex-shrink: 0;
-        aspect-ratio: 1 / 1;
-        font-size: var(--text-base) !important;
-    }
-    
-    /* Essential scroll support for tables only */
-    .table-wrapper {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-}
+
 
 /* === Enhanced Container Spacing During Search === */
 .thinking-indicator + .web-search-sources,
@@ -1790,13 +1718,6 @@ body.dark-mode .source-citation:hover {
     color: white;
 }
 
-/* Add viewport meta tag styles */
-html {
-    -webkit-text-size-adjust: 100%;
-    -webkit-tap-highlight-color: transparent;
-    height: 100%;
-}
-
 /* Fix for iOS input zoom */
 @media screen and (-webkit-min-device-pixel-ratio:0) { 
     select,
@@ -1804,12 +1725,6 @@ html {
     input {
         font-size: 16px;
     }
-}
-
-/* Prevent horizontal scroll on mobile */
-html, body {
-    max-width: 100%;
-    overflow-x: hidden;
 }
 
 /* Improve touch feedback */
@@ -1821,5 +1736,216 @@ html, body {
     #model-select:active {
         opacity: 0.7;
         transform: scale(0.98);
+    }
+}
+
+/* === MOBILE LAYOUT STABILIZATION === */
+
+/* Prevent layout shifts and ensure stable viewport */
+html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    height: 100%;
+    position: fixed;
+    width: 100%;
+    overflow: hidden;
+}
+
+body {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
+.main-container {
+    min-height: 100vh;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Constrain all content to prevent horizontal overflow */
+* {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ensure all text content respects container bounds */
+.results-container-perplexity,
+.reasoning-container-perplexity,
+.web-search-sources {
+    width: 100%;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
+}
+
+/* Constrain all text elements */
+.results-container-perplexity *,
+.reasoning-container-perplexity *,
+.web-search-sources * {
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+/* Prevent code blocks from causing horizontal scroll */
+.results-container-perplexity pre,
+.reasoning-container-perplexity pre,
+.web-search-sources pre {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.results-container-perplexity pre code,
+.reasoning-container-perplexity pre code,
+.web-search-sources pre code {
+    max-width: 100%;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Enhanced mobile responsive design */
+@media (max-width: 480px) {
+    /* Force stable layout */
+    html {
+        position: fixed !important;
+        width: 100% !important;
+        height: 100% !important;
+        overflow: hidden !important;
+    }
+    
+    body {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100vh !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        padding-top: var(--space-2xl);
+    }
+    
+    .main-container {
+        padding: 0 var(--space-md);
+        max-width: 100vw !important;
+        width: 100% !important;
+        gap: var(--space-2xl);
+        min-height: 100vh;
+        overflow-x: hidden !important;
+    }
+    
+    /* Ensure search form doesn't exceed viewport */
+    .search-form-perplexity {
+        padding: var(--space-sm);
+        gap: var(--space-sm);
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    /* Constrain all containers */
+    .results-container-perplexity,
+    .reasoning-container-perplexity,
+    .web-search-sources {
+        max-width: 100vw;
+        width: 100%;
+        overflow-x: hidden;
+        margin-left: 0;
+        margin-right: 0;
+    }
+    
+    /* Force all content to stay within bounds */
+    .results-container-perplexity *,
+    .reasoning-container-perplexity *,
+    .web-search-sources * {
+        max-width: 100% !important;
+        overflow-wrap: break-word !important;
+        word-wrap: break-word !important;
+    }
+    
+    /* Prevent images from causing overflow */
+    .results-container-perplexity img,
+    .reasoning-container-perplexity img,
+    .web-search-sources img {
+        max-width: 100% !important;
+        height: auto !important;
+        object-fit: contain;
+    }
+    
+    /* Constrain tables */
+    .table-wrapper {
+        max-width: 100vw;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 calc(-1 * var(--space-md));
+        padding: 0 var(--space-md);
+    }
+    
+    .results-container-perplexity table {
+        min-width: 300px;
+        font-size: 0.875rem;
+    }
+    
+    /* Reduce header spacing on mobile */
+    .search-header h1 {
+        margin-bottom: var(--space-3xl);
+    }
+    
+    .logo-title {
+        margin-bottom: var(--space-sm);
+    }
+    
+    /* Disable problematic animations on mobile */
+    .fade-in,
+    .fadeInStaggered {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+    
+    /* Ensure consistent button sizes */
+    button:not(.circular-button):not(#theme-toggle-button):not(#new-search-button),
+    #model-select,
+    #search-input {
+        min-height: 44px;
+    }
+    
+    .circular-button {
+        width: var(--button-height) !important;
+        height: var(--button-height) !important;
+        min-width: var(--button-height) !important;
+        min-height: var(--button-height) !important;
+        max-width: var(--button-height) !important;
+        max-height: var(--button-height) !important;
+        border-radius: var(--radius-full) !important;
+        flex-shrink: 0;
+        aspect-ratio: 1 / 1;
+        font-size: var(--text-lg) !important;
+    }
+    
+    #theme-toggle-button,
+    #new-search-button {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+        max-width: 36px !important;
+        max-height: 36px !important;
+        border-radius: var(--radius-full) !important;
+        flex-shrink: 0;
+        aspect-ratio: 1 / 1;
+        font-size: var(--text-base) !important;
     }
 } 
