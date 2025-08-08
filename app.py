@@ -104,7 +104,7 @@ OPENROUTER_MODELS = {
     "x-ai/grok-4"
     "perplexity/sonar-reasoning-pro",
     "openai/gpt-4.1",
-    "openai/gpt-4.5-preview",
+    "openai/gpt-5",
     "openai/codex-mini",
     "anthropic/claude-sonnet-4",
     "anthropic/claude-opus-4",
@@ -677,7 +677,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         max_tokens_val = min(1047576 - 8192, 80000)  # Reserve 8192 tokens for prompt, allow comprehensive responses
     elif actual_model_name_for_sdk == "openai/gpt-4o-search-preview": # Stated 16,384 generation capacity
         max_tokens_val = 16384
-    elif actual_model_name_for_sdk == "openai/gpt-4.5-preview": # 128,000 token context window
+    elif actual_model_name_for_sdk == "openai/gpt-5": # 128,000 token context window
         max_tokens_val = min(128000 - 8192, 60000)  # Reserve 8192 tokens for prompt, allow detailed responses
     elif actual_model_name_for_sdk == "openai/o4-mini-high": # 200,000 token context window
         max_tokens_val = min(200000 - 8192, 80000)  # Reserve 8192 tokens for prompt, allow comprehensive responses
@@ -751,7 +751,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
     MODELS_WITH_TEMPERATURE = {
         "perplexity/sonar-reasoning-pro",
         "openai/gpt-4.1",
-        "openai/gpt-4.5-preview",
+        "openai/gpt-5",
         "anthropic/claude-sonnet-4",
         "anthropic/claude-opus-4",
         "openai/o4-mini-high",
@@ -819,7 +819,7 @@ def stream_openrouter(query, model_name_with_suffix, reasoning_config=None, uplo
         context_limited_models = {
             "perplexity/sonar-reasoning-pro": 128000,
             "perplexity/sonar-deep-research": 128000,
-            "openai/gpt-4.5-preview": 128000,
+            "openai/gpt-5": 128000,
             "openai/gpt-4o-search-preview": 32000,  # Smaller context window
         }
         
