@@ -104,7 +104,7 @@ OPENROUTER_MODELS = {
     "x-ai/grok-4"
     "perplexity/sonar-reasoning-pro",
     "openai/gpt-4.1",
-    "openai/gpt-4.5-preview",
+    "openai/gpt-5",
     "openai/codex-mini",
     "anthropic/claude-sonnet-4",
     "anthropic/claude-opus-4",
